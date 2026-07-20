@@ -186,58 +186,98 @@
 <!-- Content Area -->
 <div class="flex-1 p-container-margin md:p-xl max-w-5xl mx-auto w-full">
 <!-- Page Header -->
-<div class="flex flex-col md:flex-row-reverse justify-between items-start md:items-center mb-xl gap-md mt-md">
+<div class="mb-xl text-right">
+<h2 class="font-display-lg-mobile md:font-display-lg text-display-lg-mobile md:text-display-lg text-on-surface mb-xs">إضافة فاتورة جديدة</h2>
+<p class="text-secondary font-body-md text-body-md">أدخل تفاصيل المعاملة المالية لتوثيقها في سجلات الشركة</p>
+</div>
+<!-- Main Form Card -->
+<div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden p-md md:p-xl">
+<form class="space-y-lg">
+<!-- Form Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-lg">
+<!-- Client Name -->
+<div class="flex flex-col gap-xs">
+<label class="font-label-md text-label-md text-on-surface-variant mb-xs">اسم العميل</label>
+<div class="relative">
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline" data-icon="person">person</span>
+<input class="w-full h-12 pr-10 pl-md rounded-xl bg-surface-container-low border border-outline-variant form-input-focus transition-all text-right" placeholder="مثال: أحمد محمد علي" type="text"/>
+</div>
+</div>
+<!-- Mobile Number -->
+<div class="flex flex-col gap-xs">
+<label class="font-label-md text-label-md text-on-surface-variant mb-xs">رقم الجوال</label>
+<div class="relative">
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline" data-icon="call">call</span>
+<input class="w-full h-12 pr-10 pl-md rounded-xl bg-surface-container-low border border-outline-variant form-input-focus transition-all text-right" placeholder="05XXXXXXXX" type="tel"/>
+</div>
+</div>
+<!-- Date -->
+<div class="flex flex-col gap-xs">
+<label class="font-label-md text-label-md text-on-surface-variant mb-xs">تاريخ الفاتورة</label>
+<div class="relative">
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline" data-icon="calendar_today">calendar_today</span>
+<input class="w-full h-12 pr-10 pl-md rounded-xl bg-surface-container-low border border-outline-variant form-input-focus transition-all text-right" type="date"/>
+</div>
+</div>
+<!-- Amount -->
+<div class="flex flex-col gap-xs">
+<label class="font-label-md text-label-md text-on-surface-variant mb-xs">المبلغ المستحق (ريال)</label>
+<div class="relative">
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline" data-icon="payments">payments</span>
+<input class="w-full h-12 pr-10 pl-md rounded-xl bg-surface-container-low border border-outline-variant form-input-focus transition-all text-right font-bold text-primary" placeholder="0.00" type="number"/>
+</div>
+</div>
+<!-- Full Width Fields -->
+<div class="md:col-span-2 flex flex-col gap-xs">
+<label class="font-label-md text-label-md text-on-surface-variant mb-xs">عنوان التوصيل</label>
+<div class="relative">
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline" data-icon="location_on">location_on</span>
+<input class="w-full h-12 pr-10 pl-md rounded-xl bg-surface-container-low border border-outline-variant form-input-focus transition-all text-right" placeholder="الحي، الشارع، رقم المبنى..." type="text"/>
+</div>
+</div>
+<div class="md:col-span-2 flex flex-col gap-xs">
+<label class="font-label-md text-label-md text-on-surface-variant mb-xs">التفاصيل / المشتريات</label>
+<div class="relative">
+<span class="material-symbols-outlined absolute right-3 top-4 text-outline" data-icon="inventory_2">inventory_2</span>
+<textarea class="w-full pr-10 pl-md pt-3 rounded-xl bg-surface-container-low border border-outline-variant form-input-focus transition-all text-right resize-none" placeholder="مثال: 1 طن أسمنت مقاوم، 500 حجر بلوك مقاس 20..." rows="4"></textarea>
+</div>
+</div>
+</div>
+<!-- Action Buttons -->
+<div class="flex flex-col md:flex-row-reverse items-center gap-md pt-lg border-t border-outline-variant mt-xl">
+<button class="w-full md:w-auto min-w-[160px] bg-primary text-on-primary h-14 rounded-full font-headline-sm text-headline-sm flex items-center justify-center gap-sm hover:opacity-90 active:scale-95 transition-all" type="submit">
+<span class="material-symbols-outlined" data-icon="save" style="font-variation-settings: 'FILL' 1;">save</span>
+                            حفظ الفاتورة
+                        </button>
+<button class="w-full md:w-auto min-w-[160px] bg-white border border-outline-variant text-on-surface h-14 rounded-full font-headline-sm text-headline-sm flex items-center justify-center gap-sm hover:bg-surface-container-low active:scale-95 transition-all" type="button">
+                            إلغاء
+                        </button>
+</div>
+</form>
+</div>
+<!-- Additional Context Section (Visual Polish) -->
+<div class="mt-xl grid grid-cols-1 md:grid-cols-3 gap-md">
+<div class="bg-primary-container/10 p-md rounded-xl border border-primary/20 flex flex-row-reverse items-start gap-sm">
+<span class="material-symbols-outlined text-primary" data-icon="verified_user">verified_user</span>
 <div class="text-right">
-<h2 class="font-display-lg-mobile md:font-display-lg text-display-lg-mobile md:text-display-lg text-on-surface mb-xs">سجل الفواتير</h2>
-<p class="text-secondary font-body-md text-body-md">إدارة وتتبع جميع الفواتير والمعاملات المالية</p>
-</div>
-<button class="bg-primary text-on-primary rounded-full py-md px-lg font-label-md text-label-md hover:opacity-90 transition-opacity flex flex-row-reverse items-center justify-center gap-sm shadow-sm" onclick="openModal()">
-<span class="material-symbols-outlined" data-icon="add">add</span>
-        فاتورة جديدة
-    </button>
-</div>
-<!-- Search and Filter Form -->
-<div class="bg-white rounded-xl border border-slate-200 shadow-sm p-md mb-lg flex flex-col md:flex-row-reverse gap-md items-center">
-<div class="relative flex-1 w-full text-right">
-<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline">search</span>
-<input class="w-full h-12 pr-10 pl-md rounded-xl bg-surface-container-low border border-outline-variant form-input-focus transition-all text-right" id="searchInput" onkeyup="filterInvoices()" placeholder="ابحث باسم العميل أو رقم الجوال..." type="text"/>
+<h4 class="font-label-md text-label-md text-primary font-bold">تأمين البيانات</h4>
+<p class="text-xs text-secondary leading-relaxed">يتم تشفير كافة الفواتير وحفظها تلقائياً في السجل السحابي للشركة.</p>
 </div>
 </div>
-<!-- Invoice List (Table) -->
-<div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-<div class="overflow-x-auto">
-<table class="w-full text-right border-collapse" dir="rtl">
-<thead class="bg-surface-container-low border-b border-outline-variant">
-<tr>
-<th class="p-md font-label-md text-on-surface-variant font-bold">اسم العميل</th>
-<th class="p-md font-label-md text-on-surface-variant font-bold">رقم الجوال</th>
-<th class="p-md font-label-md text-on-surface-variant font-bold">التاريخ</th>
-<th class="p-md font-label-md text-on-surface-variant font-bold">المبلغ (ريال)</th>
-<th class="p-md font-label-md text-on-surface-variant font-bold">التفاصيل</th>
-</tr>
-</thead>
-<tbody class="divide-y divide-outline-variant" id="invoiceList">
-<!-- Dynamic rows will be added here -->
-<tr class="invoice-item hover:bg-surface-container-lowest transition-colors">
-<td class="p-md font-body-md text-on-surface client-name">أحمد محمد</td>
-<td class="p-md font-body-md text-secondary client-mobile" dir="ltr">0500000000</td>
-<td class="p-md font-body-md text-secondary">2023-10-25</td>
-<td class="p-md font-body-md font-bold text-primary">1500.00</td>
-<td class="p-md font-body-md text-secondary">أسمنت وبلوك</td>
-</tr>
-<tr class="invoice-item hover:bg-surface-container-lowest transition-colors">
-<td class="p-md font-body-md text-on-surface client-name">شركة الأفق</td>
-<td class="p-md font-body-md text-secondary client-mobile" dir="ltr">0511111111</td>
-<td class="p-md font-body-md text-secondary">2023-10-26</td>
-<td class="p-md font-body-md font-bold text-primary">5000.00</td>
-<td class="p-md font-body-md text-secondary">حديد تسليح</td>
-</tr>
-</tbody>
-</table>
+<div class="bg-secondary-container/10 p-md rounded-xl border border-secondary/20 flex flex-row-reverse items-start gap-sm">
+<span class="material-symbols-outlined text-secondary" data-icon="print">print</span>
+<div class="text-right">
+<h4 class="font-label-md text-label-md text-on-surface font-bold">طباعة فورية</h4>
+<p class="text-xs text-secondary leading-relaxed">يمكنك طباعة نسخة ورقية أو إرسال الفاتورة عبر واتساب فور الحفظ.</p>
 </div>
-<div class="hidden p-xl text-center text-secondary font-body-md" id="noResults">
-        لا توجد فواتير مطابقة للبحث
-    </div>
+</div>
+<div class="bg-tertiary-fixed/10 p-md rounded-xl border border-tertiary-fixed/20 flex flex-row-reverse items-start gap-sm">
+<span class="material-symbols-outlined text-tertiary" data-icon="history">history</span>
+<div class="text-right">
+<h4 class="font-label-md text-label-md text-on-tertiary-container font-bold">تتبع التعديلات</h4>
+<p class="text-xs text-secondary leading-relaxed">يتم تسجيل وقت وتاريخ أي تعديل لاحق على هذه الفاتورة لأغراض الرقابة.</p>
+</div>
+</div>
 </div>
 </div>
 <!-- Mobile Bottom NavBar (Authority: Style Guidance) -->
@@ -280,176 +320,4 @@
         // Set current date by default
         document.querySelector('input[type="date"]').valueAsDate = new Date();
     </script>
-
-<!-- Modal -->
-<div class="fixed inset-0 z-[100] hidden items-center justify-center bg-black/50 p-4" id="invoiceModal">
-<div class="bg-white rounded-xl shadow-lg w-full max-w-3xl max-h-[90vh] overflow-y-auto p-md md:p-xl">
-<div class="flex flex-row-reverse justify-between items-center mb-lg border-b border-outline-variant pb-sm">
-<h2 class="font-headline-md text-headline-md font-bold text-on-surface">إضافة فاتورة جديدة</h2>
-<button class="text-secondary hover:text-on-surface" onclick="closeModal()" type="button">
-<span class="material-symbols-outlined">close</span>
-</button>
-</div>
-<form class="space-y-lg" id="invoiceForm">
-<!-- Form Grid -->
-<div class="grid grid-cols-1 md:grid-cols-2 gap-lg">
-<!-- Client Name -->
-<div class="flex flex-col gap-xs">
-<label class="font-label-md text-label-md text-on-surface-variant mb-xs">اسم العميل</label>
-<div class="relative">
-<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline" data-icon="person">person</span>
-<input class="w-full h-12 pr-10 pl-md rounded-xl bg-surface-container-low border border-outline-variant form-input-focus transition-all text-right" id="clientName" placeholder="مثال: أحمد محمد علي" type="text"/>
-</div>
-</div>
-<!-- Mobile Number -->
-<div class="flex flex-col gap-xs">
-<label class="font-label-md text-label-md text-on-surface-variant mb-xs">رقم الجوال</label>
-<div class="relative">
-<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline" data-icon="call">call</span>
-<input class="w-full h-12 pr-10 pl-md rounded-xl bg-surface-container-low border border-outline-variant form-input-focus transition-all text-right" id="mobileNumber" placeholder="05XXXXXXXX" type="tel"/>
-</div>
-</div>
-<!-- Date -->
-<div class="flex flex-col gap-xs">
-<label class="font-label-md text-label-md text-on-surface-variant mb-xs">تاريخ الفاتورة</label>
-<div class="relative">
-<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline" data-icon="calendar_today">calendar_today</span>
-<input class="w-full h-12 pr-10 pl-md rounded-xl bg-surface-container-low border border-outline-variant form-input-focus transition-all text-right" id="invoiceDate" type="date"/>
-</div>
-</div>
-<!-- Amount -->
-<div class="flex flex-col gap-xs">
-<label class="font-label-md text-label-md text-on-surface-variant mb-xs">المبلغ المستحق (ريال)</label>
-<div class="relative">
-<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline" data-icon="payments">payments</span>
-<input class="w-full h-12 pr-10 pl-md rounded-xl bg-surface-container-low border border-outline-variant form-input-focus transition-all text-right font-bold text-primary" id="invoiceAmount" placeholder="0.00" type="number"/>
-</div>
-</div>
-<!-- Full Width Fields -->
-<div class="md:col-span-2 flex flex-col gap-xs">
-<label class="font-label-md text-label-md text-on-surface-variant mb-xs">عنوان التوصيل</label>
-<div class="relative">
-<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline" data-icon="location_on">location_on</span>
-<input class="w-full h-12 pr-10 pl-md rounded-xl bg-surface-container-low border border-outline-variant form-input-focus transition-all text-right" id="deliveryAddress" placeholder="الحي، الشارع، رقم المبنى..." type="text"/>
-</div>
-</div>
-<div class="md:col-span-2 flex flex-col gap-xs">
-<label class="font-label-md text-label-md text-on-surface-variant mb-xs">التفاصيل / المشتريات</label>
-<div class="relative">
-<span class="material-symbols-outlined absolute right-3 top-4 text-outline" data-icon="inventory_2">inventory_2</span>
-<textarea class="w-full pr-10 pl-md pt-3 rounded-xl bg-surface-container-low border border-outline-variant form-input-focus transition-all text-right resize-none" id="invoiceDetails" placeholder="مثال: 1 طن أسمنت مقاوم، 500 حجر بلوك مقاس 20..." rows="4"></textarea>
-</div>
-</div>
-</div>
-<!-- Action Buttons -->
-<div class="flex flex-col md:flex-row-reverse items-center gap-md pt-lg border-t border-outline-variant mt-xl">
-<button class="w-full md:w-auto min-w-[160px] bg-primary text-on-primary h-14 rounded-full font-headline-sm text-headline-sm flex items-center justify-center gap-sm hover:opacity-90 active:scale-95 transition-all" type="submit">
-<span class="material-symbols-outlined" data-icon="save" style="font-variation-settings: 'FILL' 1;">save</span>
-                            حفظ الفاتورة
-                        </button>
-<button class="w-full md:w-auto min-w-[160px] bg-white border border-outline-variant text-on-surface h-14 rounded-full font-headline-sm text-headline-sm flex items-center justify-center gap-sm hover:bg-surface-container-low active:scale-95 transition-all" id="cancelModalBtn" onclick="closeModal()" type="button">
-                            إلغاء
-                        </button>
-</div>
-</form>
-</div>
-</div>
-<script>
-    // Modal functions
-    function openModal() {
-        const modal = document.getElementById('invoiceModal');
-        modal.classList.remove('hidden');
-        modal.classList.add('flex');
-        document.body.style.overflow = 'hidden'; // Prevent scrolling
-    }
-
-    function closeModal() {
-        const modal = document.getElementById('invoiceModal');
-        modal.classList.add('hidden');
-        modal.classList.remove('flex');
-        document.body.style.overflow = '';
-        document.getElementById('invoiceForm').reset();
-        document.querySelector('input[type="date"]').valueAsDate = new Date();
-    }
-
-    // Handle form submission
-    document.getElementById('invoiceForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-
-        // Get values
-        const name = document.getElementById('clientName').value;
-        const mobile = document.getElementById('mobileNumber').value;
-        const date = document.getElementById('invoiceDate').value;
-        const amount = document.getElementById('invoiceAmount').value;
-        const details = document.getElementById('invoiceDetails').value || '-';
-
-        if (!name || !amount) {
-            alert('الرجاء إدخال اسم العميل والمبلغ المستحق.');
-            return;
-        }
-
-        // Create new row
-        const tbody = document.getElementById('invoiceList');
-        const tr = document.createElement('tr');
-        tr.className = 'invoice-item hover:bg-surface-container-lowest transition-colors';
-
-        tr.innerHTML = `
-            <td class="p-md font-body-md text-on-surface client-name">${name}</td>
-            <td class="p-md font-body-md text-secondary client-mobile" dir="ltr">${mobile}</td>
-            <td class="p-md font-body-md text-secondary">${date}</td>
-            <td class="p-md font-body-md font-bold text-primary">${parseFloat(amount).toFixed(2)}</td>
-            <td class="p-md font-body-md text-secondary">${details}</td>
-        `;
-
-        // Add to top of list
-        tbody.insertBefore(tr, tbody.firstChild);
-
-        // Close modal
-        closeModal();
-
-        // Re-run filter just in case
-        filterInvoices();
-    });
-
-    // Search/Filter function
-    function filterInvoices() {
-        const input = document.getElementById('searchInput');
-        const filter = input.value.toLowerCase();
-        const rows = document.querySelectorAll('.invoice-item');
-        let hasVisible = false;
-
-        rows.forEach(row => {
-            const name = row.querySelector('.client-name').textContent.toLowerCase();
-            const mobile = row.querySelector('.client-mobile').textContent.toLowerCase();
-
-            if (name.includes(filter) || mobile.includes(filter)) {
-                row.style.display = '';
-                hasVisible = true;
-            } else {
-                row.style.display = 'none';
-            }
-        });
-
-        const noResults = document.getElementById('noResults');
-        if (hasVisible) {
-            noResults.classList.add('hidden');
-        } else {
-            noResults.classList.remove('hidden');
-        }
-    }
-
-    // Close modal when clicking outside
-    document.getElementById('invoiceModal').addEventListener('click', function(e) {
-        if (e.target === this) {
-            closeModal();
-        }
-    });
-
-    // Set current date by default on load
-    document.addEventListener('DOMContentLoaded', () => {
-        const dateInput = document.querySelector('input[type="date"]');
-        if (dateInput) {
-            dateInput.valueAsDate = new Date();
-        }
-    });
-</script></body></html>
+</body></html>
