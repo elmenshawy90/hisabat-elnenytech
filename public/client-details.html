@@ -24,7 +24,7 @@
 </div>
 </div>
 <div class="flex items-center gap-md">
-<button class="material-symbols-outlined text-secondary hover:bg-surface-container-low p-2 rounded-full transition-colors">notifications</button>
+<button onclick="logout()" class="material-symbols-outlined text-secondary hover:bg-surface-container-low p-2 rounded-full transition-colors" title="تسجيل الخروج">logout</button>
 <button class="material-symbols-outlined text-secondary hover:bg-surface-container-low p-2 rounded-full transition-colors">account_circle</button>
 </div>
 </header>
@@ -50,8 +50,8 @@
 </nav>
 <div class="mt-auto">
 <div class="bg-primary-fixed text-on-primary-fixed p-md rounded-xl flex flex-col gap-xs">
-<span class="font-label-sm text-label-sm opacity-80">الشركة الحالية</span>
-<span class="font-label-md text-label-md font-bold">شركة مواد البناء المحدودة</span>
+<span class="font-label-sm text-label-sm opacity-80 user-display-name">مدير الحسابات</span>
+<span class="font-label-md text-label-md font-bold user-role-name">مستخدم</span>
 </div>
 </div>
 </aside>
@@ -204,6 +204,13 @@ function getClientId() {
 
 // Load client data from API
 async function loadClientDetails() {
+    const user = await checkAuth();
+    if (!user) return;
+    
+    // Update user display names
+    document.querySelectorAll('.user-display-name').forEach(el => el.textContent = user.displayName || user.username);
+    document.querySelectorAll('.user-role-name').forEach(el => el.textContent = user.role === 'admin' ? 'المدير' : 'مستخدم');
+
     const clientId = getClientId();
     if (!clientId) {
         showToast('لم يتم تحديد العميل', 'error');

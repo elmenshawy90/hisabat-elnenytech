@@ -21,8 +21,8 @@
 <span class="material-symbols-outlined text-secondary">account_circle</span>
 </div>
 <div class="text-right">
-<p class="font-label-md text-label-md text-on-surface font-bold">مدير الحسابات</p>
-<p class="text-xs text-secondary">حساب نشط</p>
+<p class="font-label-md text-label-md text-on-surface font-bold user-display-name">مدير الحسابات</p>
+<p class="text-xs text-secondary user-role-name">حساب نشط</p>
 </div>
 </div>
 </div>
@@ -56,7 +56,9 @@
 <!-- TopNavBar -->
 <header class="bg-surface border-b border-outline-variant shadow-sm flex flex-row-reverse justify-between items-center px-container-margin w-full h-16 sticky top-0 z-40">
 <div class="flex items-center gap-md">
-<span class="material-symbols-outlined text-primary cursor-pointer">notifications</span>
+<button onclick="logout()" class="p-base hover:bg-error-container/20 hover:text-error rounded-full transition-colors active:opacity-80 text-secondary" title="تسجيل الخروج">
+<span class="material-symbols-outlined">logout</span>
+</button>
 <span class="material-symbols-outlined text-primary cursor-pointer">account_circle</span>
 </div>
 <div class="flex flex-row-reverse items-center gap-lg">
@@ -74,10 +76,16 @@
 <h2 class="font-display-lg-mobile md:font-display-lg text-display-lg-mobile md:text-display-lg text-on-surface mb-xs">سجل الفواتير</h2>
 <p class="text-secondary font-body-md text-body-md">إدارة وتتبع جميع الفواتير والمعاملات المالية</p>
 </div>
-<button class="bg-primary text-on-primary rounded-full py-md px-lg font-label-md text-label-md hover:opacity-90 transition-opacity flex flex-row-reverse items-center justify-center gap-sm shadow-sm" onclick="openModal()">
-<span class="material-symbols-outlined">add</span>
-فاتورة جديدة
-</button>
+<div class="flex gap-sm">
+    <a href="/api/export/invoices/excel" class="bg-surface-container-low text-on-surface rounded-full py-md px-lg font-label-md text-label-md hover:bg-surface-container transition-colors flex flex-row-reverse items-center justify-center gap-sm shadow-sm border border-outline-variant">
+        <span class="material-symbols-outlined">download</span>
+        تصدير
+    </a>
+    <button class="bg-primary text-on-primary rounded-full py-md px-lg font-label-md text-label-md hover:opacity-90 transition-opacity flex flex-row-reverse items-center justify-center gap-sm shadow-sm" onclick="openModal()">
+        <span class="material-symbols-outlined">add</span>
+        فاتورة جديدة
+    </button>
+</div>
 </div>
 <!-- Search and Filter -->
 <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-md mb-lg flex flex-col md:flex-row-reverse gap-md items-center">
@@ -204,6 +212,13 @@ let allInvoices = [];
 
 // Load invoices from API
 async function loadInvoices() {
+    const user = await checkAuth();
+    if (!user) return;
+    
+    // Update user display names
+    document.querySelectorAll('.user-display-name').forEach(el => el.textContent = user.displayName || user.username);
+    document.querySelectorAll('.user-role-name').forEach(el => el.textContent = user.role === 'admin' ? 'المدير' : 'مستخدم');
+
     try {
         const res = await fetch('/api/invoices');
         allInvoices = await res.json();

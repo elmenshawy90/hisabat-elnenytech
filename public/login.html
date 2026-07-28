@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>تسجيل الدخول - حسابات</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script src="js/tailwind-config.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="css/styles.css" rel="stylesheet"/>
+<style>
+    body {
+        background: linear-gradient(135deg, #f1f3ff 0%, #e9edff 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+    }
+    .login-card {
+        background: rgba(255, 255, 255, 0.9);
+        backdrop-filter: blur(20px);
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.1);
+    }
+</style>
+</head>
+<body class="p-4">
+
+<div class="login-card w-full max-w-md rounded-2xl p-8 md:p-10 border border-white/50">
+    <div class="flex flex-col items-center mb-8">
+        <div class="w-16 h-16 bg-primary text-on-primary rounded-2xl flex items-center justify-center mb-4 shadow-lg">
+            <span class="material-symbols-outlined text-4xl">account_balance_wallet</span>
+        </div>
+        <h1 class="text-3xl font-bold text-primary mb-2 font-display-lg">نظام حسابات</h1>
+        <p class="text-secondary text-sm text-center">قم بتسجيل الدخول للوصول إلى لوحة القيادة وإدارة بياناتك المالية</p>
+    </div>
+
+    <form id="loginForm" class="space-y-6">
+        <div class="space-y-2 text-right">
+            <label for="username" class="block text-sm font-medium text-on-surface">اسم المستخدم</label>
+            <div class="relative">
+                <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                    <span class="material-symbols-outlined text-outline text-xl">person</span>
+                </div>
+                <input type="text" id="username" name="username" required
+                    class="block w-full pr-10 pl-3 py-3 border border-outline-variant rounded-xl bg-surface-container-lowest focus:ring-2 focus:ring-primary focus:border-primary transition-shadow text-right"
+                    placeholder="أدخل اسم المستخدم">
+            </div>
+        </div>
+
+        <div class="space-y-2 text-right">
+            <label for="password" class="block text-sm font-medium text-on-surface">كلمة المرور</label>
+            <div class="relative">
+                <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                    <span class="material-symbols-outlined text-outline text-xl">lock</span>
+                </div>
+                <input type="password" id="password" name="password" required
+                    class="block w-full pr-10 pl-10 py-3 border border-outline-variant rounded-xl bg-surface-container-lowest focus:ring-2 focus:ring-primary focus:border-primary transition-shadow text-right"
+                    placeholder="أدخل كلمة المرور">
+                <button type="button" id="togglePassword" class="absolute inset-y-0 left-0 pl-3 flex items-center text-outline hover:text-on-surface transition-colors focus:outline-none">
+                    <span class="material-symbols-outlined text-xl">visibility</span>
+                </button>
+            </div>
+        </div>
+
+        <div id="errorMessage" class="hidden bg-error-container text-on-error-container p-3 rounded-lg text-sm text-right flex items-center gap-2 flex-row-reverse">
+            <span class="material-symbols-outlined text-lg">error</span>
+            <span id="errorText"></span>
+        </div>
+
+        <button type="submit" id="loginButton"
+            class="w-full flex justify-center items-center gap-2 py-3 px-4 border border-transparent rounded-xl shadow-md text-sm font-bold text-white bg-primary hover:bg-primary-container hover:text-on-primary-container focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-all active:scale-[0.98]">
+            <span id="buttonText">تسجيل الدخول</span>
+            <span id="buttonLoader" class="hidden material-symbols-outlined animate-spin text-xl">progress_activity</span>
+        </button>
+    </form>
+</div>
+
+<script>
+    // Toggle password visibility
+    const togglePassword = document.getElementById('togglePassword');
+    const passwordInput = document.getElementById('password');
+    
+    togglePassword.addEventListener('click', () => {
+        const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+        passwordInput.setAttribute('type', type);
+        togglePassword.querySelector('span').textContent = type === 'password' ? 'visibility' : 'visibility_off';
+    });
+
+    // Handle form submission
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const username = document.getElementById('username').value.trim();
+        const password = passwordInput.value;
+        const errorDiv = document.getElementById('errorMessage');
+        const errorText = document.getElementById('errorText');
+        const submitBtn = document.getElementById('loginButton');
+        const btnText = document.getElementById('buttonText');
+        const btnLoader = document.getElementById('buttonLoader');
+        
+        // Reset state
+        errorDiv.classList.add('hidden');
+        submitBtn.disabled = true;
+        btnText.textContent = 'جاري التحقق...';
+        btnLoader.classList.remove('hidden');
+
+        try {
+            const response = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ username, password })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                // Success - redirect to dashboard
+                btnText.textContent = 'تم بنجاح! جاري التحويل...';
+                btnText.parentElement.classList.replace('bg-primary', 'bg-green-600');
+                btnLoader.textContent = 'check_circle';
+                btnLoader.classList.remove('animate-spin');
+                
+                setTimeout(() => {
+                    window.location.href = '/dashboard.html';
+                }, 800);
+            } else {
+                // Show error
+                errorText.textContent = data.error || 'فشل في تسجيل الدخول';
+                errorDiv.classList.remove('hidden');
+                
+                // Reset button
+                submitBtn.disabled = false;
+                btnText.textContent = 'تسجيل الدخول';
+                btnLoader.classList.add('hidden');
+                passwordInput.value = ''; // clear password on error
+                passwordInput.focus();
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            errorText.textContent = 'حدث خطأ في الاتصال بالخادم. تأكد من اتصالك بالإنترنت.';
+            errorDiv.classList.remove('hidden');
+            
+            // Reset button
+            submitBtn.disabled = false;
+            btnText.textContent = 'تسجيل الدخول';
+            btnLoader.classList.add('hidden');
+        }
+    });
+
+    // Check if already logged in
+    window.addEventListener('DOMContentLoaded', async () => {
+        try {
+            const res = await fetch('/api/auth/me');
+            if (res.ok) {
+                const data = await res.json();
+                if (data.authenticated) {
+                    window.location.href = '/dashboard.html';
+                }
+            }
+        } catch (e) {
+            console.log('Not authenticated');
+        }
+    });
+</script>
+</body>
+</html>

@@ -21,8 +21,8 @@
 <span class="material-symbols-outlined text-3xl text-on-primary-fixed">domain</span>
 </div>
 <div class="text-center">
-<h2 class="font-headline-sm text-headline-sm text-primary">شركة مواد البناء</h2>
-<p class="font-label-md text-label-md text-secondary">مدير الحسابات</p>
+<h2 class="font-headline-sm text-headline-sm text-primary user-display-name">شركة مواد البناء</h2>
+<p class="font-label-md text-label-md text-secondary user-role-name">مدير الحسابات</p>
 </div>
 </div>
 <nav class="flex flex-col gap-sm">
@@ -58,8 +58,8 @@
 <h1 class="font-headline-md text-headline-md font-bold text-primary">سجل الديون</h1>
 </div>
 <div class="flex items-center gap-md">
-<button class="p-base hover:bg-surface-container-low rounded-full transition-colors active:opacity-80">
-<span class="material-symbols-outlined text-secondary">notifications</span>
+<button onclick="logout()" class="p-base hover:bg-error-container/20 hover:text-error rounded-full transition-colors active:opacity-80 text-secondary" title="تسجيل الخروج">
+<span class="material-symbols-outlined">logout</span>
 </button>
 <button class="p-base hover:bg-surface-container-low rounded-full transition-colors active:opacity-80">
 <span class="material-symbols-outlined text-secondary">account_circle</span>
@@ -74,10 +74,16 @@
 <h2 class="font-headline-md text-headline-md text-on-surface">العملاء</h2>
 <p class="font-body-md text-body-md text-secondary">إدارة ومتابعة ديون العملاء المسجلين</p>
 </div>
-<button onclick="openAddClientModal()" class="bg-primary text-on-primary px-lg py-md rounded-full flex items-center justify-center gap-sm font-headline-sm text-headline-sm shadow-md hover:shadow-lg transition-all active:scale-95">
-<span class="material-symbols-outlined">person_add</span>
-+ عميل جديد
-</button>
+<div class="flex gap-sm">
+    <a href="/api/export/clients/excel" class="bg-surface-container-low text-on-surface px-lg py-md rounded-full flex items-center justify-center gap-sm font-headline-sm text-headline-sm shadow-sm hover:shadow transition-all active:scale-95 border border-outline-variant">
+        <span class="material-symbols-outlined">download</span>
+        تصدير
+    </a>
+    <button onclick="openAddClientModal()" class="bg-primary text-on-primary px-lg py-md rounded-full flex items-center justify-center gap-sm font-headline-sm text-headline-sm shadow-md hover:shadow-lg transition-all active:scale-95">
+        <span class="material-symbols-outlined">person_add</span>
+        + عميل جديد
+    </button>
+</div>
 </div>
 <!-- Stats Row -->
 <div class="grid grid-cols-1 md:grid-cols-3 gap-md mb-xl">
@@ -201,6 +207,13 @@ let allClients = [];
 
 // Load clients from API
 async function loadClients() {
+    const user = await checkAuth();
+    if (!user) return;
+    
+    // Update user display names
+    document.querySelectorAll('.user-display-name').forEach(el => el.textContent = user.displayName || user.username);
+    document.querySelectorAll('.user-role-name').forEach(el => el.textContent = user.role === 'admin' ? 'المدير' : 'مستخدم');
+
     try {
         const res = await fetch('/api/clients');
         allClients = await res.json();

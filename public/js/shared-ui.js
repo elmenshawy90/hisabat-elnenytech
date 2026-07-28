@@ -169,3 +169,38 @@ function formatDate(dateStr) {
     day: 'numeric'
   });
 }
+
+// ─── Authentication & Session ────────────────────────────────
+async function checkAuth() {
+  try {
+    const res = await fetch('/api/auth/me');
+    if (!res.ok || res.status === 401) {
+      window.location.href = '/login.html';
+      return null;
+    }
+    const data = await res.json();
+    if (!data.authenticated) {
+      window.location.href = '/login.html';
+      return null;
+    }
+    return data.user;
+  } catch (err) {
+    console.error('Auth check failed:', err);
+    window.location.href = '/login.html';
+    return null;
+  }
+}
+
+async function logout() {
+  try {
+    const res = await fetch('/api/auth/logout', { method: 'POST' });
+    if (res.ok) {
+      window.location.href = '/login.html';
+    }
+  } catch (err) {
+    console.error('Logout failed:', err);
+  }
+}
+
+// Intercept fetch responses globally (if possible) or just do an initial check on load
+// For pages requiring auth, they can just call checkAuth() on DOMContentLoaded
