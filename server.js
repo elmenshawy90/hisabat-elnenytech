@@ -14,6 +14,9 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Trust proxy for Render/Vercel (required for secure cookies)
+app.set('trust proxy', 1);
+
 // Session Configuration
 app.use(session({
   secret: process.env.SESSION_SECRET || 'fallback-secret-for-dev',
