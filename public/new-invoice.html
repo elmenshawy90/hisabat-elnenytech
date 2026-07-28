@@ -18,7 +18,7 @@
     <link href="css/styles.css" rel="stylesheet" />
 </head>
 
-<body class="text-on-surface bg-background min-h-screen flex">
+<body class="text-on-surface bg-background min-h-screen flex max-w-[100vw] overflow-x-hidden">
     <!-- SideNavBar -->
     <aside
         class="docked fixed right-0 h-full w-64 bg-surface-container-low border-l border-outline-variant flex-col gap-lg p-md hidden md:flex z-50">
@@ -125,8 +125,8 @@
             </div>
             <!-- Invoice List (Table) -->
             <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                <div class="overflow-x-auto">
-                    <table class="w-full text-right border-collapse" dir="rtl">
+                <div class="overflow-x-auto w-full max-w-[100vw]">
+                    <table class="w-full text-right border-collapse whitespace-nowrap" dir="rtl">
                         <thead class="bg-surface-container-low border-b border-outline-variant">
                             <tr>
                                 <th class="p-md font-label-md text-on-surface-variant font-bold">اسم العميل</th>
