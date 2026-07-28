@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>تفاصيل العميل - سجل الديون</title>
+<meta name="description" content="عرض تفاصيل العميل وسجل المعاملات"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script src="js/tailwind-config.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="css/styles.css" rel="stylesheet"/>
+</head>
+<body class="bg-background text-on-surface min-h-screen">
+<!-- Top Navigation Bar -->
+<header class="bg-surface border-b border-outline-variant shadow-sm fixed top-0 right-0 left-0 z-50 h-16 flex flex-row-reverse justify-between items-center px-container-margin w-full">
+<div class="flex items-center gap-md flex-row-reverse">
+<a href="dashboard.html" class="font-headline-md text-headline-md font-bold text-primary hover:opacity-80 transition-opacity">سجل الديون</a>
+<div class="h-8 w-px bg-outline-variant mx-2"></div>
+<div class="flex items-center gap-sm flex-row-reverse">
+<a href="clients.html" class="text-secondary hover:text-primary transition-colors">العملاء</a>
+<span class="material-symbols-outlined text-outline text-sm">chevron_left</span>
+<span class="font-headline-sm text-headline-sm text-on-surface" id="breadcrumbName">تفاصيل العميل</span>
+</div>
+</div>
+<div class="flex items-center gap-md">
+<button class="material-symbols-outlined text-secondary hover:bg-surface-container-low p-2 rounded-full transition-colors">notifications</button>
+<button class="material-symbols-outlined text-secondary hover:bg-surface-container-low p-2 rounded-full transition-colors">account_circle</button>
+</div>
+</header>
+<!-- Side Navigation (Desktop Only) -->
+<aside class="hidden md:flex fixed right-0 top-16 h-[calc(100vh-64px)] w-64 bg-surface-container-low border-l border-outline-variant flex-col gap-lg p-md">
+<nav class="flex flex-col gap-sm">
+<a class="flex flex-row-reverse items-center gap-md text-secondary hover:bg-surface-container-highest px-md py-sm rounded-lg transition-all" href="dashboard.html">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-label-md text-label-md">لوحة القيادة</span>
+</a>
+<a class="flex flex-row-reverse items-center gap-md bg-primary-container text-on-primary-container rounded-lg px-md py-sm transition-all" href="clients.html">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">group</span>
+<span class="font-label-md text-label-md">العملاء</span>
+</a>
+<a class="flex flex-row-reverse items-center gap-md text-secondary hover:bg-surface-container-highest px-md py-sm rounded-lg transition-all" href="new-invoice.html">
+<span class="material-symbols-outlined">add_circle</span>
+<span class="font-label-md text-label-md">إضافة معاملة</span>
+</a>
+<a class="flex flex-row-reverse items-center gap-md text-secondary hover:bg-surface-container-highest px-md py-sm rounded-lg transition-all" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-label-md text-label-md">الإعدادات</span>
+</a>
+</nav>
+<div class="mt-auto">
+<div class="bg-primary-fixed text-on-primary-fixed p-md rounded-xl flex flex-col gap-xs">
+<span class="font-label-sm text-label-sm opacity-80">الشركة الحالية</span>
+<span class="font-label-md text-label-md font-bold">شركة مواد البناء المحدودة</span>
+</div>
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<main class="pt-24 pb-32 px-container-margin md:mr-64 min-h-screen">
+<div class="max-w-5xl mx-auto space-y-lg" id="mainContent">
+<!-- Loading State -->
+<div class="flex flex-col items-center justify-center py-20 gap-md" id="loadingState">
+<div style="width:40px;height:40px;border:3px solid #becabf;border-top-color:#006840;border-radius:50%;animation:spin 0.8s linear infinite;"></div>
+<span class="text-secondary">جاري تحميل بيانات العميل...</span>
+</div>
+<!-- Customer Profile Header (hidden until loaded) -->
+<div class="hidden" id="clientContent">
+<!-- Profile Header -->
+<div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-md mb-lg">
+<div class="flex items-center gap-md flex-row-reverse">
+<div class="w-16 h-16 rounded-full bg-primary-fixed flex items-center justify-center text-primary font-bold text-headline-md" id="clientInitials">--</div>
+<div class="text-right">
+<h2 class="font-headline-md text-headline-md text-on-surface" id="clientName">--</h2>
+<p class="font-body-md text-body-md text-secondary flex items-center gap-xs justify-end">
+<span id="clientPhone">--</span>
+<span class="material-symbols-outlined text-sm">call</span>
+</p>
+</div>
+</div>
+<div class="flex gap-sm w-full md:w-auto">
+<a href="new-invoice.html" class="flex-1 md:flex-none px-lg py-sm bg-primary text-on-primary rounded-full font-label-md text-label-md hover:opacity-90 transition-all flex items-center justify-center gap-xs">
+<span class="material-symbols-outlined text-[20px]">add_circle</span>
++ عملية شراء
+</a>
+<button onclick="goBack()" class="flex-1 md:flex-none px-lg py-sm border border-outline text-on-surface rounded-full font-label-md text-label-md hover:bg-surface-container transition-all flex items-center justify-center gap-xs">
+<span class="material-symbols-outlined text-[20px]">arrow_forward</span>
+رجوع
+</button>
+</div>
+</div>
+<!-- Bento Layout -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-md">
+<!-- Outstanding Balance Card -->
+<div class="md:col-span-2 bg-white rounded-xl border border-outline-variant p-lg shadow-sm flex flex-col justify-between relative overflow-hidden">
+<div class="absolute -left-8 -top-8 w-32 h-32 bg-primary/5 rounded-full blur-3xl"></div>
+<div class="relative z-10">
+<div class="flex justify-between items-start mb-lg">
+<div class="text-right">
+<span class="font-label-md text-label-md text-secondary uppercase tracking-wider">الرصيد المستحق الحالي</span>
+<div class="font-display-lg text-display-lg text-primary mt-xs" id="clientBalance">-- ج.م</div>
+</div>
+<span class="bg-error-container text-on-error-container px-md py-xs rounded-full font-label-sm text-label-sm" id="clientStatus">--</span>
+</div>
+<div class="grid grid-cols-2 gap-md border-t border-outline-variant pt-md">
+<div>
+<span class="font-label-sm text-label-sm text-secondary">آخر معاملة</span>
+<p class="font-body-md text-body-md" id="clientLastTx">--</p>
+</div>
+<div class="text-left">
+<span class="font-label-sm text-label-sm text-secondary">إجمالي المعاملات</span>
+<p class="font-body-md text-body-md" id="clientTotalTx">--</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Quick Stats -->
+<div class="bg-surface-container-high rounded-xl p-lg flex flex-col gap-md">
+<h3 class="font-headline-sm text-headline-sm text-on-surface">إحصاءات سريعة</h3>
+<div class="space-y-sm">
+<div class="flex justify-between items-center p-sm bg-white/50 rounded-lg">
+<span class="font-label-md text-label-md text-secondary">عدد العمليات</span>
+<span class="font-label-md text-label-md font-bold text-on-surface" id="statTxCount">--</span>
+</div>
+<div class="flex justify-between items-center p-sm bg-white/50 rounded-lg">
+<span class="font-label-md text-label-md text-secondary">إجمالي المشتريات</span>
+<span class="font-label-md text-label-md font-bold text-on-surface" id="statPurchases">--</span>
+</div>
+<div class="flex justify-between items-center p-sm bg-white/50 rounded-lg">
+<span class="font-label-md text-label-md text-secondary">إجمالي المدفوعات</span>
+<span class="font-label-md text-label-md font-bold text-primary" id="statPayments">--</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Transaction History Table -->
+<div class="bg-white rounded-xl border border-outline-variant overflow-hidden shadow-sm mt-lg">
+<div class="p-md border-b border-outline-variant flex justify-between items-center">
+<h3 class="font-headline-sm text-headline-sm">سجل المعاملات</h3>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-right border-collapse">
+<thead>
+<tr class="bg-surface-container-low font-label-md text-label-md text-secondary">
+<th class="px-md py-sm">التاريخ</th>
+<th class="px-md py-sm">النوع</th>
+<th class="px-md py-sm">الوصف</th>
+<th class="px-md py-sm">المبلغ</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant" id="transactionsBody">
+<tr><td colspan="4" class="p-xl text-center text-secondary">جاري التحميل...</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Mobile Bottom Navigation -->
+<nav class="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-white border-t border-outline-variant flex justify-around items-center px-md z-50">
+<a href="dashboard.html" class="flex flex-col items-center gap-xs text-secondary">
+<span class="material-symbols-outlined">home</span>
+<span class="text-[10px] font-label-sm">الرئيسية</span>
+</a>
+<a href="clients.html" class="flex flex-col items-center gap-xs text-primary">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">group</span>
+<span class="text-[10px] font-label-sm">العملاء</span>
+</a>
+<div class="relative -top-6">
+<a href="new-invoice.html" class="w-14 h-14 bg-primary text-on-primary rounded-full shadow-lg flex items-center justify-center">
+<span class="material-symbols-outlined text-2xl">add</span>
+</a>
+</div>
+<a href="new-invoice.html" class="flex flex-col items-center gap-xs text-secondary">
+<span class="material-symbols-outlined">receipt_long</span>
+<span class="text-[10px] font-label-sm">الفواتير</span>
+</a>
+<a href="#" class="flex flex-col items-center gap-xs text-secondary">
+<span class="material-symbols-outlined">settings</span>
+<span class="text-[10px] font-label-sm">إعدادات</span>
+</a>
+</nav>
+
+<script src="js/shared-ui.js"></script>
+<script>
+// Add spinner animation
+const style = document.createElement('style');
+style.textContent = `@keyframes spin { to { transform: rotate(360deg); } }`;
+document.head.appendChild(style);
+
+function goBack() {
+    if (window.history.length > 1) {
+        window.history.back();
+    } else {
+        window.location.href = 'clients.html';
+    }
+}
+
+// Get client ID from URL
+function getClientId() {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('id');
+}
+
+// Load client data from API
+async function loadClientDetails() {
+    const clientId = getClientId();
+    if (!clientId) {
+        showToast('لم يتم تحديد العميل', 'error');
+        setTimeout(() => window.location.href = 'clients.html', 1500);
+        return;
+    }
+
+    try {
+        const res = await fetch(`/api/clients/${clientId}`);
+        if (!res.ok) {
+            showToast('العميل غير موجود', 'error');
+            setTimeout(() => window.location.href = 'clients.html', 1500);
+            return;
+        }
+
+        const client = await res.json();
+
+        // Hide loading, show content
+        document.getElementById('loadingState').classList.add('hidden');
+        document.getElementById('clientContent').classList.remove('hidden');
+
+        // Populate profile
+        const initials = client.name.split(' ').slice(0, 2).map(w => w[0]).join(' ');
+        document.getElementById('clientInitials').textContent = initials;
+        document.getElementById('clientName').textContent = client.name;
+        document.getElementById('breadcrumbName').textContent = client.name;
+        document.getElementById('clientPhone').textContent = client.phone;
+        document.getElementById('clientBalance').textContent = formatCurrency(client.balance);
+        document.title = `${client.name} - سجل الديون`;
+
+        // Status badge
+        const statusEl = document.getElementById('clientStatus');
+        if (client.balance <= 0) {
+            statusEl.textContent = 'مسدد';
+            statusEl.className = 'bg-green-100 text-green-700 px-md py-xs rounded-full font-label-sm text-label-sm';
+        } else if (client.balance > 10000) {
+            statusEl.textContent = 'رصيد مرتفع';
+            statusEl.className = 'bg-error-container text-on-error-container px-md py-xs rounded-full font-label-sm text-label-sm';
+        } else {
+            statusEl.textContent = 'نشط';
+            statusEl.className = 'bg-orange-100 text-orange-700 px-md py-xs rounded-full font-label-sm text-label-sm';
+        }
+
+        // Last transaction
+        document.getElementById('clientLastTx').textContent = formatDate(client.lastTransaction);
+
+        // Invoices
+        const invoices = client.invoices || [];
+        document.getElementById('clientTotalTx').textContent = invoices.length + ' معاملة';
+        document.getElementById('statTxCount').textContent = invoices.length;
+
+        const totalPurchases = invoices.filter(i => i.type === 'purchase').reduce((s, i) => s + i.amount, 0);
+        const totalPayments = invoices.filter(i => i.type === 'payment').reduce((s, i) => s + i.amount, 0);
+        document.getElementById('statPurchases').textContent = formatCurrency(totalPurchases);
+        document.getElementById('statPayments').textContent = formatCurrency(totalPayments);
+
+        // Render transaction rows
+        renderTransactions(invoices);
+
+    } catch (err) {
+        console.error('Failed to load client:', err);
+        showToast('فشل في تحميل بيانات العميل', 'error');
+    }
+}
+
+function renderTransactions(invoices) {
+    const tbody = document.getElementById('transactionsBody');
+    if (invoices.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" class="p-xl text-center text-secondary">لا توجد معاملات لهذا العميل</td></tr>';
+        return;
+    }
+
+    // Sort by date descending
+    invoices.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    tbody.innerHTML = invoices.map(inv => {
+        const isPurchase = inv.type === 'purchase';
+        const typeBadge = isPurchase
+            ? '<span class="px-sm py-1 rounded-full bg-primary-fixed text-on-primary-fixed font-label-sm text-label-sm">شراء</span>'
+            : '<span class="px-sm py-1 rounded-full bg-secondary-container text-on-secondary-container font-label-sm text-label-sm">دفع</span>';
+        const amountClass = isPurchase ? 'font-bold' : 'text-primary font-bold';
+        const amountPrefix = isPurchase ? '+' : '-';
+
+        return `
+            <tr class="hover:bg-primary/5 transition-colors group">
+                <td class="px-md py-md font-body-md text-body-md">${formatDate(inv.date)}</td>
+                <td class="px-md py-md">${typeBadge}</td>
+                <td class="px-md py-md font-body-md text-body-md">${inv.details || '-'}</td>
+                <td class="px-md py-md font-body-md text-body-md ${amountClass}">${amountPrefix}${formatCurrency(inv.amount)}</td>
+            </tr>
+        `;
+    }).join('');
+}
+
+// Ripple effect for buttons
+document.querySelectorAll('button').forEach(button => {
+    button.addEventListener('mousedown', function() { this.classList.add('scale-95'); });
+    button.addEventListener('mouseup', function() { this.classList.remove('scale-95'); });
+    button.addEventListener('mouseleave', function() { this.classList.remove('scale-95'); });
+});
+
+// Initialize
+document.addEventListener('DOMContentLoaded', loadClientDetails);
+</script>
+</body></html>

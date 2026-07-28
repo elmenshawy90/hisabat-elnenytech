@@ -1,0 +1,98 @@
+[
+  {
+    "id": "inv1",
+    "clientId": "c7",
+    "clientName": "أحمد عبد الله",
+    "clientPhone": "0501234567",
+    "date": "2023-10-24",
+    "amount": 5200,
+    "type": "purchase",
+    "details": "حديد سابك 12 ملم - 2 طن",
+    "status": "pending",
+    "createdAt": "2023-10-24T10:00:00Z"
+  },
+  {
+    "id": "inv2",
+    "clientId": "c7",
+    "clientName": "أحمد عبد الله",
+    "clientPhone": "0501234567",
+    "date": "2023-10-20",
+    "amount": 3000,
+    "type": "payment",
+    "details": "دفعة نقدية - سند رقم #4521",
+    "status": "paid",
+    "createdAt": "2023-10-20T14:30:00Z"
+  },
+  {
+    "id": "inv3",
+    "clientId": "c7",
+    "clientName": "أحمد عبد الله",
+    "clientPhone": "0501234567",
+    "date": "2023-10-15",
+    "amount": 1250,
+    "type": "purchase",
+    "details": "أسمنت بحريني - 50 كيس",
+    "status": "pending",
+    "createdAt": "2023-10-15T09:00:00Z"
+  },
+  {
+    "id": "inv4",
+    "clientId": "c1",
+    "clientName": "أحمد محمد العتيبي",
+    "clientPhone": "0501234567",
+    "date": "2023-10-12",
+    "amount": 12400,
+    "type": "purchase",
+    "details": "أسمنت وبلوك",
+    "status": "pending",
+    "createdAt": "2023-10-12T08:00:00Z"
+  },
+  {
+    "id": "inv5",
+    "clientId": "c3",
+    "clientName": "مؤسسة النجاح للمقاولات",
+    "clientPhone": "0112223334",
+    "date": "2023-10-11",
+    "amount": 5000,
+    "type": "payment",
+    "details": "دفعة مالية",
+    "status": "paid",
+    "createdAt": "2023-10-11T11:00:00Z"
+  },
+  {
+    "id": "inv6",
+    "clientId": "c5",
+    "clientName": "شركة المقاولات المتحدة",
+    "clientPhone": "0551112233",
+    "date": "2023-10-10",
+    "amount": 45000,
+    "type": "purchase",
+    "details": "حديد تسليح وأسمنت",
+    "status": "pending",
+    "createdAt": "2023-10-10T13:00:00Z"
+  },
+  {
+    "id": "607ad73f",
+    "clientId": null,
+    "clientName": "محمد ناصر",
+    "clientPhone": "01012345678",
+    "date": "2026-07-27",
+    "amount": 3500,
+    "type": "purchase",
+    "details": "رمل ناعم - 10 متر",
+    "status": "pending",
+    "createdAt": "2026-07-27T13:50:43.167Z"
+  },
+  {
+    "id": "98ba8681",
+    "clientId": null,
+    "clientName": "ahmed",
+    "clientPhone": "01288388593",
+    "date": "2026-07-29",
+    "amount": 200,
+    "type": "purchase",
+    "details": "1 ton cement",
+    "status": "pending",
+    "createdAt": "2026-07-28T06:04:13.841Z"
+  }
+]

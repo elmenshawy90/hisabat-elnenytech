@@ -1,0 +1,65 @@
+[
+  {
+    "id": "c1",
+    "name": "أحمد محمد العتيبي",
+    "phone": "0501234567",
+    "balance": 2450,
+    "lastTransaction": "2023-10-15",
+    "lastTransactionNote": "فاتورة توريد أسمنت",
+    "createdAt": "2023-01-10"
+  },
+  {
+    "id": "c2",
+    "name": "خالد إبراهيم الحربي",
+    "phone": "0559876543",
+    "balance": 0,
+    "lastTransaction": "2023-10-10",
+    "lastTransactionNote": "تم تسوية الحساب",
+    "createdAt": "2023-02-15"
+  },
+  {
+    "id": "c3",
+    "name": "مؤسسة النجاح للمقاولات",
+    "phone": "0112223334",
+    "balance": 12900,
+    "lastTransaction": "2023-10-08",
+    "lastTransactionNote": "متأخر - 12 يوم",
+    "createdAt": "2023-03-20"
+  },
+  {
+    "id": "c4",
+    "name": "سالم عبد العزيز",
+    "phone": "0543332211",
+    "balance": 850,
+    "lastTransaction": "2023-10-01",
+    "lastTransactionNote": "دفعة نقدية",
+    "createdAt": "2023-04-05"
+  },
+  {
+    "id": "c5",
+    "name": "شركة المقاولات المتحدة",
+    "phone": "0551112233",
+    "balance": 85200,
+    "lastTransaction": "2023-09-01",
+    "lastTransactionNote": "متأخر منذ 45 يوماً",
+    "createdAt": "2022-11-01"
+  },
+  {
+    "id": "c6",
+    "name": "مؤسسة الفجر",
+    "phone": "0509998877",
+    "balance": 42150,
+    "lastTransaction": "2023-09-15",
+    "lastTransactionNote": "متأخر منذ 32 يوماً",
+    "createdAt": "2023-01-20"
+  },
+  {
+    "id": "c7",
+    "name": "أحمد عبد الله",
+    "phone": "0501234567",
+    "balance": 12450,
+    "lastTransaction": "2023-10-24",
+    "lastTransactionNote": "حديد سابك 12 ملم",
+    "createdAt": "2023-05-10"
+  }
+]

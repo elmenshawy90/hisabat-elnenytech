@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>سجل الديون - لوحة القيادة</title>
+<meta name="description" content="لوحة القيادة الرئيسية لنظام سجل الديون - إدارة مواد البناء"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script src="js/tailwind-config.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="css/styles.css" rel="stylesheet"/>
+</head>
+<body class="bg-background text-on-surface min-h-screen">
+<!-- Main Navigation Wrapper -->
+<div class="flex flex-col md:flex-row min-h-screen">
+<!-- SideNavBar (Desktop Right) -->
+<aside class="hidden md:flex flex-col gap-lg p-md fixed right-0 h-full w-64 bg-surface-container-low border-l border-outline-variant z-40 transition-all duration-300" id="sidebar">
+<div class="flex flex-col gap-sm py-md px-md border-b border-outline-variant/30 mb-md">
+<div class="flex items-center gap-sm">
+<div class="w-10 h-10 rounded-lg bg-primary-container flex items-center justify-center text-on-primary-container">
+<span class="material-symbols-outlined">architecture</span>
+</div>
+<div>
+<h1 class="font-headline-md text-headline-md font-bold text-primary leading-tight">سجل الديون</h1>
+<p class="text-[10px] text-secondary">إدارة مواد البناء</p>
+</div>
+</div>
+</div>
+<nav class="flex flex-col gap-sm flex-grow">
+<!-- Dashboard Active -->
+<a class="flex flex-row-reverse items-center gap-md bg-primary-container text-on-primary-container rounded-lg px-md py-sm hover:bg-surface-container-highest transition-all" href="dashboard.html">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">dashboard</span>
+<span class="font-label-md text-label-md flex-grow text-right">لوحة القيادة</span>
+</a>
+<a class="flex flex-row-reverse items-center gap-md text-secondary px-md py-sm hover:bg-surface-container-highest transition-all rounded-lg" href="clients.html">
+<span class="material-symbols-outlined">group</span>
+<span class="font-label-md text-label-md flex-grow text-right">العملاء</span>
+</a>
+<a class="flex flex-row-reverse items-center gap-md text-secondary px-md py-sm hover:bg-surface-container-highest transition-all rounded-lg" href="new-invoice.html">
+<span class="material-symbols-outlined">add_circle</span>
+<span class="font-label-md text-label-md flex-grow text-right">إضافة معاملة</span>
+</a>
+<div class="mt-auto border-t border-outline-variant/30 pt-md">
+<a class="flex flex-row-reverse items-center gap-md text-secondary px-md py-sm hover:bg-surface-container-highest transition-all rounded-lg" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-label-md text-label-md flex-grow text-right">الإعدادات</span>
+</a>
+</div>
+</nav>
+<div class="flex flex-row-reverse items-center gap-md bg-surface p-sm rounded-xl border border-outline-variant/30">
+<div class="w-10 h-10 rounded-full overflow-hidden bg-secondary-container flex items-center justify-center">
+<span class="material-symbols-outlined text-secondary">account_circle</span>
+</div>
+<div class="text-right overflow-hidden">
+<p class="text-sm font-bold text-on-surface truncate">شركة مواد البناء</p>
+<p class="text-[11px] text-secondary truncate">مدير الحسابات</p>
+</div>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="flex-grow md:mr-64 p-container-margin transition-all">
+<!-- TopNavBar (Mobile & Tablet) -->
+<header class="flex flex-row-reverse justify-between items-center w-full h-16 bg-surface mb-lg rounded-xl px-md border border-outline-variant/30 md:hidden shadow-sm">
+<div class="flex items-center gap-sm">
+<button class="material-symbols-outlined p-sm hover:bg-surface-container-low rounded-full transition-colors text-primary" onclick="toggleSidebar()">menu</button>
+<h2 class="font-bold text-primary text-lg">سجل الديون</h2>
+</div>
+<div class="flex items-center gap-md">
+<span class="material-symbols-outlined text-secondary">notifications</span>
+<span class="material-symbols-outlined text-secondary">account_circle</span>
+</div>
+</header>
+<!-- Dashboard Content -->
+<div class="max-w-7xl mx-auto space-y-lg">
+<!-- Page Header (Desktop) -->
+<div class="hidden md:flex justify-between items-end mb-xl">
+<div class="text-right">
+<h1 class="text-3xl font-bold text-on-surface">مرحباً بك في لوحة القيادة</h1>
+<p class="text-secondary mt-1">نظرة عامة على الحالة المالية للشركة اليوم</p>
+</div>
+<a href="new-invoice.html" class="bg-primary hover:bg-primary-container text-white px-lg py-sm rounded-full flex items-center gap-sm transition-all shadow-md active:scale-95">
+<span class="material-symbols-outlined text-[20px]">add</span>
+<span>إضافة فاتورة جديدة</span>
+</a>
+</div>
+<!-- Summary Cards Bento Grid -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-md">
+<!-- Total Customers -->
+<div class="bg-white p-md rounded-lg border border-outline-variant shadow-sm hover:shadow-md transition-shadow">
+<div class="flex justify-between items-start mb-sm">
+<div class="p-base bg-secondary-container rounded-lg text-on-secondary-container">
+<span class="material-symbols-outlined">group</span>
+</div>
+</div>
+<p class="text-secondary text-sm">إجمالي العملاء</p>
+<h3 class="text-2xl font-bold text-on-surface" id="statTotalClients">--</h3>
+</div>
+<!-- Outstanding Balance -->
+<div class="bg-white p-md rounded-lg border border-outline-variant shadow-sm hover:shadow-md transition-shadow">
+<div class="flex justify-between items-start mb-sm">
+<div class="p-base bg-primary-container/10 rounded-lg text-primary">
+<span class="material-symbols-outlined">account_balance_wallet</span>
+</div>
+</div>
+<p class="text-secondary text-sm">المستحقات القائمة</p>
+<h3 class="text-2xl font-bold text-on-surface" id="statOutstanding">--</h3>
+</div>
+<!-- Late Customers -->
+<div class="bg-white p-md rounded-lg border border-outline-variant shadow-sm hover:shadow-md transition-shadow">
+<div class="flex justify-between items-start mb-sm">
+<div class="p-base bg-error-container/10 rounded-lg text-error">
+<span class="material-symbols-outlined">timer_off</span>
+</div>
+<span class="text-[10px] text-error font-bold">حرج</span>
+</div>
+<p class="text-secondary text-sm">عملاء متأخرون</p>
+<h3 class="text-2xl font-bold text-on-surface" id="statLateClients">--</h3>
+</div>
+<!-- Today's Transactions -->
+<div class="bg-white p-md rounded-lg border border-outline-variant shadow-sm hover:shadow-md transition-shadow">
+<div class="flex justify-between items-start mb-sm">
+<div class="p-base bg-tertiary-container/10 rounded-lg text-tertiary">
+<span class="material-symbols-outlined">receipt_long</span>
+</div>
+<span class="text-[10px] text-primary font-bold">نشط</span>
+</div>
+<p class="text-secondary text-sm">معاملات اليوم</p>
+<h3 class="text-2xl font-bold text-on-surface" id="statTodayTx">--</h3>
+</div>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-lg">
+<!-- Recent Transactions Table (Main Column) -->
+<div class="lg:col-span-2 space-y-md">
+<div class="bg-white rounded-lg border border-outline-variant shadow-sm overflow-hidden">
+<div class="flex justify-between items-center px-md py-sm border-b border-outline-variant">
+<h4 class="font-bold text-on-surface">أحدث المعاملات</h4>
+<a href="new-invoice.html" class="text-primary text-sm font-medium hover:underline">عرض الكل</a>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-right border-collapse">
+<thead class="bg-surface-container-low text-secondary text-[12px] uppercase">
+<tr>
+<th class="px-md py-sm font-medium">العميل</th>
+<th class="px-md py-sm font-medium">نوع المعاملة</th>
+<th class="px-md py-sm font-medium text-left">المبلغ</th>
+<th class="px-md py-sm font-medium">التاريخ</th>
+<th class="px-md py-sm font-medium">الحالة</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant/30" id="recentTransactions">
+<tr><td colspan="5" class="p-xl text-center text-secondary">جاري التحميل...</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+<!-- Top Debtors Sidebar -->
+<div class="space-y-md">
+<div class="bg-white rounded-lg border border-outline-variant shadow-sm overflow-hidden flex flex-col h-full">
+<div class="px-md py-sm border-b border-outline-variant bg-surface-container-low flex justify-between items-center">
+<h4 class="font-bold text-on-surface">أكبر المدينين</h4>
+<span class="material-symbols-outlined text-secondary text-[20px]">warning</span>
+</div>
+<div class="p-md space-y-md flex-grow" id="topDebtors">
+<div class="p-xl text-center text-secondary">جاري التحميل...</div>
+</div>
+<div class="p-md pt-0">
+<a href="clients.html" class="w-full py-sm border-2 border-primary text-primary font-bold rounded-lg hover:bg-primary hover:text-white transition-all flex items-center justify-center gap-sm">
+<span>عرض جميع العملاء</span>
+<span class="material-symbols-outlined text-[18px]">arrow_back</span>
+</a>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Floating Action Button (Mobile Only) -->
+<a href="new-invoice.html" class="md:hidden fixed bottom-24 left-md w-14 h-14 bg-primary text-white rounded-full shadow-lg flex items-center justify-center z-50 active:scale-90 transition-transform">
+<span class="material-symbols-outlined text-3xl">add</span>
+</a>
+<!-- Mobile Bottom NavBar -->
+<nav class="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-white border-t border-outline-variant flex items-center justify-around z-50">
+<a class="flex flex-col items-center gap-1 text-primary" href="dashboard.html">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">dashboard</span>
+<span class="text-[10px] font-bold">الرئيسية</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-secondary" href="clients.html">
+<span class="material-symbols-outlined">group</span>
+<span class="text-[10px]">العملاء</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-secondary" href="new-invoice.html">
+<span class="material-symbols-outlined">payments</span>
+<span class="text-[10px]">الفواتير</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-secondary" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="text-[10px]">الإعدادات</span>
+</a>
+</nav>
+</div>
+
+<script src="js/shared-ui.js"></script>
+<script>
+// Mobile Sidebar Toggle
+const sidebar = document.getElementById('sidebar');
+function toggleSidebar() {
+    sidebar.classList.toggle('hidden');
+    sidebar.classList.toggle('md:flex');
+}
+
+// Load dashboard data from API
+async function loadDashboard() {
+    try {
+        const res = await fetch('/api/dashboard');
+        const data = await res.json();
+
+        // Update KPI cards
+        document.getElementById('statTotalClients').textContent = data.totalClients;
+        document.getElementById('statOutstanding').textContent = formatCurrency(data.outstandingBalance);
+        document.getElementById('statLateClients').textContent = data.lateClients;
+        document.getElementById('statTodayTx').textContent = data.todayTransactions;
+
+        // Render recent transactions
+        renderRecentTransactions(data.recentTransactions);
+
+        // Render top debtors
+        renderTopDebtors(data.topDebtors);
+    } catch (err) {
+        console.error('Failed to load dashboard:', err);
+        showToast('فشل في تحميل البيانات', 'error');
+    }
+}
+
+function renderRecentTransactions(transactions) {
+    const tbody = document.getElementById('recentTransactions');
+    if (!transactions || transactions.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="p-xl text-center text-secondary">لا توجد معاملات بعد</td></tr>';
+        return;
+    }
+    tbody.innerHTML = transactions.map(tx => {
+        const initials = tx.clientName.split(' ').slice(0, 2).map(w => w[0]).join(' ');
+        const isPayment = tx.type === 'payment';
+        const statusBadge = isPayment
+            ? '<span class="bg-green-100 text-green-700 text-[10px] font-bold px-sm py-[2px] rounded-full">تم السداد</span>'
+            : tx.status === 'pending'
+            ? '<span class="bg-orange-100 text-orange-700 text-[10px] font-bold px-sm py-[2px] rounded-full">قيد الانتظار</span>'
+            : '<span class="bg-red-100 text-red-700 text-[10px] font-bold px-sm py-[2px] rounded-full">متأخر</span>';
+        const typeIcon = isPayment
+            ? '<span class="material-symbols-outlined text-[16px] text-green-600" style="font-variation-settings: \'FILL\' 1;">payments</span>'
+            : '<span class="material-symbols-outlined text-[16px] text-primary">shopping_cart</span>';
+        const typeName = isPayment ? 'دفعة مالية' : 'مشتريات';
+        const amountClass = isPayment ? 'text-green-600' : '';
+
+        return `
+            <tr class="hover:bg-primary-container/5 transition-colors">
+                <td class="px-md py-md">
+                    <div class="flex items-center gap-sm">
+                        <div class="w-8 h-8 rounded-full bg-surface-container-highest flex items-center justify-center text-[12px] font-bold">${initials}</div>
+                        <span class="text-on-surface font-medium text-sm">${tx.clientName}</span>
+                    </div>
+                </td>
+                <td class="px-md py-md">
+                    <span class="flex items-center gap-xs text-sm text-on-surface">
+                        ${typeIcon} ${typeName}
+                    </span>
+                </td>
+                <td class="px-md py-md text-sm font-bold text-left ${amountClass}">${isPayment ? '-' : ''}${formatCurrency(tx.amount)}</td>
+                <td class="px-md py-md text-sm text-secondary">${formatDate(tx.date)}</td>
+                <td class="px-md py-md">${statusBadge}</td>
+            </tr>
+        `;
+    }).join('');
+}
+
+function renderTopDebtors(debtors) {
+    const container = document.getElementById('topDebtors');
+    if (!debtors || debtors.length === 0) {
+        container.innerHTML = '<div class="p-xl text-center text-secondary">لا يوجد مدينون</div>';
+        return;
+    }
+    container.innerHTML = debtors.map((debtor, index) => {
+        const severity = index === 0 ? { color: 'bg-red-500', text: 'حالة حرجة' }
+                        : index === 1 ? { color: 'bg-red-400', text: 'تنبيه' }
+                        : { color: 'bg-orange-400', text: 'متابعة' };
+        return `
+            <a href="client-details.html?id=${debtor.id}" class="flex flex-row-reverse items-center justify-between p-sm border border-outline-variant/30 rounded-lg hover:border-primary/50 transition-colors block">
+                <div class="text-right">
+                    <p class="font-bold text-sm text-on-surface">${debtor.name}</p>
+                    <p class="text-[10px] text-secondary">${debtor.lastTransactionNote || ''}</p>
+                </div>
+                <div class="text-left">
+                    <p class="font-bold ${index < 2 ? 'text-error' : 'text-on-surface'} text-sm">${formatCurrency(debtor.balance)}</p>
+                    <div class="flex items-center justify-end gap-xs">
+                        <span class="w-2 h-2 rounded-full ${severity.color}"></span>
+                        <span class="text-[10px] text-secondary">${severity.text}</span>
+                    </div>
+                </div>
+            </a>
+        `;
+    }).join('');
+}
+
+// Initialize
+document.addEventListener('DOMContentLoaded', loadDashboard);
+</script>
+</body></html>
