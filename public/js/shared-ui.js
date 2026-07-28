@@ -154,7 +154,7 @@ function hideLoading(container) {
 // ─── Format Currency ─────────────────────────────────────────
 function formatCurrency(amount) {
   return new Intl.NumberFormat('ar-EG', {
-    minimumFractionDigits: 2,
+    minimumFractionDigits: 0,
     maximumFractionDigits: 2
   }).format(amount) + ' ج.م';
 }
@@ -204,3 +204,61 @@ async function logout() {
 
 // Intercept fetch responses globally (if possible) or just do an initial check on load
 // For pages requiring auth, they can just call checkAuth() on DOMContentLoaded
+
+// ─── Input Validation ────────────────────────────────────────
+function setupPhoneValidation(inputId, errorId) {
+  const input = document.getElementById(inputId);
+  const errorMsg = document.getElementById(errorId);
+  if (!input) return;
+
+  input.maxLength = 11; // EG phones are 11 digits
+
+  const validate = () => {
+    // Strip non-numbers
+    let val = input.value.replace(/[^0-9]/g, '');
+    input.value = val;
+
+    let isError = false;
+    let errorText = "";
+
+    if (val.length > 0) {
+      if (val[0] !== '0') {
+        isError = true;
+        errorText = "رقم الهاتف يجب أن يبدأ بـ 01";
+      } else if (val.length >= 2 && val.substring(0, 2) !== '01') {
+        isError = true;
+        errorText = "رقم الهاتف يجب أن يبدأ بـ 01";
+      } else if (val.length >= 3 && !['010', '011', '012', '015'].includes(val.substring(0, 3))) {
+        isError = true;
+        errorText = "الشبكة غير صحيحة (010, 011, 012, 015)";
+      }
+    }
+
+    if (isError) {
+      input.classList.add('border-error', 'focus:border-error', 'focus:ring-error');
+      input.classList.remove('focus:border-primary', 'focus:ring-primary', 'border-outline-variant');
+      if (errorMsg) {
+        errorMsg.textContent = errorText;
+        errorMsg.classList.remove('hidden');
+      }
+    } else {
+      input.classList.remove('border-error', 'focus:border-error', 'focus:ring-error');
+      input.classList.add('focus:border-primary', 'focus:ring-primary', 'border-outline-variant');
+      if (errorMsg) errorMsg.classList.add('hidden');
+    }
+  };
+
+  input.addEventListener('input', validate);
+  
+  input.addEventListener('blur', () => {
+    let val = input.value;
+    if (val.length > 0 && val.length < 11) {
+      input.classList.add('border-error', 'focus:border-error', 'focus:ring-error');
+      input.classList.remove('focus:border-primary', 'focus:ring-primary', 'border-outline-variant');
+      if (errorMsg) {
+        errorMsg.textContent = "رقم الهاتف يجب أن يتكون من 11 رقماً";
+        errorMsg.classList.remove('hidden');
+      }
+    }
+  });
+}

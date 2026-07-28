@@ -43,23 +43,24 @@ router.get('/', async (req, res) => {
       .sort({ date: -1, createdAt: -1 })
       .limit(5);
 
-    // Chart Data (Last 6 months revenue vs payments)
-    const sixMonthsAgo = new Date();
-    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+    // Chart Data (Last 6 weeks revenue vs payments)
+    const sixWeeksAgo = new Date();
+    sixWeeksAgo.setDate(sixWeeksAgo.getDate() - 42);
     
     const chartData = await Invoice.aggregate([
-      { $match: { date: { $gte: sixMonthsAgo } } },
+      { $match: { date: { $gte: sixWeeksAgo } } },
       { 
         $group: {
           _id: { 
             year: { $year: "$date" }, 
             month: { $month: "$date" },
+            week: { $ceil: { $divide: [ { $dayOfMonth: "$date" }, 7 ] } },
             type: "$type"
           },
           total: { $sum: "$amount" }
         }
       },
-      { $sort: { "_id.year": 1, "_id.month": 1 } }
+      { $sort: { "_id.year": 1, "_id.month": 1, "_id.week": 1 } }
     ]);
 
     res.json({

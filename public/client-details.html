@@ -13,11 +13,11 @@
 </head>
 <body class="bg-background text-on-surface min-h-screen">
 <!-- Top Navigation Bar -->
-<header class="bg-surface border-b border-outline-variant shadow-sm fixed top-0 right-0 left-0 z-50 h-16 flex flex-row-reverse justify-between items-center px-container-margin w-full">
-<div class="flex items-center gap-md flex-row-reverse">
+<header class="bg-surface border-b border-outline-variant shadow-sm fixed top-0 right-0 left-0 z-50 h-16 flex flex-row justify-between items-center px-container-margin w-full">
+<div class="flex items-center gap-md flex-row">
 <a href="dashboard.html" class="font-headline-md text-headline-md font-bold text-primary hover:opacity-80 transition-opacity">سجل الديون</a>
 <div class="h-8 w-px bg-outline-variant mx-2"></div>
-<div class="flex items-center gap-sm flex-row-reverse">
+<div class="flex items-center gap-sm flex-row">
 <a href="clients.html" class="text-secondary hover:text-primary transition-colors">العملاء</a>
 <span class="material-symbols-outlined text-outline text-sm">chevron_left</span>
 <span class="font-headline-sm text-headline-sm text-on-surface" id="breadcrumbName">تفاصيل العميل</span>
@@ -31,19 +31,19 @@
 <!-- Side Navigation (Desktop Only) -->
 <aside class="hidden md:flex fixed right-0 top-16 h-[calc(100vh-64px)] w-64 bg-surface-container-low border-l border-outline-variant flex-col gap-lg p-md">
 <nav class="flex flex-col gap-sm">
-<a class="flex flex-row-reverse items-center gap-md text-secondary hover:bg-surface-container-highest px-md py-sm rounded-lg transition-all" href="dashboard.html">
+<a class="flex flex-row items-center gap-md text-secondary hover:bg-surface-container-highest px-md py-sm rounded-lg transition-all" href="dashboard.html">
 <span class="material-symbols-outlined">dashboard</span>
 <span class="font-label-md text-label-md">لوحة القيادة</span>
 </a>
-<a class="flex flex-row-reverse items-center gap-md bg-primary-container text-on-primary-container rounded-lg px-md py-sm transition-all" href="clients.html">
+<a class="flex flex-row items-center gap-md bg-primary-container text-on-primary-container rounded-lg px-md py-sm transition-all" href="clients.html">
 <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">group</span>
 <span class="font-label-md text-label-md">العملاء</span>
 </a>
-<a class="flex flex-row-reverse items-center gap-md text-secondary hover:bg-surface-container-highest px-md py-sm rounded-lg transition-all" href="new-invoice.html">
+<a class="flex flex-row items-center gap-md text-secondary hover:bg-surface-container-highest px-md py-sm rounded-lg transition-all" href="new-invoice.html">
 <span class="material-symbols-outlined">add_circle</span>
 <span class="font-label-md text-label-md">إضافة معاملة</span>
 </a>
-<a class="flex flex-row-reverse items-center gap-md text-secondary hover:bg-surface-container-highest px-md py-sm rounded-lg transition-all" href="#">
+<a class="flex flex-row items-center gap-md text-secondary hover:bg-surface-container-highest px-md py-sm rounded-lg transition-all" href="#">
 <span class="material-symbols-outlined">settings</span>
 <span class="font-label-md text-label-md">الإعدادات</span>
 </a>
@@ -67,7 +67,7 @@
 <div class="hidden" id="clientContent">
 <!-- Profile Header -->
 <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-md mb-lg">
-<div class="flex items-center gap-md flex-row-reverse">
+<div class="flex items-center gap-md flex-row">
 <div class="w-16 h-16 rounded-full bg-primary-fixed flex items-center justify-center text-primary font-bold text-headline-md" id="clientInitials">--</div>
 <div class="text-right">
 <h2 class="font-headline-md text-headline-md text-on-surface" id="clientName">--</h2>

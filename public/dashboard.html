@@ -30,26 +30,26 @@
 </div>
 <nav class="flex flex-col gap-sm flex-grow">
 <!-- Dashboard Active -->
-<a class="flex flex-row-reverse items-center gap-md bg-primary-container text-on-primary-container rounded-lg px-md py-sm hover:bg-surface-container-highest transition-all" href="dashboard.html">
+<a class="flex flex-row items-center gap-md bg-primary-container text-on-primary-container rounded-lg px-md py-sm hover:bg-surface-container-highest transition-all" href="dashboard.html">
 <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">dashboard</span>
 <span class="font-label-md text-label-md flex-grow text-right">لوحة القيادة</span>
 </a>
-<a class="flex flex-row-reverse items-center gap-md text-secondary px-md py-sm hover:bg-surface-container-highest transition-all rounded-lg" href="clients.html">
+<a class="flex flex-row items-center gap-md text-secondary px-md py-sm hover:bg-surface-container-highest transition-all rounded-lg" href="clients.html">
 <span class="material-symbols-outlined">group</span>
 <span class="font-label-md text-label-md flex-grow text-right">العملاء</span>
 </a>
-<a class="flex flex-row-reverse items-center gap-md text-secondary px-md py-sm hover:bg-surface-container-highest transition-all rounded-lg" href="new-invoice.html">
+<a class="flex flex-row items-center gap-md text-secondary px-md py-sm hover:bg-surface-container-highest transition-all rounded-lg" href="new-invoice.html">
 <span class="material-symbols-outlined">add_circle</span>
 <span class="font-label-md text-label-md flex-grow text-right">إضافة معاملة</span>
 </a>
 <div class="mt-auto border-t border-outline-variant/30 pt-md">
-<a class="flex flex-row-reverse items-center gap-md text-secondary px-md py-sm hover:bg-surface-container-highest transition-all rounded-lg" href="#">
+<a class="flex flex-row items-center gap-md text-secondary px-md py-sm hover:bg-surface-container-highest transition-all rounded-lg" href="#">
 <span class="material-symbols-outlined">settings</span>
 <span class="font-label-md text-label-md flex-grow text-right">الإعدادات</span>
 </a>
 </div>
 </nav>
-<div class="flex flex-row-reverse items-center gap-md bg-surface p-sm rounded-xl border border-outline-variant/30">
+<div class="flex flex-row items-center gap-md bg-surface p-sm rounded-xl border border-outline-variant/30">
 <div class="w-10 h-10 rounded-full overflow-hidden bg-secondary-container flex items-center justify-center">
 <span class="material-symbols-outlined text-secondary">account_circle</span>
 </div>
@@ -62,7 +62,7 @@
 <!-- Main Content Area -->
 <main class="flex-grow md:mr-64 p-container-margin transition-all">
 <!-- TopNavBar (Mobile & Tablet) -->
-<header class="flex flex-row-reverse justify-between items-center w-full h-16 bg-surface mb-lg rounded-xl px-md border border-outline-variant/30 md:hidden shadow-sm">
+<header class="flex flex-row justify-between items-center w-full h-16 bg-surface mb-lg rounded-xl px-md border border-outline-variant/30 md:hidden shadow-sm">
 <div class="flex items-center gap-sm">
 <button class="material-symbols-outlined p-sm hover:bg-surface-container-low rounded-full transition-colors text-primary" onclick="toggleSidebar()">menu</button>
 <h2 class="font-bold text-primary text-lg">سجل الديون</h2>
@@ -133,57 +133,59 @@
 </div>
 </div>
 
-<!-- Charts Section -->
-<div class="grid grid-cols-1 gap-lg mb-lg">
-    <div class="bg-white p-md rounded-lg border border-outline-variant shadow-sm h-[300px]">
-        <canvas id="monthlyChart"></canvas>
+<!-- Charts Section and Top Debtors -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-lg mb-lg">
+    <!-- Chart (Main Column) -->
+    <div class="lg:col-span-2 bg-white p-md rounded-lg border border-outline-variant shadow-sm h-[350px] relative w-full">
+        <canvas id="monthlyChart" class="w-full h-full"></canvas>
+    </div>
+    
+    <!-- Top Debtors Sidebar -->
+    <div class="space-y-md h-[350px]">
+        <div class="bg-white rounded-lg border border-outline-variant shadow-sm overflow-hidden flex flex-col h-full">
+            <div class="px-md py-sm border-b border-outline-variant bg-surface-container-low flex justify-between items-center">
+                <h4 class="font-bold text-on-surface">أكبر المدينين</h4>
+                <span class="material-symbols-outlined text-secondary text-[20px]">warning</span>
+            </div>
+            <div class="p-md space-y-md flex-grow overflow-y-auto custom-scrollbar" id="topDebtors">
+                <div class="p-xl text-center text-secondary">جاري التحميل...</div>
+            </div>
+            <div class="p-md pt-0 border-t border-outline-variant mt-auto">
+                <a href="clients.html" class="w-full py-sm mt-md border-2 border-primary text-primary font-bold rounded-lg hover:bg-primary hover:text-white transition-all flex items-center justify-center gap-sm">
+                    <span>عرض جميع العملاء</span>
+                    <span class="material-symbols-outlined text-[18px]">arrow_back</span>
+                </a>
+            </div>
+        </div>
     </div>
 </div>
 
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-lg">
-<!-- Recent Transactions Table (Main Column) -->
-<div class="lg:col-span-2 space-y-md">
-<div class="bg-white rounded-lg border border-outline-variant shadow-sm overflow-hidden">
-<div class="flex justify-between items-center px-md py-sm border-b border-outline-variant">
-<h4 class="font-bold text-on-surface">أحدث المعاملات</h4>
-<a href="new-invoice.html" class="text-primary text-sm font-medium hover:underline">عرض الكل</a>
-</div>
-<div class="overflow-x-auto">
-<table class="w-full text-right border-collapse">
-<thead class="bg-surface-container-low text-secondary text-[12px] uppercase">
-<tr>
-<th class="px-md py-sm font-medium">العميل</th>
-<th class="px-md py-sm font-medium">نوع المعاملة</th>
-<th class="px-md py-sm font-medium text-left">المبلغ</th>
-<th class="px-md py-sm font-medium">التاريخ</th>
-<th class="px-md py-sm font-medium">الحالة</th>
-</tr>
-</thead>
-<tbody class="divide-y divide-outline-variant/30" id="recentTransactions">
-<tr><td colspan="5" class="p-xl text-center text-secondary">جاري التحميل...</td></tr>
-</tbody>
-</table>
-</div>
-</div>
-</div>
-<!-- Top Debtors Sidebar -->
-<div class="space-y-md">
-<div class="bg-white rounded-lg border border-outline-variant shadow-sm overflow-hidden flex flex-col h-full">
-<div class="px-md py-sm border-b border-outline-variant bg-surface-container-low flex justify-between items-center">
-<h4 class="font-bold text-on-surface">أكبر المدينين</h4>
-<span class="material-symbols-outlined text-secondary text-[20px]">warning</span>
-</div>
-<div class="p-md space-y-md flex-grow" id="topDebtors">
-<div class="p-xl text-center text-secondary">جاري التحميل...</div>
-</div>
-<div class="p-md pt-0">
-<a href="clients.html" class="w-full py-sm border-2 border-primary text-primary font-bold rounded-lg hover:bg-primary hover:text-white transition-all flex items-center justify-center gap-sm">
-<span>عرض جميع العملاء</span>
-<span class="material-symbols-outlined text-[18px]">arrow_back</span>
-</a>
-</div>
-</div>
-</div>
+<!-- Recent Transactions Table -->
+<div class="grid grid-cols-1 gap-lg">
+    <div class="space-y-md">
+        <div class="bg-white rounded-lg border border-outline-variant shadow-sm overflow-hidden">
+            <div class="flex justify-between items-center px-md py-sm border-b border-outline-variant">
+                <h4 class="font-bold text-on-surface">أحدث المعاملات</h4>
+                <a href="new-invoice.html" class="text-primary text-sm font-medium hover:underline">عرض الكل</a>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-right border-collapse">
+                    <thead class="bg-surface-container-low text-secondary text-[12px] uppercase">
+                        <tr>
+                            <th class="px-md py-sm font-medium">العميل</th>
+                            <th class="px-md py-sm font-medium">نوع المعاملة</th>
+                            <th class="px-md py-sm font-medium text-left">المبلغ</th>
+                            <th class="px-md py-sm font-medium">التاريخ</th>
+                            <th class="px-md py-sm font-medium">الحالة</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-outline-variant/30" id="recentTransactions">
+                        <tr><td colspan="5" class="p-xl text-center text-secondary">جاري التحميل...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
 </div>
 </div>
 </main>
@@ -259,24 +261,23 @@ function renderChart(chartData) {
     
     const ctx = document.getElementById('monthlyChart').getContext('2d');
     
-    // Group by month
-    const months = [];
+    // Group by week
+    const weeks = [];
     const purchases = [];
     const payments = [];
     
-    // Create a map for easy lookup
     const dataMap = {};
     chartData.forEach(item => {
-        const key = `${item._id.year}-${item._id.month}`;
+        const key = `${item._id.year}-${item._id.month}-${item._id.week}`;
         if (!dataMap[key]) {
-            dataMap[key] = { purchase: 0, payment: 0, label: `${item._id.year}/${item._id.month}` };
-            months.push(dataMap[key].label);
+            dataMap[key] = { purchase: 0, payment: 0, label: `أسبوع ${item._id.week}، شهر ${item._id.month}` };
+            weeks.push(dataMap[key].label);
         }
         dataMap[key][item._id.type] = item.total;
     });
     
-    months.forEach(m => {
-        const item = Object.values(dataMap).find(d => d.label === m);
+    weeks.forEach(w => {
+        const item = Object.values(dataMap).find(d => d.label === w);
         purchases.push(item.purchase);
         payments.push(item.payment);
     });
@@ -284,7 +285,7 @@ function renderChart(chartData) {
     new Chart(ctx, {
         type: 'bar',
         data: {
-            labels: months,
+            labels: weeks,
             datasets: [
                 {
                     label: 'مشتريات',
@@ -366,7 +367,7 @@ function renderTopDebtors(debtors) {
                         : index === 1 ? { color: 'bg-red-400', text: 'تنبيه' }
                         : { color: 'bg-orange-400', text: 'متابعة' };
         return `
-            <a href="client-details.html?id=${debtor.id}" class="flex flex-row-reverse items-center justify-between p-sm border border-outline-variant/30 rounded-lg hover:border-primary/50 transition-colors block">
+            <a href="client-details.html?id=${debtor.id}" class="flex flex-row items-center justify-between p-sm border border-outline-variant/30 rounded-lg hover:border-primary/50 transition-colors block">
                 <div class="text-right">
                     <p class="font-bold text-sm text-on-surface">${debtor.name}</p>
                     <p class="text-[10px] text-secondary">${debtor.lastTransactionNote || ''}</p>

@@ -1,241 +1,318 @@
 <!DOCTYPE html>
 <html class="light" dir="rtl" lang="ar">
+
 <head>
-<meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>إضافة فاتورة جديدة | سجل الديون</title>
-<meta name="description" content="إضافة وإدارة الفواتير والمعاملات المالية"/>
-<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<script src="js/tailwind-config.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
-<link href="css/styles.css" rel="stylesheet"/>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>إضافة فاتورة جديدة | سجل الديون</title>
+    <meta name="description" content="إضافة وإدارة الفواتير والمعاملات المالية" />
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ar.js"></script>
+    <script src="js/tailwind-config.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+        rel="stylesheet" />
+    <link href="css/styles.css" rel="stylesheet" />
 </head>
+
 <body class="text-on-surface bg-background min-h-screen flex">
-<!-- SideNavBar -->
-<aside class="docked fixed right-0 h-full w-64 bg-surface-container-low border-l border-outline-variant flex-col gap-lg p-md hidden md:flex z-50">
-<div class="flex flex-col gap-sm mb-lg">
-<h2 class="font-headline-md text-headline-md font-bold text-primary">شركة مواد البناء</h2>
-<div class="flex flex-row-reverse items-center gap-sm mt-md">
-<div class="w-10 h-10 rounded-full bg-secondary-container flex items-center justify-center overflow-hidden">
-<span class="material-symbols-outlined text-secondary">account_circle</span>
-</div>
-<div class="text-right">
-<p class="font-label-md text-label-md text-on-surface font-bold user-display-name">مدير الحسابات</p>
-<p class="text-xs text-secondary user-role-name">حساب نشط</p>
-</div>
-</div>
-</div>
-<nav class="flex flex-col gap-sm">
-<a class="flex flex-row-reverse items-center gap-md text-secondary px-md py-sm hover:bg-surface-container-highest transition-all rounded-lg" href="dashboard.html">
-<span class="material-symbols-outlined">dashboard</span>
-<span class="font-label-md text-label-md">لوحة القيادة</span>
-</a>
-<a class="flex flex-row-reverse items-center gap-md text-secondary px-md py-sm hover:bg-surface-container-highest transition-all rounded-lg" href="clients.html">
-<span class="material-symbols-outlined">group</span>
-<span class="font-label-md text-label-md">العملاء</span>
-</a>
-<a class="flex flex-row-reverse items-center gap-md bg-primary-container text-on-primary-container rounded-lg px-md py-sm transition-all" href="new-invoice.html">
-<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">add_circle</span>
-<span class="font-label-md text-label-md">إضافة معاملة</span>
-</a>
-<a class="flex flex-row-reverse items-center gap-md text-secondary px-md py-sm hover:bg-surface-container-highest transition-all rounded-lg" href="#">
-<span class="material-symbols-outlined">settings</span>
-<span class="font-label-md text-label-md">الإعدادات</span>
-</a>
-</nav>
-<div class="mt-auto">
-<button onclick="openModal()" class="w-full bg-primary text-on-primary rounded-full py-md px-lg font-label-md text-label-md hover:opacity-90 transition-opacity flex items-center justify-center gap-sm">
-<span class="material-symbols-outlined">post_add</span>
-إضافة فاتورة جديدة
-</button>
-</div>
-</aside>
-<!-- Main Canvas -->
-<main class="flex-1 md:mr-64 min-h-screen flex flex-col">
-<!-- TopNavBar -->
-<header class="bg-surface border-b border-outline-variant shadow-sm flex flex-row-reverse justify-between items-center px-container-margin w-full h-16 sticky top-0 z-40">
-<div class="flex items-center gap-md">
-<button onclick="logout()" class="p-base hover:bg-error-container/20 hover:text-error rounded-full transition-colors active:opacity-80 text-secondary" title="تسجيل الخروج">
-<span class="material-symbols-outlined">logout</span>
-</button>
-<span class="material-symbols-outlined text-primary cursor-pointer">account_circle</span>
-</div>
-<div class="flex flex-row-reverse items-center gap-lg">
-<h1 class="font-headline-md text-headline-md font-bold text-primary">سجل الديون</h1>
-<div class="hidden md:flex flex-row-reverse items-center gap-md border-r border-outline-variant pr-md mr-md">
-<span class="text-secondary font-body-md text-body-md">الفواتير</span>
-</div>
-</div>
-</header>
-<!-- Content Area -->
-<div class="flex-1 p-container-margin md:p-xl max-w-5xl mx-auto w-full">
-<!-- Page Header -->
-<div class="flex flex-col md:flex-row-reverse justify-between items-start md:items-center mb-xl gap-md mt-md">
-<div class="text-right">
-<h2 class="font-display-lg-mobile md:font-display-lg text-display-lg-mobile md:text-display-lg text-on-surface mb-xs">سجل الفواتير</h2>
-<p class="text-secondary font-body-md text-body-md">إدارة وتتبع جميع الفواتير والمعاملات المالية</p>
-</div>
-<div class="flex gap-sm">
-    <a href="/api/export/invoices/excel" class="bg-surface-container-low text-on-surface rounded-full py-md px-lg font-label-md text-label-md hover:bg-surface-container transition-colors flex flex-row-reverse items-center justify-center gap-sm shadow-sm border border-outline-variant">
-        <span class="material-symbols-outlined">download</span>
-        تصدير
-    </a>
-    <button class="bg-primary text-on-primary rounded-full py-md px-lg font-label-md text-label-md hover:opacity-90 transition-opacity flex flex-row-reverse items-center justify-center gap-sm shadow-sm" onclick="openModal()">
-        <span class="material-symbols-outlined">add</span>
-        فاتورة جديدة
-    </button>
-</div>
-</div>
-<!-- Search and Filter -->
-<div class="bg-white rounded-xl border border-slate-200 shadow-sm p-md mb-lg flex flex-col md:flex-row-reverse gap-md items-center">
-<div class="relative flex-1 w-full text-right">
-<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline">search</span>
-<input class="w-full h-12 pr-10 pl-md rounded-xl bg-surface-container-low border border-outline-variant form-input-focus transition-all text-right" id="searchInput" onkeyup="filterInvoices()" placeholder="ابحث باسم العميل أو رقم الجوال..." type="text"/>
-</div>
-</div>
-<!-- Invoice List (Table) -->
-<div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-<div class="overflow-x-auto">
-<table class="w-full text-right border-collapse" dir="rtl">
-<thead class="bg-surface-container-low border-b border-outline-variant">
-<tr>
-<th class="p-md font-label-md text-on-surface-variant font-bold">اسم العميل</th>
-<th class="p-md font-label-md text-on-surface-variant font-bold">رقم الجوال</th>
-<th class="p-md font-label-md text-on-surface-variant font-bold">التاريخ</th>
-<th class="p-md font-label-md text-on-surface-variant font-bold">المبلغ (جنيه)</th>
-<th class="p-md font-label-md text-on-surface-variant font-bold">التفاصيل</th>
-<th class="p-md font-label-md text-on-surface-variant font-bold text-center">الإجراءات</th>
-</tr>
-</thead>
-<tbody class="divide-y divide-outline-variant" id="invoiceList">
-<tr><td colspan="6" class="p-xl text-center text-secondary">جاري التحميل...</td></tr>
-</tbody>
-</table>
-</div>
-<div class="hidden p-xl text-center text-secondary font-body-md" id="noResults">
-لا توجد فواتير مطابقة للبحث
-</div>
-</div>
-</div>
-<!-- Mobile Bottom NavBar -->
-<nav class="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-white border-t border-slate-200 flex items-center justify-around z-50">
-<a class="flex flex-col items-center gap-1 text-secondary" href="dashboard.html">
-<span class="material-symbols-outlined">home</span>
-<span class="text-[10px]">الرئيسية</span>
-</a>
-<a class="flex flex-col items-center gap-1 text-secondary" href="clients.html">
-<span class="material-symbols-outlined">group</span>
-<span class="text-[10px]">العملاء</span>
-</a>
-<a class="flex flex-col items-center gap-1 text-primary" href="new-invoice.html">
-<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">add_circle</span>
-<span class="text-[10px] font-bold">الفواتير</span>
-</a>
-<a class="flex flex-col items-center gap-1 text-secondary" href="#">
-<span class="material-symbols-outlined">settings</span>
-<span class="text-[10px]">الإعدادات</span>
-</a>
-</nav>
-</main>
+    <!-- SideNavBar -->
+    <aside
+        class="docked fixed right-0 h-full w-64 bg-surface-container-low border-l border-outline-variant flex-col gap-lg p-md hidden md:flex z-50">
+        <div class="flex flex-col gap-sm mb-lg">
+            <h2 class="font-headline-md text-headline-md font-bold text-primary">شركة مواد البناء</h2>
+            <div class="flex flex-row items-center gap-sm mt-md">
+                <div
+                    class="w-10 h-10 rounded-full bg-secondary-container flex items-center justify-center overflow-hidden">
+                    <span class="material-symbols-outlined text-secondary">account_circle</span>
+                </div>
+                <div class="text-right">
+                    <p class="font-label-md text-label-md text-on-surface font-bold user-display-name">مدير الحسابات</p>
+                    <p class="text-xs text-secondary user-role-name">حساب نشط</p>
+                </div>
+            </div>
+        </div>
+        <nav class="flex flex-col gap-sm">
+            <a class="flex flex-row items-center gap-md text-secondary px-md py-sm hover:bg-surface-container-highest transition-all rounded-lg"
+                href="dashboard.html">
+                <span class="material-symbols-outlined">dashboard</span>
+                <span class="font-label-md text-label-md">لوحة القيادة</span>
+            </a>
+            <a class="flex flex-row items-center gap-md text-secondary px-md py-sm hover:bg-surface-container-highest transition-all rounded-lg"
+                href="clients.html">
+                <span class="material-symbols-outlined">group</span>
+                <span class="font-label-md text-label-md">العملاء</span>
+            </a>
+            <a class="flex flex-row items-center gap-md bg-primary-container text-on-primary-container rounded-lg px-md py-sm transition-all"
+                href="new-invoice.html">
+                <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">add_circle</span>
+                <span class="font-label-md text-label-md">إضافة معاملة</span>
+            </a>
+            <a class="flex flex-row items-center gap-md text-secondary px-md py-sm hover:bg-surface-container-highest transition-all rounded-lg"
+                href="#">
+                <span class="material-symbols-outlined">settings</span>
+                <span class="font-label-md text-label-md">الإعدادات</span>
+            </a>
+        </nav>
+        <div class="mt-auto">
+            <button onclick="openModal()"
+                class="w-full bg-primary text-on-primary rounded-full py-md px-lg font-label-md text-label-md hover:opacity-90 transition-opacity flex items-center justify-center gap-sm">
+                <span class="material-symbols-outlined">post_add</span>
+                إضافة فاتورة جديدة
+            </button>
+        </div>
+    </aside>
+    <!-- Main Canvas -->
+    <main class="flex-1 md:mr-64 min-h-screen flex flex-col">
+        <!-- TopNavBar -->
+        <header
+            class="bg-surface border-b border-outline-variant shadow-sm flex flex-row justify-between items-center px-container-margin w-full h-16 sticky top-0 z-40">
+            <div class="flex flex-row items-center gap-lg">
+                <h1 class="font-headline-md text-headline-md font-bold text-primary">سجل الديون</h1>
+                <div
+                    class="hidden md:flex flex-row items-center gap-md border-r border-outline-variant pr-md mr-md">
+                    <span class="text-secondary font-body-md text-body-md">الفواتير</span>
+                </div>
+            </div>
+            <div class="flex items-center gap-md">
+                <button onclick="logout()"
+                    class="p-base hover:bg-error-container/20 hover:text-error rounded-full transition-colors active:opacity-80 text-secondary"
+                    title="تسجيل الخروج">
+                    <span class="material-symbols-outlined">logout</span>
+                </button>
+                <span class="material-symbols-outlined text-primary cursor-pointer">account_circle</span>
+            </div>
+        </header>
+        <!-- Content Area -->
+        <div class="flex-1 p-container-margin md:p-xl max-w-5xl mx-auto w-full">
+            <!-- Page Header -->
+            <div
+                class="flex flex-col md:flex-row justify-between items-start md:items-center mb-xl gap-md mt-md">
+                <div class="text-right">
+                    <h2
+                        class="font-display-lg-mobile md:font-display-lg text-display-lg-mobile md:text-display-lg text-on-surface mb-xs">
+                        سجل الفواتير</h2>
+                    <p class="text-secondary font-body-md text-body-md">إدارة وتتبع جميع الفواتير والمعاملات المالية</p>
+                </div>
+                <div class="flex gap-sm">
+                    <a href="/api/export/invoices/excel"
+                        class="bg-surface-container-low text-on-surface rounded-full py-md px-lg font-label-md text-label-md hover:bg-surface-container transition-colors flex flex-row items-center justify-center gap-sm shadow-sm border border-outline-variant">
+                        <span class="material-symbols-outlined">download</span>
+                        تصدير
+                    </a>
+                    <button
+                        class="bg-primary text-on-primary rounded-full py-md px-lg font-label-md text-label-md hover:opacity-90 transition-opacity flex flex-row items-center justify-center gap-sm shadow-sm"
+                        onclick="openModal()">
+                        <span class="material-symbols-outlined">add</span>
+                        فاتورة جديدة
+                    </button>
+                </div>
+            </div>
+            <!-- Search and Filter -->
+            <div
+                class="bg-white rounded-xl border border-slate-200 shadow-sm p-md mb-lg flex flex-col md:flex-row gap-md items-center">
+                <div class="relative flex-1 w-full text-right">
+                    <span
+                        class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline">search</span>
+                    <input
+                        class="w-full h-12 pr-10 pl-md rounded-xl bg-surface-container-low border border-outline-variant form-input-focus transition-all text-right"
+                        id="searchInput" onkeyup="filterInvoices()" placeholder="ابحث باسم العميل أو رقم الجوال..."
+                        type="text" />
+                </div>
+            </div>
+            <!-- Invoice List (Table) -->
+            <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-right border-collapse" dir="rtl">
+                        <thead class="bg-surface-container-low border-b border-outline-variant">
+                            <tr>
+                                <th class="p-md font-label-md text-on-surface-variant font-bold">اسم العميل</th>
+                                <th class="p-md font-label-md text-on-surface-variant font-bold">رقم الجوال</th>
+                                <th class="p-md font-label-md text-on-surface-variant font-bold">التاريخ</th>
+                                <th class="p-md font-label-md text-on-surface-variant font-bold">المبلغ (جنيه)</th>
+                                <th class="p-md font-label-md text-on-surface-variant font-bold">التفاصيل</th>
+                                <th class="p-md font-label-md text-on-surface-variant font-bold text-center">الإجراءات
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-outline-variant" id="invoiceList">
+                            <tr>
+                                <td colspan="6" class="p-xl text-center text-secondary">جاري التحميل...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="hidden p-xl text-center text-secondary font-body-md" id="noResults">
+                    لا توجد فواتير مطابقة للبحث
+                </div>
+            </div>
+        </div>
+        <!-- Mobile Bottom NavBar -->
+        <nav
+            class="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-white border-t border-slate-200 flex items-center justify-around z-50">
+            <a class="flex flex-col items-center gap-1 text-secondary" href="dashboard.html">
+                <span class="material-symbols-outlined">home</span>
+                <span class="text-[10px]">الرئيسية</span>
+            </a>
+            <a class="flex flex-col items-center gap-1 text-secondary" href="clients.html">
+                <span class="material-symbols-outlined">group</span>
+                <span class="text-[10px]">العملاء</span>
+            </a>
+            <a class="flex flex-col items-center gap-1 text-primary" href="new-invoice.html">
+                <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">add_circle</span>
+                <span class="text-[10px] font-bold">الفواتير</span>
+            </a>
+            <a class="flex flex-col items-center gap-1 text-secondary" href="#">
+                <span class="material-symbols-outlined">settings</span>
+                <span class="text-[10px]">الإعدادات</span>
+            </a>
+        </nav>
+    </main>
 
-<!-- Modal -->
-<div class="fixed inset-0 z-[100] hidden items-center justify-center bg-black/50 p-4" id="invoiceModal">
-<div class="bg-white rounded-xl shadow-lg w-full max-w-3xl max-h-[90vh] overflow-y-auto p-md md:p-xl">
-<div class="flex flex-row-reverse justify-between items-center mb-lg border-b border-outline-variant pb-sm">
-<h2 class="font-headline-md text-headline-md font-bold text-on-surface">إضافة فاتورة جديدة</h2>
-<button class="text-secondary hover:text-on-surface" onclick="closeModal()" type="button">
-<span class="material-symbols-outlined">close</span>
-</button>
-</div>
-<form class="space-y-lg" id="invoiceForm">
-<div class="grid grid-cols-1 md:grid-cols-2 gap-lg">
-<div class="flex flex-col gap-xs">
-<label class="font-label-md text-label-md text-on-surface-variant mb-xs">اسم العميل</label>
-<div class="relative">
-<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline">person</span>
-<input class="w-full h-12 pr-10 pl-md rounded-xl bg-surface-container-low border border-outline-variant form-input-focus transition-all text-right" id="clientName" placeholder="مثال: أحمد محمد علي" type="text" required/>
-</div>
-</div>
-<div class="flex flex-col gap-xs">
-<label class="font-label-md text-label-md text-on-surface-variant mb-xs">رقم الجوال</label>
-<div class="relative">
-<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline">call</span>
-<input class="w-full h-12 pr-10 pl-md rounded-xl bg-surface-container-low border border-outline-variant form-input-focus transition-all text-right" id="mobileNumber" placeholder="01XXXXXXXXX" type="tel"/>
-</div>
-</div>
-<div class="flex flex-col gap-xs">
-<label class="font-label-md text-label-md text-on-surface-variant mb-xs">تاريخ الفاتورة</label>
-<div class="relative">
-<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline">calendar_today</span>
-<input class="w-full h-12 pr-10 pl-md rounded-xl bg-surface-container-low border border-outline-variant form-input-focus transition-all text-right" id="invoiceDate" type="date"/>
-</div>
-</div>
-<div class="flex flex-col gap-xs">
-<label class="font-label-md text-label-md text-on-surface-variant mb-xs">المبلغ المستحق (جنيه)</label>
-<div class="relative">
-<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline">payments</span>
-<input class="w-full h-12 pr-10 pl-md rounded-xl bg-surface-container-low border border-outline-variant form-input-focus transition-all text-right font-bold text-primary" id="invoiceAmount" placeholder="0.00" type="number" step="0.01" required/>
-</div>
-</div>
-<div class="md:col-span-2 flex flex-col gap-xs">
-<label class="font-label-md text-label-md text-on-surface-variant mb-xs">عنوان التوصيل</label>
-<div class="relative">
-<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline">location_on</span>
-<input class="w-full h-12 pr-10 pl-md rounded-xl bg-surface-container-low border border-outline-variant form-input-focus transition-all text-right" id="deliveryAddress" placeholder="الحي، الشارع، رقم المبنى..." type="text"/>
-</div>
-</div>
-<div class="md:col-span-2 flex flex-col gap-xs">
-<label class="font-label-md text-label-md text-on-surface-variant mb-xs">التفاصيل / المشتريات</label>
-<div class="relative">
-<span class="material-symbols-outlined absolute right-3 top-4 text-outline">inventory_2</span>
-<textarea class="w-full pr-10 pl-md pt-3 rounded-xl bg-surface-container-low border border-outline-variant form-input-focus transition-all text-right resize-none" id="invoiceDetails" placeholder="مثال: 1 طن أسمنت مقاوم، 500 حجر بلوك مقاس 20..." rows="4"></textarea>
-</div>
-</div>
-</div>
-<div class="flex flex-col md:flex-row-reverse items-center gap-md pt-lg border-t border-outline-variant mt-xl">
-<button class="w-full md:w-auto min-w-[160px] bg-primary text-on-primary h-14 rounded-full font-headline-sm text-headline-sm flex items-center justify-center gap-sm hover:opacity-90 active:scale-95 transition-all" type="submit">
-<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">save</span>
-حفظ الفاتورة
-</button>
-<button class="w-full md:w-auto min-w-[160px] bg-white border border-outline-variant text-on-surface h-14 rounded-full font-headline-sm text-headline-sm flex items-center justify-center gap-sm hover:bg-surface-container-low active:scale-95 transition-all" onclick="closeModal()" type="button">
-إلغاء
-</button>
-</div>
-</form>
-</div>
-</div>
+    <!-- Modal -->
+    <div class="fixed inset-0 z-[100] hidden items-center justify-center bg-black/50 p-4" id="invoiceModal">
+        <div class="bg-white rounded-xl shadow-lg w-full max-w-3xl max-h-[90vh] overflow-y-auto p-md md:p-xl">
+            <div class="flex flex-row justify-between items-center mb-lg border-b border-outline-variant pb-sm">
+                <h2 class="font-headline-md text-headline-md font-bold text-on-surface">إضافة فاتورة جديدة</h2>
+                <button class="text-secondary hover:text-on-surface" onclick="closeModal()" type="button">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            <p class="text-[13px] text-secondary mb-md -mt-sm">الحقول المشار إليها بنجمة (<span
+                    class="text-error font-bold">*</span>) هي حقول إجبارية</p>
+            <form class="space-y-lg" id="invoiceForm">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-lg">
+                    <div class="flex flex-col gap-xs">
+                        <label class="font-label-md text-label-md text-on-surface-variant mb-xs">اسم العميل <span
+                                class="text-error">*</span></label>
+                        <div class="relative">
+                            <span
+                                class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline">person</span>
+                            <input
+                                class="w-full h-12 pr-10 pl-md rounded-xl bg-surface-container-low border border-outline-variant form-input-focus transition-all text-right"
+                                id="clientName" placeholder="مثال: أحمد محمد علي" type="text" required />
+                        </div>
+                    </div>
+                    <div class="flex flex-col gap-xs">
+                        <label class="font-label-md text-label-md text-on-surface-variant mb-xs">رقم الجوال</label>
+                        <div class="relative">
+                            <span
+                                class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline">call</span>
+                            <input
+                                class="w-full h-12 pr-10 pl-md rounded-xl bg-surface-container-low border border-outline-variant form-input-focus transition-all text-right"
+                                id="mobileNumber" placeholder="01XXXXXXXXX" type="tel" />
+                        </div>
+                        <p id="mobileNumberError" class="hidden text-error text-[11px] mt-1 pr-1 font-bold">يجب إدخال
+                            أرقام فقط</p>
+                    </div>
+                    <div class="flex flex-col gap-xs">
+                        <label class="font-label-md text-label-md text-on-surface-variant mb-xs">تاريخ الفاتورة <span
+                                class="text-error">*</span></label>
+                        <div class="relative">
+                            <span
+                                class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline pointer-events-none">calendar_today</span>
+                            <input
+                                class="w-full h-12 pr-10 pl-md rounded-xl bg-surface-container-low border border-outline-variant form-input-focus transition-all text-right cursor-pointer"
+                                id="invoiceDate" placeholder="اختر التاريخ" type="text" required />
+                        </div>
+                    </div>
+                    <div class="flex flex-col gap-xs">
+                        <label class="font-label-md text-label-md text-on-surface-variant mb-xs">المبلغ المستحق (جنيه)
+                            <span class="text-error">*</span></label>
+                        <div class="relative">
+                            <span
+                                class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline">payments</span>
+                            <input
+                                class="w-full h-12 pr-10 pl-md rounded-xl bg-surface-container-low border border-outline-variant form-input-focus transition-all text-right font-bold text-primary"
+                                id="invoiceAmount" placeholder="0.00" type="number" step="0.01" required />
+                        </div>
+                    </div>
+                    <div class="md:col-span-2 flex flex-col gap-xs">
+                        <label class="font-label-md text-label-md text-on-surface-variant mb-xs">عنوان التوصيل</label>
+                        <div class="relative">
+                            <span
+                                class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline">location_on</span>
+                            <input
+                                class="w-full h-12 pr-10 pl-md rounded-xl bg-surface-container-low border border-outline-variant form-input-focus transition-all text-right"
+                                id="deliveryAddress" placeholder="الحي، الشارع، رقم المبنى..." type="text" />
+                        </div>
+                    </div>
+                    <div class="md:col-span-2 flex flex-col gap-xs">
+                        <label class="font-label-md text-label-md text-on-surface-variant mb-xs">التفاصيل /
+                            المشتريات</label>
+                        <div class="relative">
+                            <span
+                                class="material-symbols-outlined absolute right-3 top-4 text-outline">inventory_2</span>
+                            <textarea
+                                class="w-full pr-10 pl-md pt-3 rounded-xl bg-surface-container-low border border-outline-variant form-input-focus transition-all text-right resize-none"
+                                id="invoiceDetails" placeholder="مثال: 1 طن أسمنت مقاوم، 500 حجر بلوك مقاس 20..."
+                                rows="4"></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div
+                    class="flex flex-col md:flex-row items-center gap-md pt-lg border-t border-outline-variant mt-xl">
+                    <button
+                        class="w-full md:w-auto min-w-[160px] bg-primary text-on-primary h-14 rounded-full font-headline-sm text-headline-sm flex items-center justify-center gap-sm hover:opacity-90 active:scale-95 transition-all"
+                        type="submit">
+                        <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">save</span>
+                        حفظ الفاتورة
+                    </button>
+                    <button
+                        class="w-full md:w-auto min-w-[160px] bg-white border border-outline-variant text-on-surface h-14 rounded-full font-headline-sm text-headline-sm flex items-center justify-center gap-sm hover:bg-surface-container-low active:scale-95 transition-all"
+                        onclick="closeModal()" type="button">
+                        إلغاء
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
 
-<script src="js/shared-ui.js"></script>
-<script>
-let allInvoices = [];
+    <script src="js/shared-ui.js"></script>
+    <script>
+        let allInvoices = [];
 
-// Load invoices from API
-async function loadInvoices() {
-    const user = await checkAuth();
-    if (!user) return;
-    
-    // Update user display names
-    document.querySelectorAll('.user-display-name').forEach(el => el.textContent = user.displayName || user.username);
-    document.querySelectorAll('.user-role-name').forEach(el => el.textContent = user.role === 'admin' ? 'المدير' : 'مستخدم');
+        // Load invoices from API
+        async function loadInvoices() {
+            const user = await checkAuth();
+            if (!user) return;
 
-    try {
-        const res = await fetch('/api/invoices');
-        allInvoices = await res.json();
-        renderInvoices(allInvoices);
-    } catch (err) {
-        console.error('Failed to load invoices:', err);
-        showToast('فشل في تحميل الفواتير', 'error');
-    }
-}
+            // Update user display names
+            document.querySelectorAll('.user-display-name').forEach(el => el.textContent = user.displayName || user.username);
+            document.querySelectorAll('.user-role-name').forEach(el => el.textContent = user.role === 'admin' ? 'المدير' : 'مستخدم');
 
-function renderInvoices(invoices) {
-    const tbody = document.getElementById('invoiceList');
-    if (invoices.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" class="p-xl text-center text-secondary">لا توجد فواتير بعد</td></tr>';
-        return;
-    }
-    tbody.innerHTML = invoices.map(inv => `
+            // Setup Validation
+            setupPhoneValidation('mobileNumber', 'mobileNumberError');
+
+            // Setup Calendar
+            flatpickr("#invoiceDate", {
+                locale: "ar",
+                defaultDate: "today",
+                dateFormat: "Y-m-d",
+                disableMobile: true
+            });
+
+            try {
+                const res = await fetch('/api/invoices');
+                const responseData = await res.json();
+                allInvoices = responseData.data || [];
+                renderInvoices(allInvoices);
+            } catch (err) {
+                console.error('Failed to load invoices:', err);
+                showToast('فشل في تحميل الفواتير', 'error');
+            }
+        }
+
+        function renderInvoices(invoices) {
+            const tbody = document.getElementById('invoiceList');
+            if (invoices.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="p-xl text-center text-secondary">لا توجد فواتير بعد</td></tr>';
+                return;
+            }
+            tbody.innerHTML = invoices.map(inv => `
         <tr class="invoice-item hover:bg-surface-container-lowest transition-colors">
             <td class="p-md font-body-md text-on-surface client-name">${inv.clientName}</td>
             <td class="p-md font-body-md text-secondary client-mobile" dir="ltr">${inv.clientPhone || '-'}</td>
@@ -249,101 +326,103 @@ function renderInvoices(invoices) {
             </td>
         </tr>
     `).join('');
-}
-
-// Search/Filter
-function filterInvoices() {
-    const filter = document.getElementById('searchInput').value.toLowerCase();
-    const filtered = allInvoices.filter(inv =>
-        inv.clientName.toLowerCase().includes(filter) ||
-        (inv.clientPhone && inv.clientPhone.includes(filter))
-    );
-    renderInvoices(filtered);
-    document.getElementById('noResults').classList.toggle('hidden', filtered.length > 0);
-}
-
-// Delete invoice
-async function deleteInvoice(id) {
-    const confirmed = await showConfirm('هل أنت متأكد من حذف هذه الفاتورة؟');
-    if (!confirmed) return;
-    try {
-        const res = await fetch(`/api/invoices/${id}`, { method: 'DELETE' });
-        if (res.ok) {
-            showToast('تم حذف الفاتورة بنجاح', 'success');
-            loadInvoices();
-        } else {
-            showToast('فشل في حذف الفاتورة', 'error');
         }
-    } catch (err) {
-        showToast('فشل في حذف الفاتورة', 'error');
-    }
-}
 
-// Modal functions
-function openModal() {
-    const modal = document.getElementById('invoiceModal');
-    modal.classList.remove('hidden');
-    modal.classList.add('flex');
-    document.body.style.overflow = 'hidden';
-    document.getElementById('invoiceDate').valueAsDate = new Date();
-}
+        // Search/Filter
+        function filterInvoices() {
+            const filter = document.getElementById('searchInput').value.toLowerCase();
+            const filtered = allInvoices.filter(inv =>
+                inv.clientName.toLowerCase().includes(filter) ||
+                (inv.clientPhone && inv.clientPhone.includes(filter))
+            );
+            renderInvoices(filtered);
+            document.getElementById('noResults').classList.toggle('hidden', filtered.length > 0);
+        }
 
-function closeModal() {
-    const modal = document.getElementById('invoiceModal');
-    modal.classList.add('hidden');
-    modal.classList.remove('flex');
-    document.body.style.overflow = '';
-    document.getElementById('invoiceForm').reset();
-}
+        // Delete invoice
+        async function deleteInvoice(id) {
+            const confirmed = await showConfirm('هل أنت متأكد من حذف هذه الفاتورة؟');
+            if (!confirmed) return;
+            try {
+                const res = await fetch(`/api/invoices/${id}`, { method: 'DELETE' });
+                if (res.ok) {
+                    showToast('تم حذف الفاتورة بنجاح', 'success');
+                    loadInvoices();
+                } else {
+                    showToast('فشل في حذف الفاتورة', 'error');
+                }
+            } catch (err) {
+                showToast('فشل في حذف الفاتورة', 'error');
+            }
+        }
 
-// Handle form submission — POST to API
-document.getElementById('invoiceForm').addEventListener('submit', async function(e) {
-    e.preventDefault();
+        // Modal functions
+        function openModal() {
+            const modal = document.getElementById('invoiceModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            document.body.style.overflow = 'hidden';
+            document.getElementById('invoiceDate').valueAsDate = new Date();
+        }
 
-    const name = document.getElementById('clientName').value.trim();
-    const mobile = document.getElementById('mobileNumber').value.trim();
-    const date = document.getElementById('invoiceDate').value;
-    const amount = document.getElementById('invoiceAmount').value;
-    const details = document.getElementById('invoiceDetails').value || '-';
+        function closeModal() {
+            const modal = document.getElementById('invoiceModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            document.body.style.overflow = '';
+            document.getElementById('invoiceForm').reset();
+        }
 
-    if (!name || !amount) {
-        showToast('الرجاء إدخال اسم العميل والمبلغ المستحق', 'warning');
-        return;
-    }
+        // Handle form submission — POST to API
+        document.getElementById('invoiceForm').addEventListener('submit', async function (e) {
+            e.preventDefault();
 
-    try {
-        const res = await fetch('/api/invoices', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                clientName: name,
-                clientPhone: mobile,
-                date: date,
-                amount: parseFloat(amount),
-                details: details,
-                type: 'purchase'
-            })
+            const name = document.getElementById('clientName').value.trim();
+            const mobile = document.getElementById('mobileNumber').value.trim();
+            const date = document.getElementById('invoiceDate').value;
+            const amount = document.getElementById('invoiceAmount').value;
+            const details = document.getElementById('invoiceDetails').value || '-';
+
+            if (!name || !amount) {
+                showToast('الرجاء إدخال اسم العميل والمبلغ المستحق', 'warning');
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/invoices', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        clientName: name,
+                        clientPhone: mobile,
+                        date: date,
+                        amount: parseFloat(amount),
+                        details: details,
+                        type: 'purchase'
+                    })
+                });
+
+                if (res.ok) {
+                    showToast('تم حفظ الفاتورة بنجاح ✓', 'success');
+                    closeModal();
+                    loadInvoices();
+                } else {
+                    const err = await res.json();
+                    showToast(err.error || 'فشل في حفظ الفاتورة', 'error');
+                }
+            } catch (err) {
+                showToast('فشل في حفظ الفاتورة — تأكد من تشغيل السيرفر', 'error');
+            }
         });
 
-        if (res.ok) {
-            showToast('تم حفظ الفاتورة بنجاح ✓', 'success');
-            closeModal();
-            loadInvoices();
-        } else {
-            const err = await res.json();
-            showToast(err.error || 'فشل في حفظ الفاتورة', 'error');
-        }
-    } catch (err) {
-        showToast('فشل في حفظ الفاتورة — تأكد من تشغيل السيرفر', 'error');
-    }
-});
+        // Close modal when clicking outside
+        document.getElementById('invoiceModal').addEventListener('click', function (e) {
+            if (e.target === this) closeModal();
+        });
 
-// Close modal when clicking outside
-document.getElementById('invoiceModal').addEventListener('click', function(e) {
-    if (e.target === this) closeModal();
-});
+        // Initialize
+        document.addEventListener('DOMContentLoaded', loadInvoices);
+    </script>
+</body>
 
-// Initialize
-document.addEventListener('DOMContentLoaded', loadInvoices);
-</script>
-</body></html>
+</html>
