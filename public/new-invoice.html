@@ -187,9 +187,28 @@
             </div>
             <p class="text-[13px] text-secondary mb-md -mt-sm">الحقول المشار إليها بنجمة (<span
                     class="text-error font-bold">*</span>) هي حقول إجبارية</p>
-            <form class="space-y-lg" id="invoiceForm">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-lg">
+            <form class="space-y-lg" id="invoiceForm" novalidate>
+                <input type="hidden" id="clientId">
+                
+                <!-- Client Summary Card (Hidden initially) -->
+                <div id="clientSummaryCard" class="hidden bg-primary/10 border border-primary/20 rounded-xl p-md mb-md flex flex-row items-center justify-between">
                     <div class="flex flex-col gap-xs">
+                        <div class="flex items-center gap-sm">
+                            <span class="material-symbols-outlined text-primary text-[20px]">account_circle</span>
+                            <span class="font-body-md text-on-surface font-bold">عميل موجود بالخزينة</span>
+                        </div>
+                        <div class="text-sm text-secondary mr-7">
+                            <p>الرصيد: <span id="summaryBalance" class="font-bold dir-ltr inline-block">0</span></p>
+                            <p>آخر معاملة: <span id="summaryLastTransaction">--</span></p>
+                        </div>
+                    </div>
+                    <a href="#" id="summaryProfileLink" target="_blank" class="p-sm text-primary hover:bg-primary/10 rounded-lg transition-colors flex items-center justify-center" title="فتح ملف العميل">
+                        <span class="material-symbols-outlined">open_in_new</span>
+                    </a>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-lg">
+                    <div class="flex flex-col gap-xs relative">
                         <label class="font-label-md text-label-md text-on-surface-variant mb-xs">اسم العميل <span
                                 class="text-error">*</span></label>
                         <div class="relative">
@@ -197,7 +216,10 @@
                                 class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline">person</span>
                             <input
                                 class="w-full h-12 pr-10 pl-md rounded-xl bg-surface-container-low border border-outline-variant form-input-focus transition-all text-right"
-                                id="clientName" placeholder="مثال: أحمد محمد علي" type="text" required />
+                                id="clientName" placeholder="مثال: أحمد محمد علي" type="text" required autocomplete="off" />
+                        </div>
+                        <!-- Dropdown -->
+                        <div id="clientDropdown" class="hidden absolute top-[72px] left-0 right-0 mt-1 bg-surface border border-outline-variant rounded-xl shadow-lg z-[110] max-h-[300px] overflow-y-auto custom-scrollbar">
                         </div>
                     </div>
                     <div class="flex flex-col gap-xs">
@@ -235,25 +257,17 @@
                         </div>
                     </div>
                     <div class="md:col-span-2 flex flex-col gap-xs">
-                        <label class="font-label-md text-label-md text-on-surface-variant mb-xs">عنوان التوصيل</label>
+                        <label class="font-label-md text-label-md text-on-surface-variant mb-xs">عنوان التوصيل <span class="text-error">*</span></label>
                         <div class="relative">
-                            <span
-                                class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline">location_on</span>
-                            <input
-                                class="w-full h-12 pr-10 pl-md rounded-xl bg-surface-container-low border border-outline-variant form-input-focus transition-all text-right"
-                                id="deliveryAddress" placeholder="الحي، الشارع، رقم المبنى..." type="text" />
+                            <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline">location_on</span>
+                            <input class="w-full h-12 pr-10 pl-md rounded-xl bg-surface-container-low border border-outline-variant form-input-focus transition-all text-right" id="deliveryAddress" placeholder="الحي، الشارع، رقم المبنى..." type="text" required />
                         </div>
                     </div>
                     <div class="md:col-span-2 flex flex-col gap-xs">
-                        <label class="font-label-md text-label-md text-on-surface-variant mb-xs">التفاصيل /
-                            المشتريات</label>
+                        <label class="font-label-md text-label-md text-on-surface-variant mb-xs">التفاصيل / المشتريات <span class="text-error">*</span></label>
                         <div class="relative">
-                            <span
-                                class="material-symbols-outlined absolute right-3 top-4 text-outline">inventory_2</span>
-                            <textarea
-                                class="w-full pr-10 pl-md pt-3 rounded-xl bg-surface-container-low border border-outline-variant form-input-focus transition-all text-right resize-none"
-                                id="invoiceDetails" placeholder="مثال: 1 طن أسمنت مقاوم، 500 حجر بلوك مقاس 20..."
-                                rows="4"></textarea>
+                            <span class="material-symbols-outlined absolute right-3 top-4 text-outline">inventory_2</span>
+                            <textarea class="w-full pr-10 pl-md pt-3 rounded-xl bg-surface-container-low border border-outline-variant form-input-focus transition-all text-right resize-none" id="invoiceDetails" placeholder="مثال: 1 طن أسمنت مقاوم، 500 حجر بلوك مقاس 20..." rows="4" required></textarea>
                         </div>
                     </div>
                 </div>
@@ -272,14 +286,66 @@
                     </button>
                 </div>
             </form>
+    </div>
+</div>
+
+<!-- Transaction Details Modal -->
+<div class="fixed inset-0 z-[100] hidden items-center justify-center bg-black/50 p-4" id="transactionDetailsModal">
+    <div class="bg-surface rounded-xl shadow-lg w-full max-w-lg max-h-[90vh] overflow-y-auto p-md md:p-xl">
+        <div class="flex flex-row justify-between items-center mb-lg border-b border-outline-variant pb-sm">
+            <h2 class="font-headline-md text-headline-md font-bold text-on-surface">تفاصيل المعاملة</h2>
+            <button class="text-secondary hover:text-on-surface" onclick="closeTransactionDetails()" type="button">
+                <span class="material-symbols-outlined">close</span>
+            </button>
         </div>
+        <div class="space-y-md">
+            <div class="flex justify-between border-b border-outline-variant pb-xs">
+                <span class="text-secondary font-label-md">تاريخ المعاملة</span>
+                <span class="font-body-md text-on-surface font-bold" id="tdDate"></span>
+            </div>
+            <div class="flex justify-between border-b border-outline-variant pb-xs">
+                <span class="text-secondary font-label-md">العميل</span>
+                <span class="font-body-md text-on-surface font-bold" id="tdClient"></span>
+            </div>
+            <div class="flex justify-between border-b border-outline-variant pb-xs">
+                <span class="text-secondary font-label-md">نوع المعاملة</span>
+                <span class="font-body-md text-on-surface font-bold" id="tdType"></span>
+            </div>
+            <div class="flex justify-between border-b border-outline-variant pb-xs">
+                <span class="text-secondary font-label-md">المبلغ المستحق</span>
+                <span class="font-body-md font-bold" id="tdAmount"></span>
+            </div>
+            <div class="flex flex-col gap-xs border-b border-outline-variant pb-xs">
+                <span class="text-secondary font-label-md">عنوان التوصيل</span>
+                <span class="font-body-md text-on-surface" id="tdAddress"></span>
+            </div>
+            <div class="flex flex-col gap-xs pb-xs">
+                <span class="text-secondary font-label-md">التفاصيل / المشتريات</span>
+                <span class="font-body-md text-on-surface whitespace-pre-wrap" id="tdNotes"></span>
+            </div>
+        </div>
+        <div class="pt-md mt-lg text-center">
+            <button class="bg-surface-container-low text-on-surface px-xl rounded-full py-sm font-label-md hover:bg-surface-container transition-colors" onclick="closeTransactionDetails()" type="button">إغلاق</button>
+        </div>
+    </div>
+</div>
     </div>
 
     <script src="js/shared-ui.js"></script>
     <script>
         let allInvoices = [];
+        let allClientsList = [];
 
-        // Load invoices from API
+        async function loadClients() {
+            try {
+                const res = await fetch('/api/clients');
+                const data = await res.json();
+                allClientsList = data.data || [];
+            } catch (err) {
+                console.error('Failed to load clients:', err);
+            }
+        }
+
         async function loadInvoices() {
             const user = await checkAuth();
             if (!user) return;
@@ -324,7 +390,10 @@
             <td class="p-md font-body-md text-secondary">${formatDate(inv.date)}</td>
             <td class="p-md font-body-md font-bold ${inv.type === 'payment' ? 'text-green-600' : 'text-primary'}">${inv.type === 'payment' ? '-' : ''}${formatCurrency(inv.amount)}</td>
             <td class="p-md font-body-md text-secondary">${inv.details || '-'}</td>
-            <td class="p-md text-center">
+            <td class="p-md text-center flex justify-center gap-xs">
+                <button onclick="openTransactionDetails('${inv.id}')" class="p-sm rounded-lg hover:bg-surface-container-high text-secondary transition-all active:scale-90" title="تفاصيل المعاملة">
+                    <span class="material-symbols-outlined text-[20px]">info</span>
+                </button>
                 <button onclick="deleteInvoice('${inv.id}')" class="p-sm rounded-lg hover:bg-error-container/20 text-error transition-all active:scale-90" title="حذف">
                     <span class="material-symbols-outlined text-[20px]">delete</span>
                 </button>
@@ -361,6 +430,39 @@
             }
         }
 
+        // Transaction Details Modal
+        function openTransactionDetails(id) {
+            const inv = allInvoices.find(i => i.id === id);
+            if (!inv) return;
+            
+            document.getElementById('tdDate').textContent = formatDate(inv.date);
+            document.getElementById('tdClient').textContent = inv.clientName;
+            document.getElementById('tdType').textContent = inv.type === 'payment' ? 'دفعة' : 'عملية شراء';
+            
+            const amountEl = document.getElementById('tdAmount');
+            amountEl.textContent = formatCurrency(inv.amount);
+            amountEl.className = `font-body-md font-bold ${inv.type === 'payment' ? 'text-green-600' : 'text-primary'}`;
+            
+            document.getElementById('tdAddress').textContent = inv.address || '-';
+            document.getElementById('tdNotes').textContent = inv.details || '-';
+            
+            const modal = document.getElementById('transactionDetailsModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeTransactionDetails() {
+            const modal = document.getElementById('transactionDetailsModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            document.body.style.overflow = '';
+        }
+
+        document.getElementById('transactionDetailsModal').addEventListener('click', function(e) {
+            if (e.target === this) closeTransactionDetails();
+        });
+
         // Modal functions
         function openModal() {
             const modal = document.getElementById('invoiceModal');
@@ -376,7 +478,68 @@
             modal.classList.remove('flex');
             document.body.style.overflow = '';
             document.getElementById('invoiceForm').reset();
+            document.getElementById('clientId').value = '';
+            document.getElementById('clientSummaryCard').classList.add('hidden');
+            document.getElementById('clientSummaryCard').classList.remove('flex');
         }
+
+        // Auto-complete Logic
+        const clientNameInput = document.getElementById('clientName');
+        const clientDropdown = document.getElementById('clientDropdown');
+        const clientIdInput = document.getElementById('clientId');
+        const clientSummaryCard = document.getElementById('clientSummaryCard');
+
+        clientNameInput.addEventListener('input', (e) => {
+            const val = normalizeArabic(e.target.value);
+            
+            // Clear selection if user types
+            clientIdInput.value = '';
+            clientSummaryCard.classList.add('hidden');
+            clientSummaryCard.classList.remove('flex');
+            
+            if (!val) {
+                clientDropdown.classList.add('hidden');
+                return;
+            }
+            
+            const matches = allClientsList.filter(c => normalizeArabic(c.name).includes(val) || (c.phone && c.phone.includes(val)));
+            
+            if (matches.length > 0) {
+                clientDropdown.innerHTML = matches.map(c => `
+                    <div class="px-md py-sm hover:bg-surface-container-highest cursor-pointer border-b border-outline-variant/30 last:border-0 transition-colors"
+                         onclick="selectClient('${c.id}', '${c.name.replace(/'/g, "\\'")}', '${c.phone || ''}', ${c.balance || 0}, '${c.updatedAt || ''}')">
+                        <div class="font-body-md text-on-surface font-bold">${highlightArabic(c.name, val)}</div>
+                        <div class="font-label-sm text-secondary dir-ltr text-right">${highlightArabic(c.phone || '', val)}</div>
+                    </div>
+                `).join('');
+                clientDropdown.classList.remove('hidden');
+            } else {
+                clientDropdown.classList.add('hidden');
+            }
+        });
+
+        function selectClient(id, name, phone, balance, lastTransaction) {
+            clientIdInput.value = id;
+            clientNameInput.value = name;
+            document.getElementById('mobileNumber').value = phone;
+            
+            const balanceEl = document.getElementById('summaryBalance');
+            balanceEl.textContent = formatCurrency(balance);
+            balanceEl.className = `font-bold dir-ltr inline-block ${balance > 0 ? 'text-tertiary' : (balance < 0 ? 'text-error' : 'text-primary')}`;
+            
+            document.getElementById('summaryLastTransaction').textContent = lastTransaction ? formatDate(lastTransaction) : '--';
+            document.getElementById('summaryProfileLink').href = `client-details.html?id=${id}`;
+            
+            clientDropdown.classList.add('hidden');
+            clientSummaryCard.classList.remove('hidden');
+            clientSummaryCard.classList.add('flex');
+        }
+
+        document.addEventListener('click', (e) => {
+            if (!clientNameInput.contains(e.target) && !clientDropdown.contains(e.target)) {
+                clientDropdown.classList.add('hidden');
+            }
+        });
 
         // Handle form submission — POST to API
         document.getElementById('invoiceForm').addEventListener('submit', async function (e) {
@@ -386,23 +549,28 @@
             const mobile = document.getElementById('mobileNumber').value.trim();
             const date = document.getElementById('invoiceDate').value;
             const amount = document.getElementById('invoiceAmount').value;
-            const details = document.getElementById('invoiceDetails').value || '-';
+            const details = document.getElementById('invoiceDetails').value.trim();
+            const address = document.getElementById('deliveryAddress').value.trim();
 
-            if (!name || !amount) {
-                showToast('الرجاء إدخال اسم العميل والمبلغ المستحق', 'warning');
+            if (validateFormFields('invoiceForm')) {
+                showToast('الرجاء إكمال جميع الحقول الإجبارية', 'warning');
                 return;
             }
+
+            const clientId = document.getElementById('clientId').value;
 
             try {
                 const res = await fetch('/api/invoices', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
+                        client: clientId || undefined,
                         clientName: name,
                         clientPhone: mobile,
                         date: date,
                         amount: parseFloat(amount),
                         details: details,
+                        address: address,
                         type: 'purchase'
                     })
                 });
@@ -411,6 +579,7 @@
                     showToast('تم حفظ الفاتورة بنجاح ✓', 'success');
                     closeModal();
                     loadInvoices();
+                    loadClients();
                 } else {
                     const err = await res.json();
                     showToast(err.error || 'فشل في حفظ الفاتورة', 'error');
@@ -425,8 +594,11 @@
             if (e.target === this) closeModal();
         });
 
-        // Initialize
-        document.addEventListener('DOMContentLoaded', loadInvoices);
+        // Load data on start
+        document.addEventListener('DOMContentLoaded', () => {
+            loadInvoices();
+            loadClients();
+        });
     </script>
 </body>
 

@@ -51,6 +51,16 @@ router.post('/', async (req, res) => {
       if (!client) {
         return res.status(404).json({ error: 'العميل غير موجود' });
       }
+      
+      if (req.body.clientPhone && req.body.clientPhone.trim() !== '') {
+        const newPhone = req.body.clientPhone.trim();
+        const existingPhones = client.phone.split(' - ').map(p => p.trim());
+        if (!existingPhones.includes(newPhone)) {
+          client.phone = client.phone + ' - ' + newPhone;
+          await client.save();
+        }
+      }
+
       req.body.clientName = client.name;
       req.body.clientPhone = client.phone;
     } else {

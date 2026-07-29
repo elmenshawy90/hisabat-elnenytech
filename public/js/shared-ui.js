@@ -293,3 +293,29 @@ function highlightArabic(text, query) {
         return text;
     }
 }
+
+// ─── Form Validation Helper ──────────────────────────────────
+function validateFormFields(formId) {
+    let hasEmpty = false;
+    const form = document.getElementById(formId);
+    if (!form) return hasEmpty;
+    
+    const requiredElements = form.querySelectorAll('input[required], textarea[required]');
+    
+    requiredElements.forEach(el => {
+        if (!el.value.trim()) {
+            el.classList.add('border-error');
+            // Remove the red border once user types
+            el.addEventListener('input', function removeError() {
+                el.classList.remove('border-error');
+                el.removeEventListener('input', removeError);
+            });
+            hasEmpty = true;
+        } else {
+            el.classList.remove('border-error');
+        }
+    });
+    
+    return hasEmpty;
+}
+

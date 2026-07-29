@@ -31,7 +31,12 @@ const invoiceSchema = new mongoose.Schema({
   },
   details: {
     type: String,
-    default: '-',
+    required: [true, 'التفاصيل مطلوبة'],
+    trim: true
+  },
+  address: {
+    type: String,
+    required: [true, 'العنوان مطلوب'],
     trim: true
   },
   date: {

@@ -178,13 +178,14 @@
 <span class="material-symbols-outlined">close</span>
 </button>
 </div>
-<form id="addClientForm" class="space-y-lg">
+<form id="addClientForm" class="space-y-lg" novalidate>
 <div class="flex flex-col gap-xs">
 <label class="font-label-md text-label-md text-on-surface-variant">اسم العميل</label>
 <div class="relative">
 <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline">person</span>
-<input class="w-full h-12 pr-10 pl-md rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all text-right" id="newClientName" placeholder="مثال: أحمد محمد" type="text" required/>
+<input class="w-full h-12 pr-10 pl-md rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all text-right" id="newClientName" placeholder="مثال: أحمد محمد" type="text" required autocomplete="off"/>
 </div>
+<p id="newClientNameError" class="hidden text-error text-[11px] mt-1 pr-1 font-bold">العميل مسجل مسبقاً، الرجاء تغيير الاسم للمتابعة</p>
 </div>
 <div class="flex flex-col gap-xs">
 <label class="font-label-md text-label-md text-on-surface-variant">رقم الهاتف</label>
@@ -219,7 +220,7 @@ async function loadClients() {
     setupPhoneValidation('newClientPhone', 'newClientPhoneError');
 
     try {
-        const res = await fetch('/api/clients');
+        const res = await fetch('/api/clients?limit=1000');
         const responseData = await res.json();
         allClients = responseData.data || [];
         renderClients(allClients);
@@ -308,6 +309,27 @@ async function deleteClient(id, name) {
 }
 
 // Add Client Modal
+const newClientNameInput = document.getElementById('newClientName');
+const newClientNameError = document.getElementById('newClientNameError');
+const submitBtn = document.querySelector('#addClientForm button[type="submit"]');
+
+newClientNameInput.addEventListener('input', (e) => {
+    const val = normalizeArabic(e.target.value.trim());
+    const exists = allClients.some(c => normalizeArabic(c.name) === val);
+    
+    if (exists && val !== '') {
+        newClientNameError.classList.remove('hidden');
+        newClientNameInput.classList.add('border-error');
+        submitBtn.disabled = true;
+        submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+    } else {
+        newClientNameError.classList.add('hidden');
+        newClientNameInput.classList.remove('border-error');
+        submitBtn.disabled = false;
+        submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+    }
+});
+
 function openAddClientModal() {
     const modal = document.getElementById('addClientModal');
     modal.classList.remove('hidden');
@@ -327,8 +349,8 @@ document.getElementById('addClientForm').addEventListener('submit', async (e) =>
     e.preventDefault();
     const name = document.getElementById('newClientName').value.trim();
     const phone = document.getElementById('newClientPhone').value.trim();
-    if (!name || !phone) {
-        showToast('الرجاء إدخال الاسم ورقم الهاتف', 'warning');
+    if (validateFormFields('addClientForm')) {
+        showToast('الرجاء إكمال جميع الحقول الإجبارية', 'warning');
         return;
     }
     try {
