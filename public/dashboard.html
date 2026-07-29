@@ -368,10 +368,10 @@ function renderTopDebtors(debtors) {
                         : index === 1 ? { color: 'bg-red-400', text: 'تنبيه' }
                         : { color: 'bg-orange-400', text: 'متابعة' };
         return `
-            <a href="client-details.html?id=${debtor.id}" class="flex flex-row items-center justify-between p-sm border border-outline-variant/30 rounded-lg hover:border-primary/50 transition-colors block">
+            <a href="client-details.html?id=${debtor._id}" class="flex flex-row items-center justify-between p-sm border border-outline-variant/30 rounded-lg hover:border-primary/50 transition-colors block">
                 <div class="text-right">
                     <p class="font-bold text-sm text-on-surface">${debtor.name}</p>
-                    <p class="text-[10px] text-secondary">${debtor.lastTransactionNote || ''}</p>
+                    <p class="text-[10px] text-secondary">${debtor.lastTransaction ? 'آخر معاملة: ' + formatDate(debtor.lastTransaction) : (debtor.phone[0] || '')}</p>
                 </div>
                 <div class="text-left">
                     <p class="font-bold ${index < 2 ? 'text-error' : 'text-on-surface'} text-sm">${formatCurrency(debtor.balance)}</p>

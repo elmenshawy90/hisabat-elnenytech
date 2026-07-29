@@ -384,17 +384,14 @@
                 return;
             }
             tbody.innerHTML = invoices.map(inv => `
-        <tr class="invoice-item hover:bg-surface-container-lowest transition-colors">
+        <tr class="invoice-item cursor-pointer hover:bg-primary/5 transition-colors group" onclick="openTransactionDetails('${inv._id}')">
             <td class="p-md font-body-md text-on-surface client-name">${highlightArabic(inv.clientName, query)}</td>
             <td class="p-md font-body-md text-secondary client-mobile" dir="ltr">${highlightArabic(inv.clientPhone || '', query) || '-'}</td>
             <td class="p-md font-body-md text-secondary">${formatDate(inv.date)}</td>
             <td class="p-md font-body-md font-bold ${inv.type === 'payment' ? 'text-green-600' : 'text-primary'}">${inv.type === 'payment' ? '-' : ''}${formatCurrency(inv.amount)}</td>
             <td class="p-md font-body-md text-secondary">${inv.details || '-'}</td>
-            <td class="p-md text-center flex justify-center gap-xs">
-                <button onclick="openTransactionDetails('${inv.id}')" class="p-sm rounded-lg hover:bg-surface-container-high text-secondary transition-all active:scale-90" title="تفاصيل المعاملة">
-                    <span class="material-symbols-outlined text-[20px]">info</span>
-                </button>
-                <button onclick="deleteInvoice('${inv.id}')" class="p-sm rounded-lg hover:bg-error-container/20 text-error transition-all active:scale-90" title="حذف">
+            <td class="p-md text-center">
+                <button onclick="event.stopPropagation(); deleteInvoice('${inv._id}')" class="p-sm rounded-lg hover:bg-error-container/20 text-error transition-all active:scale-90" title="حذف">
                     <span class="material-symbols-outlined text-[20px]">delete</span>
                 </button>
             </td>
@@ -432,7 +429,7 @@
 
         // Transaction Details Modal
         function openTransactionDetails(id) {
-            const inv = allInvoices.find(i => i.id === id);
+            const inv = allInvoices.find(i => i._id === id);
             if (!inv) return;
             
             document.getElementById('tdDate').textContent = formatDate(inv.date);
