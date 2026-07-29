@@ -59,35 +59,28 @@
         </nav>
         <div class="mt-auto">
             <button onclick="openModal()"
-                class="w-full bg-primary text-on-primary rounded-full py-md px-lg font-label-md text-label-md hover:opacity-90 transition-opacity flex items-center justify-center gap-sm">
-                <span class="material-symbols-outlined">post_add</span>
+                class="w-full bg-primary text-on-primary rounded-full px-md py-sm md:px-lg md:py-md font-label-lg text-label-lg md:font-headline-sm md:text-headline-sm hover:opacity-90 transition-opacity flex items-center justify-center gap-sm">
+                <span class="material-symbols-outlined text-xl md:text-2xl">post_add</span>
                 إضافة فاتورة جديدة
             </button>
         </div>
     </aside>
     <!-- Main Canvas -->
     <main class="flex-1 min-w-0 md:mr-64 min-h-screen flex flex-col pb-24 md:pb-0">
-        <!-- TopNavBar -->
-        <header
-            class="bg-surface border-b border-outline-variant shadow-sm flex flex-row justify-between items-center px-container-margin w-full h-16 sticky top-0 z-40">
-            <div class="flex flex-row items-center gap-lg">
-                <h1 class="font-headline-md text-headline-md font-bold text-primary">سجل الديون</h1>
-                <div
-                    class="hidden md:flex flex-row items-center gap-md border-r border-outline-variant pr-md mr-md">
-                    <span class="text-secondary font-body-md text-body-md">الفواتير</span>
-                </div>
-            </div>
-            <div class="flex items-center gap-md">
-                <button onclick="logout()"
-                    class="p-base hover:bg-error-container/20 hover:text-error rounded-full transition-colors active:opacity-80 text-secondary"
-                    title="تسجيل الخروج">
-                    <span class="material-symbols-outlined">logout</span>
-                </button>
-                <span class="material-symbols-outlined text-primary cursor-pointer">account_circle</span>
-            </div>
-        </header>
         <!-- Content Area -->
         <div class="flex-1 p-container-margin md:p-xl max-w-5xl mx-auto w-full">
+        <!-- TopNavBar (Mobile & Tablet) -->
+        <header class="flex flex-row justify-between items-center w-full h-16 bg-surface mb-lg rounded-xl px-md border border-outline-variant/30 md:hidden shadow-sm">
+            <div class="flex items-center gap-sm">
+                <h2 class="font-bold text-primary text-lg">الفواتير</h2>
+            </div>
+            <div class="flex items-center gap-md">
+                <button onclick="logout()" class="p-base hover:bg-error-container/20 hover:text-error rounded-full transition-colors active:opacity-80 text-secondary" title="تسجيل الخروج">
+                    <span class="material-symbols-outlined">logout</span>
+                </button>
+                <span class="material-symbols-outlined text-secondary cursor-pointer">account_circle</span>
+            </div>
+        </header>
             <!-- Page Header -->
             <div
                 class="flex flex-col md:flex-row justify-between items-start md:items-center mb-xl gap-md mt-md">
@@ -99,15 +92,15 @@
                 </div>
                 <div class="flex gap-sm">
                     <a href="/api/export/invoices/excel"
-                        class="bg-surface-container-low text-on-surface rounded-full py-md px-lg font-label-md text-label-md hover:bg-surface-container transition-colors flex flex-row items-center justify-center gap-sm shadow-sm border border-outline-variant">
-                        <span class="material-symbols-outlined">download</span>
+                        class="bg-surface-container-low text-on-surface rounded-full px-md py-sm md:px-lg md:py-md font-label-lg text-label-lg md:font-headline-sm md:text-headline-sm hover:bg-surface-container transition-colors flex flex-row items-center justify-center gap-sm shadow-sm border border-outline-variant">
+                        <span class="material-symbols-outlined text-xl md:text-2xl">download</span>
                         تصدير
                     </a>
                     <button
-                        class="bg-primary text-on-primary rounded-full py-md px-lg font-label-md text-label-md hover:opacity-90 transition-opacity flex flex-row items-center justify-center gap-sm shadow-sm"
+                        class="bg-primary text-on-primary rounded-full px-md py-sm md:px-lg md:py-md font-label-lg text-label-lg md:font-headline-sm md:text-headline-sm hover:opacity-90 transition-opacity flex flex-row items-center justify-center gap-sm shadow-sm"
                         onclick="openModal()">
-                        <span class="material-symbols-outlined">add</span>
-                        فاتورة جديدة
+                        <span class="material-symbols-outlined text-xl md:text-2xl">add</span>
+                        إضافة فاتورة
                     </button>
                 </div>
             </div>
@@ -129,10 +122,10 @@
                     <table class="w-full text-right border-collapse whitespace-nowrap" dir="rtl">
                         <thead class="bg-surface-container-low border-b border-outline-variant">
                             <tr>
-                                <th class="p-md font-label-md text-on-surface-variant font-bold">اسم العميل</th>
-                                <th class="p-md font-label-md text-on-surface-variant font-bold">رقم الجوال</th>
-                                <th class="p-md font-label-md text-on-surface-variant font-bold">التاريخ</th>
-                                <th class="p-md font-label-md text-on-surface-variant font-bold">المبلغ (جنيه)</th>
+                                <th class="px-lg py-md font-label-md text-label-md text-secondary">العميل</th>
+                                <th class="px-lg py-md font-label-md text-label-md text-secondary">المبلغ المستحق</th>
+                                <th class="px-lg py-md font-label-md text-label-md text-secondary" dir="ltr">رقم الهاتف</th>
+                                <th class="px-lg py-md font-label-md text-label-md text-secondary">تاريخ الفاتورة</th>
                                 <th class="p-md font-label-md text-on-surface-variant font-bold">التفاصيل</th>
                                 <th class="p-md font-label-md text-on-surface-variant font-bold text-center">الإجراءات
                                 </th>
@@ -386,9 +379,9 @@
             tbody.innerHTML = invoices.map(inv => `
         <tr class="invoice-item cursor-pointer hover:bg-primary/5 transition-colors group" onclick="openTransactionDetails('${inv._id}')">
             <td class="p-md font-body-md text-on-surface client-name">${highlightArabic(inv.clientName, query)}</td>
+            <td class="p-md font-body-md font-bold ${inv.type === 'payment' ? 'text-green-600' : 'text-primary'}">${inv.type === 'payment' ? '-' : ''}${formatCurrency(inv.amount)}</td>
             <td class="p-md font-body-md text-secondary client-mobile" dir="ltr">${highlightArabic(inv.clientPhone || '', query) || '-'}</td>
             <td class="p-md font-body-md text-secondary">${formatDate(inv.date)}</td>
-            <td class="p-md font-body-md font-bold ${inv.type === 'payment' ? 'text-green-600' : 'text-primary'}">${inv.type === 'payment' ? '-' : ''}${formatCurrency(inv.amount)}</td>
             <td class="p-md font-body-md text-secondary">${inv.details || '-'}</td>
             <td class="p-md text-center">
                 <button onclick="event.stopPropagation(); deleteInvoice('${inv._id}')" class="p-sm rounded-lg hover:bg-error-container/20 text-error transition-all active:scale-90" title="حذف">

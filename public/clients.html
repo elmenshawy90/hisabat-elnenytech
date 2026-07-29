@@ -52,22 +52,21 @@
 </aside>
 <!-- Main Content Area -->
 <main class="flex-1 min-w-0 flex flex-col md:mr-64 h-full relative">
-<!-- TopAppBar -->
-<header class="flex flex-row justify-between items-center px-container-margin w-full h-16 bg-surface border-b border-outline-variant shadow-sm z-10">
-<div class="flex items-center gap-md">
-<h1 class="font-headline-md text-headline-md font-bold text-primary">سجل الديون</h1>
+
+<!-- Page Canvas -->
+<div class="flex-1 overflow-y-auto p-container-margin pb-24 md:pb-xl md:p-xl custom-scrollbar">
+<!-- TopNavBar (Mobile & Tablet) -->
+<header class="flex flex-row justify-between items-center w-full h-16 bg-surface mb-lg rounded-xl px-md border border-outline-variant/30 md:hidden shadow-sm">
+<div class="flex items-center gap-sm">
+<h2 class="font-bold text-primary text-lg">العملاء</h2>
 </div>
 <div class="flex items-center gap-md">
 <button onclick="logout()" class="p-base hover:bg-error-container/20 hover:text-error rounded-full transition-colors active:opacity-80 text-secondary" title="تسجيل الخروج">
 <span class="material-symbols-outlined">logout</span>
 </button>
-<button class="p-base hover:bg-surface-container-low rounded-full transition-colors active:opacity-80">
-<span class="material-symbols-outlined text-secondary">account_circle</span>
-</button>
+<span class="material-symbols-outlined text-secondary cursor-pointer">account_circle</span>
 </div>
 </header>
-<!-- Page Canvas -->
-<div class="flex-1 overflow-y-auto p-container-margin pb-24 md:pb-xl md:p-xl custom-scrollbar">
 <!-- Content Header -->
 <div class="flex flex-col md:flex-row md:items-center justify-between gap-md mb-xl">
 <div class="flex flex-col">
@@ -75,12 +74,12 @@
 <p class="font-body-md text-body-md text-secondary">إدارة ومتابعة ديون العملاء المسجلين</p>
 </div>
 <div class="flex gap-sm">
-    <a href="/api/export/clients/excel" class="bg-surface-container-low text-on-surface px-lg py-md rounded-full flex items-center justify-center gap-sm font-headline-sm text-headline-sm shadow-sm hover:shadow transition-all active:scale-95 border border-outline-variant">
-        <span class="material-symbols-outlined">download</span>
+    <a href="/api/export/clients/excel" class="bg-surface-container-low text-on-surface px-md py-sm md:px-lg md:py-md rounded-full flex items-center justify-center gap-sm font-label-lg text-label-lg md:font-headline-sm md:text-headline-sm shadow-sm hover:shadow transition-all active:scale-95 border border-outline-variant">
+        <span class="material-symbols-outlined text-xl md:text-2xl">download</span>
         تصدير
     </a>
-    <button onclick="openAddClientModal()" class="bg-primary text-on-primary px-lg py-md rounded-full flex items-center justify-center gap-sm font-headline-sm text-headline-sm shadow-md hover:shadow-lg transition-all active:scale-95">
-        <span class="material-symbols-outlined">person_add</span>
+    <button onclick="openAddClientModal()" class="bg-primary text-on-primary px-md py-sm md:px-lg md:py-md rounded-full flex items-center justify-center gap-sm font-label-lg text-label-lg md:font-headline-sm md:text-headline-sm shadow-md hover:shadow-lg transition-all active:scale-95">
+        <span class="material-symbols-outlined text-xl md:text-2xl">person_add</span>
         + عميل جديد
     </button>
 </div>
@@ -129,8 +128,8 @@
 <thead>
 <tr class="bg-surface-container-low border-b border-outline-variant">
 <th class="px-lg py-md font-label-md text-label-md text-secondary">اسم العميل</th>
-<th class="px-lg py-md font-label-md text-label-md text-secondary">رقم الهاتف</th>
 <th class="px-lg py-md font-label-md text-label-md text-secondary">الرصيد الحالي</th>
+<th class="px-lg py-md font-label-md text-label-md text-secondary">رقم الهاتف</th>
 <th class="px-lg py-md font-label-md text-label-md text-secondary">آخر معاملة</th>
 <th class="px-lg py-md font-label-md text-label-md text-secondary text-center">الإجراءات</th>
 </tr>
@@ -257,10 +256,10 @@ function renderClients(clients) {
                         <span class="font-body-md text-body-md text-on-surface">${highlightArabic(client.name, query)}</span>
                     </div>
                 </td>
-                <td class="px-lg py-md font-body-md text-body-md text-secondary">${highlightArabic(client.phone, query)}</td>
                 <td class="px-lg py-md">
                     <span class="font-headline-sm text-headline-sm ${balanceColor}">${formatCurrency(client.balance)}</span>
                 </td>
+                <td class="px-lg py-md font-body-md text-body-md text-secondary" dir="ltr">${highlightArabic(client.phone, query)}</td>
                 <td class="px-lg py-md">
                     <div class="flex flex-col">
                         <span class="font-body-md text-body-md text-on-surface">${formatDate(client.lastTransaction)}</span>
