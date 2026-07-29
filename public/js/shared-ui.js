@@ -175,18 +175,18 @@ async function checkAuth() {
   try {
     const res = await fetch('/api/auth/me');
     if (!res.ok || res.status === 401) {
-      window.location.href = '/login.html';
+      window.location.href = '/login';
       return null;
     }
     const data = await res.json();
     if (!data.authenticated) {
-      window.location.href = '/login.html';
+      window.location.href = '/login';
       return null;
     }
     return data.user;
   } catch (err) {
     console.error('Auth check failed:', err);
-    window.location.href = '/login.html';
+    window.location.href = '/login';
     return null;
   }
 }
@@ -195,7 +195,7 @@ async function logout() {
   try {
     const res = await fetch('/api/auth/logout', { method: 'POST' });
     if (res.ok) {
-      window.location.href = '/login.html';
+      window.location.href = '/login';
     }
   } catch (err) {
     console.error('Logout failed:', err);

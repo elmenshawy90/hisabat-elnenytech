@@ -14,59 +14,13 @@
 <body class="bg-background text-on-surface overflow-hidden max-w-[100vw]">
 <!-- Shell Container -->
 <div class="flex h-screen w-full">
-<!-- SideNavBar (Desktop Right) -->
-<aside class="hidden md:flex flex-col gap-lg p-md border-l border-outline-variant bg-surface-container-low fixed right-0 h-full w-64 z-20">
-<div class="flex flex-col items-center gap-sm mb-lg">
-<div class="w-16 h-16 rounded-full bg-primary-fixed flex items-center justify-center overflow-hidden">
-<span class="material-symbols-outlined text-3xl text-on-primary-fixed">domain</span>
-</div>
-<div class="text-center">
-<h2 class="font-headline-sm text-headline-sm text-primary user-display-name">شركة مواد البناء</h2>
-<p class="font-label-md text-label-md text-secondary user-role-name">مدير الحسابات</p>
-</div>
-</div>
-<nav class="flex flex-col gap-sm">
-<a class="flex flex-row items-center gap-md text-secondary hover:bg-surface-container-highest px-md py-sm rounded-lg transition-all" href="dashboard.html">
-<span class="material-symbols-outlined">dashboard</span>
-<span class="font-label-md text-label-md">لوحة القيادة</span>
-</a>
-<a class="flex flex-row items-center gap-md bg-primary-container text-on-primary-container rounded-lg px-md py-sm transition-all shadow-sm" href="clients.html">
-<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">group</span>
-<span class="font-label-md text-label-md">العملاء</span>
-</a>
-<a class="flex flex-row items-center gap-md text-secondary hover:bg-surface-container-highest px-md py-sm rounded-lg transition-all" href="new-invoice.html">
-<span class="material-symbols-outlined">add_circle</span>
-<span class="font-label-md text-label-md">إضافة معاملة</span>
-</a>
-<a class="flex flex-row items-center gap-md text-secondary hover:bg-surface-container-highest px-md py-sm rounded-lg transition-all" href="#">
-<span class="material-symbols-outlined">settings</span>
-<span class="font-label-md text-label-md">الإعدادات</span>
-</a>
-</nav>
-<div class="mt-auto">
-<a href="new-invoice.html" class="w-full bg-primary text-on-primary py-md rounded-full flex items-center justify-center gap-sm font-label-md text-label-md hover:opacity-90 active:scale-95 transition-all">
-<span class="material-symbols-outlined">receipt_long</span>
-إضافة فاتورة جديدة
-</a>
-</div>
-</aside>
+<%- include('partials/aside', { active: 'clients' }) %>
 <!-- Main Content Area -->
 <main class="flex-1 min-w-0 flex flex-col md:mr-64 h-full relative">
 
 <!-- Page Canvas -->
 <div class="flex-1 overflow-y-auto p-container-margin pb-24 md:pb-xl md:p-xl custom-scrollbar">
-<!-- TopNavBar (Mobile & Tablet) -->
-<header class="flex flex-row justify-between items-center w-full h-16 bg-surface mb-lg rounded-xl px-md border border-outline-variant/30 md:hidden shadow-sm">
-<div class="flex items-center gap-sm">
-<h2 class="font-bold text-primary text-lg">العملاء</h2>
-</div>
-<div class="flex items-center gap-md">
-<button onclick="logout()" class="p-base hover:bg-error-container/20 hover:text-error rounded-full transition-colors active:opacity-80 text-secondary" title="تسجيل الخروج">
-<span class="material-symbols-outlined">logout</span>
-</button>
-<span class="material-symbols-outlined text-secondary cursor-pointer">account_circle</span>
-</div>
-</header>
+<%- include('partials/header', { title: 'العملاء' }) %>
 <!-- Content Header -->
 <div class="flex flex-col md:flex-row md:items-center justify-between gap-md mb-xl">
 <div class="flex flex-col">
@@ -141,30 +95,7 @@
 </div>
 </div>
 </div>
-<!-- Mobile BottomNavBar -->
-<nav class="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-surface border-t border-outline-variant flex items-center justify-around px-md z-20">
-<a class="flex flex-col items-center gap-xs text-secondary" href="dashboard.html">
-<span class="material-symbols-outlined">home</span>
-<span class="text-[10px] font-label-sm">الرئيسية</span>
-</a>
-<a class="flex flex-col items-center gap-xs text-primary" href="clients.html">
-<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">group</span>
-<span class="text-[10px] font-label-sm">العملاء</span>
-</a>
-<div class="relative -top-6">
-<a href="new-invoice.html" class="w-14 h-14 bg-primary text-on-primary rounded-full shadow-lg flex items-center justify-center active:scale-90 transition-transform">
-<span class="material-symbols-outlined text-3xl">add</span>
-</a>
-</div>
-<a class="flex flex-col items-center gap-xs text-secondary" href="new-invoice.html">
-<span class="material-symbols-outlined">receipt_long</span>
-<span class="text-[10px] font-label-sm">الفواتير</span>
-</a>
-<a class="flex flex-col items-center gap-xs text-secondary" href="#">
-<span class="material-symbols-outlined">settings</span>
-<span class="text-[10px] font-label-sm">الإعدادات</span>
-</a>
-</nav>
+<%- include('partials/bottom-nav', { active: 'clients' }) %>
 </main>
 </div>
 
@@ -268,7 +199,7 @@ function renderClients(clients) {
                 </td>
                 <td class="px-lg py-md">
                     <div class="flex items-center justify-center gap-sm">
-                        <a href="client-details.html?id=${client.id}" class="p-sm rounded-lg hover:bg-surface-container-highest text-primary transition-all active:scale-90" title="عرض">
+                        <a href="/client-details?id=${client.id}" class="p-sm rounded-lg hover:bg-surface-container-highest text-primary transition-all active:scale-90" title="عرض">
                             <span class="material-symbols-outlined">visibility</span>
                         </a>
                         <button onclick="deleteClient('${client.id}', '${client.name}')" class="p-sm rounded-lg hover:bg-error-container/20 text-error transition-all active:scale-90" title="حذف">

@@ -20,67 +20,13 @@
 
 <body class="text-on-surface bg-background min-h-screen flex max-w-[100vw] overflow-x-hidden">
     <!-- SideNavBar -->
-    <aside
-        class="docked fixed right-0 h-full w-64 bg-surface-container-low border-l border-outline-variant flex-col gap-lg p-md hidden md:flex z-50">
-        <div class="flex flex-col gap-sm mb-lg">
-            <h2 class="font-headline-md text-headline-md font-bold text-primary">شركة مواد البناء</h2>
-            <div class="flex flex-row items-center gap-sm mt-md">
-                <div
-                    class="w-10 h-10 rounded-full bg-secondary-container flex items-center justify-center overflow-hidden">
-                    <span class="material-symbols-outlined text-secondary">account_circle</span>
-                </div>
-                <div class="text-right">
-                    <p class="font-label-md text-label-md text-on-surface font-bold user-display-name">مدير الحسابات</p>
-                    <p class="text-xs text-secondary user-role-name">حساب نشط</p>
-                </div>
-            </div>
-        </div>
-        <nav class="flex flex-col gap-sm">
-            <a class="flex flex-row items-center gap-md text-secondary px-md py-sm hover:bg-surface-container-highest transition-all rounded-lg"
-                href="dashboard.html">
-                <span class="material-symbols-outlined">dashboard</span>
-                <span class="font-label-md text-label-md">لوحة القيادة</span>
-            </a>
-            <a class="flex flex-row items-center gap-md text-secondary px-md py-sm hover:bg-surface-container-highest transition-all rounded-lg"
-                href="clients.html">
-                <span class="material-symbols-outlined">group</span>
-                <span class="font-label-md text-label-md">العملاء</span>
-            </a>
-            <a class="flex flex-row items-center gap-md bg-primary-container text-on-primary-container rounded-lg px-md py-sm transition-all"
-                href="new-invoice.html">
-                <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">add_circle</span>
-                <span class="font-label-md text-label-md">إضافة معاملة</span>
-            </a>
-            <a class="flex flex-row items-center gap-md text-secondary px-md py-sm hover:bg-surface-container-highest transition-all rounded-lg"
-                href="#">
-                <span class="material-symbols-outlined">settings</span>
-                <span class="font-label-md text-label-md">الإعدادات</span>
-            </a>
-        </nav>
-        <div class="mt-auto">
-            <button onclick="openModal()"
-                class="w-full bg-primary text-on-primary rounded-full px-md py-sm md:px-lg md:py-md font-label-lg text-label-lg md:font-headline-sm md:text-headline-sm hover:opacity-90 transition-opacity flex items-center justify-center gap-sm">
-                <span class="material-symbols-outlined text-xl md:text-2xl">post_add</span>
-                إضافة فاتورة جديدة
-            </button>
-        </div>
-    </aside>
+<%- include('partials/aside', { active: 'invoices' }) %>
     <!-- Main Canvas -->
     <main class="flex-1 min-w-0 md:mr-64 min-h-screen flex flex-col pb-24 md:pb-0">
         <!-- Content Area -->
         <div class="flex-1 p-container-margin md:p-xl max-w-5xl mx-auto w-full">
         <!-- TopNavBar (Mobile & Tablet) -->
-        <header class="flex flex-row justify-between items-center w-full h-16 bg-surface mb-lg rounded-xl px-md border border-outline-variant/30 md:hidden shadow-sm">
-            <div class="flex items-center gap-sm">
-                <h2 class="font-bold text-primary text-lg">الفواتير</h2>
-            </div>
-            <div class="flex items-center gap-md">
-                <button onclick="logout()" class="p-base hover:bg-error-container/20 hover:text-error rounded-full transition-colors active:opacity-80 text-secondary" title="تسجيل الخروج">
-                    <span class="material-symbols-outlined">logout</span>
-                </button>
-                <span class="material-symbols-outlined text-secondary cursor-pointer">account_circle</span>
-            </div>
-        </header>
+        <%- include('partials/header', { title: 'الفواتير' }) %>
             <!-- Page Header -->
             <div
                 class="flex flex-col md:flex-row justify-between items-start md:items-center mb-xl gap-md mt-md">
@@ -144,29 +90,7 @@
             </div>
         </div>
         <!-- Mobile Bottom NavBar -->
-        <nav class="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-surface border-t border-outline-variant flex items-center justify-around px-md z-50">
-        <a class="flex flex-col items-center gap-xs text-secondary" href="dashboard.html">
-        <span class="material-symbols-outlined">home</span>
-        <span class="text-[10px] font-label-sm">الرئيسية</span>
-        </a>
-        <a class="flex flex-col items-center gap-xs text-secondary" href="clients.html">
-        <span class="material-symbols-outlined">group</span>
-        <span class="text-[10px] font-label-sm">العملاء</span>
-        </a>
-        <div class="relative -top-6">
-        <a href="new-invoice.html" class="w-14 h-14 bg-primary text-on-primary rounded-full shadow-lg flex items-center justify-center active:scale-90 transition-transform">
-        <span class="material-symbols-outlined text-3xl">add</span>
-        </a>
-        </div>
-        <a class="flex flex-col items-center gap-xs text-primary" href="new-invoice.html">
-        <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">receipt_long</span>
-        <span class="text-[10px] font-label-sm">الفواتير</span>
-        </a>
-        <a class="flex flex-col items-center gap-xs text-secondary" href="#">
-        <span class="material-symbols-outlined">settings</span>
-        <span class="text-[10px] font-label-sm">الإعدادات</span>
-        </a>
-        </nav>
+        <%- include('partials/bottom-nav', { active: 'invoices' }) %>
     </main>
 
     <!-- Modal -->
@@ -518,7 +442,7 @@
             balanceEl.className = `font-bold dir-ltr inline-block ${balance > 0 ? 'text-tertiary' : (balance < 0 ? 'text-error' : 'text-primary')}`;
             
             document.getElementById('summaryLastTransaction').textContent = lastTransaction ? formatDate(lastTransaction) : '--';
-            document.getElementById('summaryProfileLink').href = `client-details.html?id=${id}`;
+            document.getElementById('summaryProfileLink').href = `/client-details?id=${id}`;
             
             clientDropdown.classList.add('hidden');
             clientSummaryCard.classList.remove('hidden');

@@ -15,64 +15,10 @@
 <body class="bg-background text-on-surface min-h-screen overflow-x-hidden">
 <!-- Main Navigation Wrapper -->
 <div class="flex flex-col md:flex-row min-h-screen">
-<!-- SideNavBar (Desktop Right) -->
-<aside class="hidden md:flex flex-col gap-lg p-md fixed right-0 h-full w-64 bg-surface-container-low border-l border-outline-variant z-40 transition-all duration-300" id="sidebar">
-<div class="flex flex-col gap-sm py-md px-md border-b border-outline-variant/30 mb-md">
-<div class="flex items-center gap-sm">
-<div class="w-10 h-10 rounded-lg bg-primary-container flex items-center justify-center text-on-primary-container">
-<span class="material-symbols-outlined">architecture</span>
-</div>
-<div>
-<h1 class="font-headline-md text-headline-md font-bold text-primary leading-tight">سجل الديون</h1>
-<p class="text-[10px] text-secondary">إدارة مواد البناء</p>
-</div>
-</div>
-</div>
-<nav class="flex flex-col gap-sm flex-grow">
-<!-- Dashboard Active -->
-<a class="flex flex-row items-center gap-md bg-primary-container text-on-primary-container rounded-lg px-md py-sm hover:bg-surface-container-highest transition-all" href="dashboard.html">
-<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">dashboard</span>
-<span class="font-label-md text-label-md flex-grow text-right">لوحة القيادة</span>
-</a>
-<a class="flex flex-row items-center gap-md text-secondary px-md py-sm hover:bg-surface-container-highest transition-all rounded-lg" href="clients.html">
-<span class="material-symbols-outlined">group</span>
-<span class="font-label-md text-label-md flex-grow text-right">العملاء</span>
-</a>
-<a class="flex flex-row items-center gap-md text-secondary px-md py-sm hover:bg-surface-container-highest transition-all rounded-lg" href="new-invoice.html">
-<span class="material-symbols-outlined">add_circle</span>
-<span class="font-label-md text-label-md flex-grow text-right">إضافة معاملة</span>
-</a>
-<div class="mt-auto border-t border-outline-variant/30 pt-md">
-<a class="flex flex-row items-center gap-md text-secondary px-md py-sm hover:bg-surface-container-highest transition-all rounded-lg" href="#">
-<span class="material-symbols-outlined">settings</span>
-<span class="font-label-md text-label-md flex-grow text-right">الإعدادات</span>
-</a>
-</div>
-</nav>
-<div class="flex flex-row items-center gap-md bg-surface p-sm rounded-xl border border-outline-variant/30">
-<div class="w-10 h-10 rounded-full overflow-hidden bg-secondary-container flex items-center justify-center">
-<span class="material-symbols-outlined text-secondary">account_circle</span>
-</div>
-<div class="text-right overflow-hidden">
-<p class="text-sm font-bold text-on-surface truncate user-display-name">شركة مواد البناء</p>
-<p class="text-[11px] text-secondary truncate user-role-name">مدير الحسابات</p>
-</div>
-</div>
-</aside>
+<%- include('partials/aside', { active: 'dashboard' }) %>
 <!-- Main Content Area -->
 <main class="flex-grow min-w-0 md:mr-64 p-container-margin pb-24 md:pb-container-margin transition-all">
-<!-- TopNavBar (Mobile & Tablet) -->
-<header class="flex flex-row justify-between items-center w-full h-16 bg-surface mb-lg rounded-xl px-md border border-outline-variant/30 md:hidden shadow-sm">
-<div class="flex items-center gap-sm">
-<h2 class="font-bold text-primary text-lg">سجل الديون</h2>
-</div>
-<div class="flex items-center gap-md">
-<button onclick="logout()" class="p-base hover:bg-error-container/20 hover:text-error rounded-full transition-colors active:opacity-80 text-secondary" title="تسجيل الخروج">
-<span class="material-symbols-outlined">logout</span>
-</button>
-<span class="material-symbols-outlined text-secondary">account_circle</span>
-</div>
-</header>
+<%- include('partials/header', { title: 'سجل الديون' }) %>
 <!-- Dashboard Content -->
 <div class="max-w-7xl mx-auto space-y-lg pb-24 md:pb-xl">
 <!-- Page Header (Desktop) -->
@@ -81,7 +27,7 @@
 <h1 class="text-3xl font-bold text-on-surface">مرحباً بك في لوحة القيادة</h1>
 <p class="text-secondary mt-1">نظرة عامة على الحالة المالية للشركة اليوم</p>
 </div>
-<a href="new-invoice.html" class="bg-primary hover:bg-primary-container text-white px-md py-sm md:px-lg md:py-md rounded-full flex items-center gap-sm transition-all shadow-md active:scale-95 font-label-lg text-label-lg md:font-headline-sm md:text-headline-sm">
+<a href="/new-invoice" class="bg-primary hover:bg-primary-container text-white px-md py-sm md:px-lg md:py-md rounded-full flex items-center gap-sm transition-all shadow-md active:scale-95 font-label-lg text-label-lg md:font-headline-sm md:text-headline-sm">
 <span class="material-symbols-outlined text-xl md:text-2xl">add</span>
 <span>إضافة فاتورة جديدة</span>
 </a>
@@ -150,7 +96,7 @@
                 <div class="p-xl text-center text-secondary">جاري التحميل...</div>
             </div>
             <div class="p-md pt-0 border-t border-outline-variant mt-auto">
-                <a href="clients.html" class="w-full py-sm mt-md border-2 border-primary text-primary font-bold rounded-lg hover:bg-primary hover:text-white transition-all flex items-center justify-center gap-sm">
+                <a href="/clients" class="w-full py-sm mt-md border-2 border-primary text-primary font-bold rounded-lg hover:bg-primary hover:text-white transition-all flex items-center justify-center gap-sm">
                     <span>عرض جميع العملاء</span>
                     <span class="material-symbols-outlined text-[18px]">arrow_back</span>
                 </a>
@@ -165,7 +111,7 @@
         <div class="bg-white rounded-lg border border-outline-variant shadow-sm overflow-hidden">
             <div class="flex justify-between items-center px-md py-sm border-b border-outline-variant">
                 <h4 class="font-bold text-on-surface">أحدث المعاملات</h4>
-                <a href="new-invoice.html" class="text-primary text-sm font-medium hover:underline">عرض الكل</a>
+                <a href="/new-invoice" class="text-primary text-sm font-medium hover:underline">عرض الكل</a>
             </div>
             <div class="overflow-x-auto w-full">
                 <table class="w-full text-right border-collapse whitespace-nowrap">
@@ -188,30 +134,7 @@
 </div>
 </div>
 </main>
-<!-- Mobile BottomNavBar -->
-<nav class="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-surface border-t border-outline-variant flex items-center justify-around px-md z-50">
-<a class="flex flex-col items-center gap-xs text-primary" href="dashboard.html">
-<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">dashboard</span>
-<span class="text-[10px] font-label-sm">الرئيسية</span>
-</a>
-<a class="flex flex-col items-center gap-xs text-secondary" href="clients.html">
-<span class="material-symbols-outlined">group</span>
-<span class="text-[10px] font-label-sm">العملاء</span>
-</a>
-<div class="relative -top-6">
-<a href="new-invoice.html" class="w-14 h-14 bg-primary text-on-primary rounded-full shadow-lg flex items-center justify-center active:scale-90 transition-transform">
-<span class="material-symbols-outlined text-3xl">add</span>
-</a>
-</div>
-<a class="flex flex-col items-center gap-xs text-secondary" href="new-invoice.html">
-<span class="material-symbols-outlined">receipt_long</span>
-<span class="text-[10px] font-label-sm">الفواتير</span>
-</a>
-<a class="flex flex-col items-center gap-xs text-secondary" href="#">
-<span class="material-symbols-outlined">settings</span>
-<span class="text-[10px] font-label-sm">الإعدادات</span>
-</a>
-</nav>
+<%- include('partials/bottom-nav', { active: 'dashboard' }) %>
 </div>
 
 <script src="js/shared-ui.js"></script>
@@ -367,7 +290,7 @@ function renderTopDebtors(debtors) {
                         : index === 1 ? { color: 'bg-red-400', text: 'تنبيه' }
                         : { color: 'bg-orange-400', text: 'متابعة' };
         return `
-            <a href="client-details.html?id=${debtor._id}" class="flex flex-row items-center justify-between p-sm border border-outline-variant/30 rounded-lg hover:border-primary/50 transition-colors block">
+            <a href="/client-details?id=${debtor._id}" class="flex flex-row items-center justify-between p-sm border border-outline-variant/30 rounded-lg hover:border-primary/50 transition-colors block">
                 <div class="text-right">
                     <p class="font-bold text-sm text-on-surface">${debtor.name}</p>
                     <p class="text-[10px] text-secondary">${debtor.lastTransaction ? 'آخر معاملة: ' + formatDate(debtor.lastTransaction) : (debtor.phone[0] || '')}</p>

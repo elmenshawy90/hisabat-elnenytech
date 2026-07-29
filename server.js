@@ -14,6 +14,10 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// View Engine
+app.set('view engine', 'ejs');
+app.set('views', path.join(__dirname, 'views'));
+
 // Trust proxy for Render/Vercel (required for secure cookies)
 app.set('trust proxy', 1);
 
@@ -39,6 +43,14 @@ app.use('/api/clients', require('./routes/clients'));
 app.use('/api/invoices', require('./routes/invoices'));
 app.use('/api/dashboard', require('./routes/dashboard'));
 app.use('/api/export', require('./routes/export'));
+
+// Web Routes
+app.get('/', (req, res) => res.render('index'));
+app.get('/login', (req, res) => res.render('login'));
+app.get('/dashboard', (req, res) => res.render('dashboard'));
+app.get('/clients', (req, res) => res.render('clients'));
+app.get('/new-invoice', (req, res) => res.render('new-invoice'));
+app.get('/client-details', (req, res) => res.render('client-details'));
 
 // Serve Static Files
 app.use(express.static(path.join(__dirname, 'public')));
