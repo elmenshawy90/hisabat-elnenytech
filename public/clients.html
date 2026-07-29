@@ -240,6 +240,7 @@ function updateStats(clients) {
 
 function renderClients(clients) {
     const tbody = document.getElementById('clientsTableBody');
+    const query = document.getElementById('searchInput').value;
     if (clients.length === 0) {
         tbody.innerHTML = '<tr><td colspan="5" class="p-xl text-center text-secondary">لا يوجد عملاء مسجلين</td></tr>';
         return;
@@ -252,10 +253,10 @@ function renderClients(clients) {
                 <td class="px-lg py-md">
                     <div class="flex items-center gap-md">
                         <div class="w-10 h-10 rounded-full bg-secondary-container flex items-center justify-center text-on-secondary-container font-bold">${initial}</div>
-                        <span class="font-body-md text-body-md text-on-surface">${client.name}</span>
+                        <span class="font-body-md text-body-md text-on-surface">${highlightArabic(client.name, query)}</span>
                     </div>
                 </td>
-                <td class="px-lg py-md font-body-md text-body-md text-secondary">${client.phone}</td>
+                <td class="px-lg py-md font-body-md text-body-md text-secondary">${highlightArabic(client.phone, query)}</td>
                 <td class="px-lg py-md">
                     <span class="font-headline-sm text-headline-sm ${balanceColor}">${formatCurrency(client.balance)}</span>
                 </td>

@@ -275,3 +275,21 @@ function normalizeArabic(text) {
         .replace(/\s+/g, ' ')
         .trim();
 }
+
+// ─── Text Highlighting ─────────────────────────────────────
+function highlightArabic(text, query) {
+    if (!query || !text) return text;
+    let escaped = query.toString().trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    if (!escaped) return text;
+    escaped = escaped
+        .replace(/[اأإآ]/g, '[اأإآ]')
+        .replace(/[هة]/g, '[هة]')
+        .replace(/[يى]/g, '[يى]')
+        .replace(/[ءؤئ]/g, '[ءؤئ]');
+    try {
+        const regex = new RegExp(`(${escaped})`, 'gi');
+        return text.toString().replace(regex, '<span class="bg-[#fef08a] text-black px-1 rounded-sm">$1</span>');
+    } catch(e) {
+        return text;
+    }
+}

@@ -312,14 +312,15 @@
 
         function renderInvoices(invoices) {
             const tbody = document.getElementById('invoiceList');
+            const query = document.getElementById('searchInput').value;
             if (invoices.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="6" class="p-xl text-center text-secondary">لا توجد فواتير بعد</td></tr>';
                 return;
             }
             tbody.innerHTML = invoices.map(inv => `
         <tr class="invoice-item hover:bg-surface-container-lowest transition-colors">
-            <td class="p-md font-body-md text-on-surface client-name">${inv.clientName}</td>
-            <td class="p-md font-body-md text-secondary client-mobile" dir="ltr">${inv.clientPhone || '-'}</td>
+            <td class="p-md font-body-md text-on-surface client-name">${highlightArabic(inv.clientName, query)}</td>
+            <td class="p-md font-body-md text-secondary client-mobile" dir="ltr">${highlightArabic(inv.clientPhone || '', query) || '-'}</td>
             <td class="p-md font-body-md text-secondary">${formatDate(inv.date)}</td>
             <td class="p-md font-body-md font-bold ${inv.type === 'payment' ? 'text-green-600' : 'text-primary'}">${inv.type === 'payment' ? '-' : ''}${formatCurrency(inv.amount)}</td>
             <td class="p-md font-body-md text-secondary">${inv.details || '-'}</td>
