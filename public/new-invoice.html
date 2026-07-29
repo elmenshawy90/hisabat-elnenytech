@@ -334,9 +334,9 @@
 
         // Search/Filter
         function filterInvoices() {
-            const filter = document.getElementById('searchInput').value.toLowerCase();
+            const filter = normalizeArabic(document.getElementById('searchInput').value);
             const filtered = allInvoices.filter(inv =>
-                inv.clientName.toLowerCase().includes(filter) ||
+                normalizeArabic(inv.clientName).includes(filter) ||
                 (inv.clientPhone && inv.clientPhone.includes(filter))
             );
             renderInvoices(filtered);

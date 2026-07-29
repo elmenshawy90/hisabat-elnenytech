@@ -282,9 +282,9 @@ function renderClients(clients) {
 
 // Search filter
 document.getElementById('searchInput').addEventListener('input', (e) => {
-    const query = e.target.value.toLowerCase();
+    const query = normalizeArabic(e.target.value);
     const filtered = allClients.filter(c =>
-        c.name.toLowerCase().includes(query) || c.phone.includes(query)
+        normalizeArabic(c.name).includes(query) || (c.phone && c.phone.includes(query))
     );
     renderClients(filtered);
 });

@@ -262,3 +262,16 @@ function setupPhoneValidation(inputId, errorId) {
     }
   });
 }
+
+// ─── Text Normalization ─────────────────────────────────────
+function normalizeArabic(text) {
+    if (!text) return '';
+    return text.toString().toLowerCase()
+        .replace(/[أإآا]/g, 'ا')
+        .replace(/[ةه]/g, 'ه')
+        .replace(/[ىي]/g, 'ي')
+        .replace(/[ؤئ]/g, 'ء')
+        .replace(/ـ/g, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+}
