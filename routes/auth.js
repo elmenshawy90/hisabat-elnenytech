@@ -46,13 +46,21 @@ router.post('/login', async (req, res) => {
 
 // POST /api/auth/logout
 router.post('/logout', (req, res) => {
-  req.session.destroy((err) => {
-    if (err) {
-      return res.status(500).json({ error: 'فشل في تسجيل الخروج' });
-    }
-    res.clearCookie('connect.sid');
+  if (req.session) {
+    req.session.userId = null;
+    req.session.role = null;
+    req.session.username = null;
+    req.session.destroy((err) => {
+      res.clearCookie('connect.sid', { path: '/' });
+      if (err) {
+        return res.status(500).json({ error: 'فشل في تسجيل الخروج' });
+      }
+      res.json({ message: 'تم تسجيل الخروج بنجاح' });
+    });
+  } else {
+    res.clearCookie('connect.sid', { path: '/' });
     res.json({ message: 'تم تسجيل الخروج بنجاح' });
-  });
+  }
 });
 
 // GET /api/auth/me - Check current session

@@ -193,12 +193,11 @@ async function checkAuth() {
 
 async function logout() {
   try {
-    const res = await fetch('/api/auth/logout', { method: 'POST' });
-    if (res.ok) {
-      window.location.href = '/login';
-    }
+    await fetch('/api/auth/logout', { method: 'POST' });
   } catch (err) {
     console.error('Logout failed:', err);
+  } finally {
+    window.location.replace('/login');
   }
 }
 
