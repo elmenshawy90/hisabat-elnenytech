@@ -1,6 +1,8 @@
 const express = require('express');
 const router = express.Router();
-const User = require('../models/User');
+const { PrismaClient } = require('@prisma/client');
+const bcrypt = require('bcrypt');
+const prisma = new PrismaClient();
 
 // POST /api/auth/login
 router.post('/login', async (req, res) => {
@@ -11,20 +13,20 @@ router.post('/login', async (req, res) => {
   }
 
   try {
-    const user = await User.findOne({ username: username.toLowerCase() });
+    const user = await prisma.user.findUnique({ where: { username: username.toLowerCase() } });
     
     if (!user) {
       return res.status(401).json({ error: 'بيانات الدخول غير صحيحة' });
     }
 
-    const isMatch = await user.comparePassword(password);
+    const isMatch = await bcrypt.compare(password, user.password);
     
     if (!isMatch) {
       return res.status(401).json({ error: 'بيانات الدخول غير صحيحة' });
     }
 
     // Set session
-    req.session.userId = user._id;
+    req.session.userId = user.id;
     req.session.role = user.role;
     req.session.username = user.username;
 

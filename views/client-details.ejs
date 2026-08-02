@@ -9,6 +9,9 @@
 <script src="js/tailwind-config.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ar.js"></script>
 <link href="css/styles.css" rel="stylesheet"/>
 </head>
 <body class="bg-background text-on-surface min-h-screen overflow-x-hidden">
@@ -145,7 +148,7 @@
                 <label class="font-label-md text-label-md text-on-surface-variant mb-xs">تاريخ الفاتورة <span class="text-error">*</span></label>
                 <div class="relative">
                     <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline pointer-events-none">calendar_today</span>
-                    <input class="w-full h-12 pr-10 pl-md rounded-xl bg-surface-container-low border border-outline-variant form-input-focus transition-all text-right cursor-pointer" id="invoiceDate" type="date" required />
+                    <input class="w-full h-12 pr-10 pl-md rounded-xl bg-surface-container-low border border-outline-variant form-input-focus transition-all text-right cursor-pointer" id="invoiceDate" type="text" placeholder="اختر التاريخ" required />
                 </div>
             </div>
             <div class="flex flex-col gap-xs">
@@ -256,7 +259,8 @@ async function loadClientDetails() {
     try {
         const res = await fetch(`/api/clients/${clientId}`);
         if (!res.ok) {
-            showToast('العميل غير موجود', 'error');
+            const errData = await res.json().catch(() => ({}));
+            showToast(errData.error || 'العميل غير موجود', 'error');
             setTimeout(() => window.location.href = '/clients', 1500);
             return;
         }
@@ -331,7 +335,7 @@ function renderTransactions(invoices) {
         const amountPrefix = isPurchase ? '+' : '-';
 
         return `
-            <tr class="cursor-pointer hover:bg-primary/5 transition-colors group" onclick="openTransactionDetails('${inv._id}')">
+            <tr class="cursor-pointer hover:bg-primary/5 transition-colors group" onclick="openTransactionDetails(${inv._id})">
                 <td class="px-md py-md font-body-md text-body-md">${formatDate(inv.date)}</td>
                 <td class="px-md py-md">${typeBadge}</td>
                 <td class="px-md py-md font-body-md text-body-md">${inv.details || '-'}</td>
@@ -350,7 +354,7 @@ document.querySelectorAll('button').forEach(button => {
 
 // Modal Functions
 function openTransactionDetails(id) {
-    const inv = clientInvoices.find(i => i._id === id);
+    const inv = clientInvoices.find(i => String(i._id || i.id) === String(id));
     if (!inv) return;
     
     document.getElementById('tdDate').textContent = formatDate(inv.date);
@@ -405,10 +409,17 @@ function openInvoiceModal(type = 'purchase') {
     }
     
     document.getElementById('invoiceForm').reset();
-    document.getElementById('invoiceDate').valueAsDate = new Date();
     modal.classList.remove('hidden');
     modal.classList.add('flex');
     document.body.style.overflow = 'hidden';
+    
+    // Initialize Flatpickr calendar (same style as new-invoice page)
+    flatpickr("#invoiceDate", {
+        locale: "ar",
+        defaultDate: "today",
+        dateFormat: "Y-m-d",
+        disableMobile: true
+    });
 }
 
 function closeInvoiceModal() {

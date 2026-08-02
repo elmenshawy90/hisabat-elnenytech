@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const Client = require('../models/Client');
-const Invoice = require('../models/Invoice');
+const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient();
 const { requireAuth } = require('../middleware/auth');
 
 // Apply auth middleware
@@ -11,17 +11,19 @@ router.use(requireAuth);
 router.get('/', async (req, res) => {
   try {
     // Total Clients
-    const totalClients = await Client.countDocuments();
+    const totalClients = await prisma.client.count();
     
     // Outstanding Balance (Sum of all positive balances)
-    const result = await Client.aggregate([
-      { $match: { balance: { $gt: 0 } } },
-      { $group: { _id: null, total: { $sum: '$balance' } } }
-    ]);
-    const outstandingBalance = result.length > 0 ? result[0].total : 0;
+    const balanceAgg = await prisma.client.aggregate({
+      where: { balance: { gt: 0 } },
+      _sum: { balance: true }
+    });
+    const outstandingBalance = balanceAgg._sum.balance || 0;
     
     // Late Clients (Balance > 10000 for this demo context)
-    const lateClients = await Client.countDocuments({ balance: { $gt: 10000 } });
+    const lateClients = await prisma.client.count({
+      where: { balance: { gt: 10000 } }
+    });
 
     // Today's transactions
     const startOfDay = new Date();
@@ -29,47 +31,71 @@ router.get('/', async (req, res) => {
     const endOfDay = new Date();
     endOfDay.setHours(23, 59, 59, 999);
     
-    const todayTransactions = await Invoice.countDocuments({
-      date: { $gte: startOfDay, $lte: endOfDay }
+    const todayTransactions = await prisma.invoice.count({
+      where: {
+        date: { gte: startOfDay, lte: endOfDay }
+      }
     });
 
     // Top Debtors
-    const topDebtors = await Client.find({ balance: { $gt: 0 } })
-      .sort({ balance: -1 })
-      .limit(5);
+    const topDebtors = await prisma.client.findMany({
+      where: { balance: { gt: 0 } },
+      orderBy: { balance: 'desc' },
+      take: 5
+    });
 
     // Recent Transactions
-    const recentTransactions = await Invoice.find()
-      .sort({ date: -1, createdAt: -1 })
-      .limit(5);
+    const recentTransactions = await prisma.invoice.findMany({
+      orderBy: [
+        { date: 'desc' },
+        { createdAt: 'desc' }
+      ],
+      take: 5
+    });
 
     // Chart Data (Last 6 weeks revenue vs payments)
     const sixWeeksAgo = new Date();
     sixWeeksAgo.setDate(sixWeeksAgo.getDate() - 42);
     
-    const chartData = await Invoice.aggregate([
-      { $match: { date: { $gte: sixWeeksAgo } } },
-      { 
-        $group: {
-          _id: { 
-            year: { $year: "$date" }, 
-            month: { $month: "$date" },
-            week: { $ceil: { $divide: [ { $dayOfMonth: "$date" }, 7 ] } },
-            type: "$type"
-          },
-          total: { $sum: "$amount" }
-        }
-      },
-      { $sort: { "_id.year": 1, "_id.month": 1, "_id.week": 1 } }
-    ]);
+    const recentInvoices = await prisma.invoice.findMany({
+      where: { date: { gte: sixWeeksAgo } }
+    });
+
+    // Aggregate in memory to avoid BigInt serialization issues with $queryRaw
+    const groups = {};
+    for (const inv of recentInvoices) {
+      const d = inv.date;
+      const year = d.getFullYear();
+      const month = d.getMonth() + 1;
+      const week = Math.ceil(d.getDate() / 7);
+      const key = `${year}-${month}-${week}-${inv.type}`;
+      
+      if (!groups[key]) {
+        groups[key] = {
+          _id: { year, month, week, type: inv.type },
+          total: 0
+        };
+      }
+      groups[key].total += inv.amount;
+    }
+
+    const chartData = Object.values(groups).sort((a, b) => {
+      if (a._id.year !== b._id.year) return a._id.year - b._id.year;
+      if (a._id.month !== b._id.month) return a._id.month - b._id.month;
+      return a._id.week - b._id.week;
+    });
 
     res.json({
       totalClients,
       outstandingBalance,
       lateClients,
       todayTransactions,
-      topDebtors,
-      recentTransactions,
+      topDebtors: topDebtors.map(c => ({
+        ...c,
+        _id: c.id,
+        initials: c.name.split(' ').slice(0, 2).map(w => w[0]).join(' ')
+      })),
+      recentTransactions: recentTransactions.map(inv => ({ ...inv, _id: inv.id })),
       chartData
     });
   } catch (err) {

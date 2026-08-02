@@ -4,8 +4,8 @@ const ExcelJS = require('exceljs');
 const PDFDocument = require('pdfkit');
 const fs = require('fs');
 const path = require('path');
-const Client = require('../models/Client');
-const Invoice = require('../models/Invoice');
+const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient();
 const { requireAuth } = require('../middleware/auth');
 
 // Apply auth middleware
@@ -19,10 +19,20 @@ const formatCurrency = (amount) => {
   }).format(amount);
 };
 
+// Helper to format date safely
+const formatDate = (d) => {
+  if (!d) return '-';
+  const date = new Date(d);
+  if (isNaN(date.getTime())) return '-';
+  return date.toLocaleDateString('ar-EG');
+};
+
 // GET /api/export/clients/excel - Export all clients
 router.get('/clients/excel', async (req, res) => {
   try {
-    const clients = await Client.find().sort({ name: 1 });
+    const clients = await prisma.client.findMany({
+      orderBy: { name: 'asc' }
+    });
     
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('العملاء', { views: [{ rightToLeft: true }] });
@@ -44,8 +54,8 @@ router.get('/clients/excel', async (req, res) => {
         name: client.name,
         phone: client.phone,
         balance: client.balance,
-        createdAt: client.createdAt ? client.createdAt.toLocaleDateString('ar-EG') : '-',
-        lastTransaction: client.updatedAt ? client.updatedAt.toLocaleDateString('ar-EG') : '-'
+        createdAt: formatDate(client.createdAt),
+        lastTransaction: formatDate(client.updatedAt)
       });
     });
 
@@ -63,7 +73,10 @@ router.get('/clients/excel', async (req, res) => {
 // GET /api/export/invoices/excel - Export invoices
 router.get('/invoices/excel', async (req, res) => {
   try {
-    const invoices = await Invoice.find().sort({ date: -1 }).populate('client');
+    const invoices = await prisma.invoice.findMany({
+      orderBy: { date: 'desc' },
+      include: { client: true }
+    });
     
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('الفواتير والمعاملات', { views: [{ rightToLeft: true }] });
@@ -82,7 +95,7 @@ router.get('/invoices/excel', async (req, res) => {
 
     invoices.forEach(inv => {
       worksheet.addRow({
-        date: inv.date ? inv.date.toLocaleDateString('ar-EG') : '-',
+        date: formatDate(inv.date),
         clientName: inv.clientName,
         clientPhone: inv.clientPhone || '-',
         type: inv.type === 'purchase' ? 'شراء' : 'دفع',

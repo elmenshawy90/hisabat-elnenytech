@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const Invoice = require('../models/Invoice');
-const Client = require('../models/Client');
+const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient();
 const { requireAuth } = require('../middleware/auth');
 
 // Apply auth middleware to all routes
@@ -14,21 +14,30 @@ router.get('/', async (req, res) => {
     const limit = parseInt(req.query.limit) || 20;
     const skip = (page - 1) * limit;
     
-    let query = {};
+    let where = {};
     
     // Filter by client ID if provided
     if (req.query.clientId) {
-      query.client = req.query.clientId;
+      where.clientId = parseInt(req.query.clientId);
     }
 
-    const total = await Invoice.countDocuments(query);
-    const invoices = await Invoice.find(query)
-      .sort({ date: -1, createdAt: -1 })
-      .skip(skip)
-      .limit(limit);
+    const total = await prisma.invoice.count({ where });
+    const invoices = await prisma.invoice.findMany({
+      where,
+      orderBy: [
+        { date: 'desc' },
+        { createdAt: 'desc' }
+      ],
+      skip,
+      take: limit
+    });
 
     res.json({
-      data: invoices,
+      data: invoices.map(inv => ({
+        ...inv,
+        _id: inv.id,
+        client: inv.clientId // For frontend compatibility
+      })),
       pagination: {
         page,
         limit,
@@ -45,62 +54,90 @@ router.get('/', async (req, res) => {
 // POST /api/invoices - Create new invoice
 router.post('/', async (req, res) => {
   try {
-    // If client ID is provided, verify it exists and populate name/phone
-    if (req.body.client) {
-      const client = await Client.findById(req.body.client);
+    const data = req.body;
+    let clientId;
+    let clientName;
+    let clientPhone;
+
+    // If client ID is provided, verify it exists
+    if (data.client) {
+      clientId = parseInt(data.client);
+      let client = await prisma.client.findUnique({ where: { id: clientId } });
+      
       if (!client) {
         return res.status(404).json({ error: 'العميل غير موجود' });
       }
       
-      if (req.body.clientPhone && req.body.clientPhone.trim() !== '') {
-        const newPhone = req.body.clientPhone.trim();
+      clientName = client.name;
+      clientPhone = client.phone;
+
+      if (data.clientPhone && data.clientPhone.trim() !== '') {
+        const newPhone = data.clientPhone.trim();
         const existingPhones = client.phone.split(' - ').map(p => p.trim());
         if (!existingPhones.includes(newPhone)) {
-          client.phone = client.phone + ' - ' + newPhone;
-          await client.save();
+          clientPhone = client.phone + ' - ' + newPhone;
+          // Update client phone
+          await prisma.client.update({
+            where: { id: clientId },
+            data: { phone: clientPhone }
+          });
         }
       }
-
-      req.body.clientName = client.name;
-      req.body.clientPhone = client.phone;
     } else {
       // Find or create client based on name if no ID provided (legacy support)
-      // This is less robust but keeps compatibility with the current frontend
-      let client = await Client.findOne({ name: req.body.clientName });
+      let client = await prisma.client.findFirst({ where: { name: data.clientName } });
       if (!client) {
-        client = new Client({
-          name: req.body.clientName,
-          phone: req.body.clientPhone || '0000000000'
+        client = await prisma.client.create({
+          data: {
+            name: data.clientName,
+            phone: data.clientPhone || '0000000000'
+          }
         });
-        await client.save();
       }
-      req.body.client = client._id;
+      clientId = client.id;
+      clientName = client.name;
+      clientPhone = client.phone;
     }
 
-    const invoice = new Invoice(req.body);
-    await invoice.save();
-
-    // Update client balance
-    const client = await Client.findById(invoice.client);
-    if (client) {
-      if (invoice.type === 'purchase') {
-        client.balance += invoice.amount;
-      } else if (invoice.type === 'payment') {
-        client.balance -= invoice.amount;
-      }
-      
-      // Update last transaction info
-      client.notes = invoice.details || (invoice.type === 'purchase' ? 'عملية شراء' : 'دفعة');
-      await client.save();
+    const amount = parseFloat(data.amount);
+    if (isNaN(amount) || amount <= 0) {
+      return res.status(400).json({ error: 'المبلغ يجب أن يكون أكبر من صفر' });
     }
 
-    res.status(201).json(invoice);
+    const amountChange = data.type === 'purchase' ? amount : (data.type === 'payment' ? -amount : 0);
+    const newNotes = data.details || (data.type === 'purchase' ? 'عملية شراء' : 'دفعة');
+
+    // Use transaction to create invoice and update client balance
+    const [invoice, updatedClient] = await prisma.$transaction([
+      prisma.invoice.create({
+        data: {
+          clientId,
+          clientName,
+          clientPhone,
+          type: data.type,
+          amount,
+          details: data.details,
+          address: data.address || '-',
+          status: data.status || 'pending',
+          date: data.date ? new Date(data.date) : new Date()
+        }
+      }),
+      prisma.client.update({
+        where: { id: clientId },
+        data: {
+          balance: { increment: amountChange },
+          notes: newNotes
+        }
+      })
+    ]);
+
+    res.status(201).json({
+      ...invoice,
+      _id: invoice.id,
+      client: invoice.clientId // For frontend compatibility
+    });
   } catch (err) {
     console.error(err);
-    if (err.name === 'ValidationError') {
-      const messages = Object.values(err.errors).map(val => val.message);
-      return res.status(400).json({ error: messages.join(', ') });
-    }
     res.status(500).json({ error: 'فشل في إنشاء الفاتورة' });
   }
 });
@@ -108,23 +145,25 @@ router.post('/', async (req, res) => {
 // DELETE /api/invoices/:id - Delete invoice
 router.delete('/:id', async (req, res) => {
   try {
-    const invoice = await Invoice.findById(req.params.id);
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) return res.status(400).json({ error: 'معرف غير صالح' });
+
+    const invoice = await prisma.invoice.findUnique({ where: { id } });
     if (!invoice) {
       return res.status(404).json({ error: 'الفاتورة غير موجودة' });
     }
 
-    // Revert client balance
-    const client = await Client.findById(invoice.client);
-    if (client) {
-      if (invoice.type === 'purchase') {
-        client.balance -= invoice.amount;
-      } else if (invoice.type === 'payment') {
-        client.balance += invoice.amount;
-      }
-      await client.save();
-    }
+    const amountChange = invoice.type === 'purchase' ? -invoice.amount : (invoice.type === 'payment' ? invoice.amount : 0);
 
-    await Invoice.findByIdAndDelete(req.params.id);
+    // Use transaction to delete invoice and revert client balance
+    await prisma.$transaction([
+      prisma.invoice.delete({ where: { id } }),
+      prisma.client.update({
+        where: { id: invoice.clientId },
+        data: { balance: { increment: amountChange } }
+      })
+    ]);
+
     res.json({ message: 'تم حذف الفاتورة بنجاح' });
   } catch (err) {
     console.error(err);
