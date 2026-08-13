@@ -21,287 +21,314 @@
 
 <body class="text-on-surface bg-background min-h-screen flex max-w-[100vw] overflow-x-hidden">
     <!-- SideNavBar -->
-<%- include('partials/aside', { active: 'invoices' }) %>
-    <!-- Main Canvas -->
-    <main class="flex-1 min-w-0 md:mr-64 min-h-screen flex flex-col pb-24 md:pb-0">
-        <!-- Content Area -->
-        <div class="flex-1 p-container-margin md:p-xl max-w-5xl mx-auto w-full">
-        <!-- TopNavBar (Mobile & Tablet) -->
-        <%- include('partials/header', { title: 'الفواتير' }) %>
-            <!-- Page Header -->
-            <div
-                class="flex flex-col md:flex-row justify-between items-start md:items-center mb-xl gap-md mt-md">
-                <div class="text-right">
-                    <h2
-                        class="font-display-lg-mobile md:font-display-lg text-display-lg-mobile md:text-display-lg text-on-surface mb-xs">
-                        سجل الفواتير</h2>
-                    <p class="text-secondary font-body-md text-body-md">إدارة وتتبع جميع الفواتير والمعاملات المالية</p>
-                </div>
-                <div class="flex gap-sm">
-                    <a href="/api/export/invoices/excel"
-                        class="bg-surface-container-low text-on-surface rounded-full px-md py-sm md:px-lg md:py-md font-label-lg text-label-lg md:font-headline-sm md:text-headline-sm hover:bg-surface-container transition-colors flex flex-row items-center justify-center gap-sm shadow-sm border border-outline-variant">
-                        <span class="material-symbols-outlined text-xl md:text-2xl">download</span>
-                        تصدير
-                    </a>
-                    <button
-                        class="bg-primary text-on-primary rounded-full px-md py-sm md:px-lg md:py-md font-label-lg text-label-lg md:font-headline-sm md:text-headline-sm hover:opacity-90 transition-opacity flex flex-row items-center justify-center gap-sm shadow-sm"
-                        onclick="openModal()">
-                        <span class="material-symbols-outlined text-xl md:text-2xl">add</span>
-                        إضافة فاتورة
-                    </button>
-                </div>
-            </div>
-            <!-- Search and Filter -->
-            <div
-                class="bg-white rounded-xl border border-slate-200 shadow-sm p-md mb-lg flex flex-col md:flex-row gap-md items-center">
-                <div class="relative flex-1 w-full text-right">
-                    <span
-                        class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline">search</span>
-                    <input
-                        class="w-full h-12 pr-10 pl-md rounded-xl bg-surface-container-low border border-outline-variant form-input-focus transition-all text-right"
-                        id="searchInput" onkeyup="filterInvoices()" placeholder="ابحث باسم العميل أو رقم الجوال..."
-                        type="text" />
-                </div>
-            </div>
-            <!-- Invoice List (Table) -->
-            <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                <div class="overflow-x-auto w-full max-w-[100vw]">
-                    <table class="w-full text-right border-collapse whitespace-nowrap" dir="rtl">
-                        <thead class="bg-surface-container-low border-b border-outline-variant">
-                            <tr>
-                                <th class="px-lg py-md font-label-md text-label-md text-secondary">العميل</th>
-                                <th class="px-lg py-md font-label-md text-label-md text-secondary">المبلغ المستحق</th>
-                                <th class="px-lg py-md font-label-md text-label-md text-secondary" dir="ltr">رقم الهاتف</th>
-                                <th class="px-lg py-md font-label-md text-label-md text-secondary">تاريخ الفاتورة</th>
-                                <th class="p-md font-label-md text-on-surface-variant font-bold">التفاصيل</th>
-                                <th class="p-md font-label-md text-on-surface-variant font-bold text-center">الإجراءات
-                                </th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-outline-variant" id="invoiceList">
-                            <tr>
-                                <td colspan="6" class="p-xl text-center text-secondary">جاري التحميل...</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-                <div class="hidden p-xl text-center text-secondary font-body-md" id="noResults">
-                    لا توجد فواتير مطابقة للبحث
-                </div>
-            </div>
-        </div>
-        <!-- Mobile Bottom NavBar -->
-        <%- include('partials/bottom-nav', { active: 'invoices' }) %>
-    </main>
-
-    <!-- Modal -->
-    <div class="fixed inset-0 z-[100] hidden items-center justify-center bg-black/50 p-4" id="invoiceModal">
-        <div class="bg-white rounded-xl shadow-lg w-full max-w-3xl max-h-[90vh] overflow-y-auto p-md md:p-xl">
-            <div class="flex flex-row justify-between items-center mb-lg border-b border-outline-variant pb-sm">
-                <h2 class="font-headline-md text-headline-md font-bold text-on-surface">إضافة فاتورة جديدة</h2>
-                <button class="text-secondary hover:text-on-surface" onclick="closeModal()" type="button">
-                    <span class="material-symbols-outlined">close</span>
-                </button>
-            </div>
-            <p class="text-[13px] text-secondary mb-md -mt-sm">الحقول المشار إليها بنجمة (<span
-                    class="text-error font-bold">*</span>) هي حقول إجبارية</p>
-            <form class="space-y-lg" id="invoiceForm" novalidate>
-                <input type="hidden" id="clientId">
-                
-                <!-- Client Summary Card (Hidden initially) -->
-                <div id="clientSummaryCard" class="hidden bg-primary/10 border border-primary/20 rounded-xl p-md mb-md flex flex-row items-center justify-between">
-                    <div class="flex flex-col gap-xs">
-                        <div class="flex items-center gap-sm">
-                            <span class="material-symbols-outlined text-primary text-[20px]">account_circle</span>
-                            <span class="font-body-md text-on-surface font-bold">عميل موجود بالخزينة</span>
+    <%- include('partials/aside', { active: 'invoices' }) %>
+        <!-- Main Canvas -->
+        <main class="flex-1 min-w-0 md:mr-64 min-h-screen flex flex-col pb-24 md:pb-0">
+            <!-- Content Area -->
+            <div class="flex-1 p-container-margin md:p-xl max-w-5xl mx-auto w-full">
+                <!-- TopNavBar (Mobile & Tablet) -->
+                <%- include('partials/header', { title: 'الفواتير' }) %>
+                    <!-- Page Header -->
+                    <div
+                        class="flex flex-col md:flex-row justify-between items-start md:items-center mb-xl gap-md mt-md">
+                        <div class="text-right">
+                            <h2
+                                class="font-display-lg-mobile md:font-display-lg text-display-lg-mobile md:text-display-lg text-on-surface mb-xs">
+                                سجل الفواتير</h2>
+                            <p class="text-secondary font-body-md text-body-md">إدارة وتتبع جميع الفواتير والمعاملات
+                                المالية</p>
                         </div>
-                        <div class="text-sm text-secondary mr-7">
-                            <p>الرصيد: <span id="summaryBalance" class="font-bold dir-ltr inline-block">0</span></p>
-                            <p>آخر معاملة: <span id="summaryLastTransaction">--</span></p>
+                        <div class="flex gap-sm">
+                            <a href="/api/export/invoices/excel"
+                                class="bg-surface-container-low text-on-surface rounded-full px-md py-sm md:px-lg md:py-md font-label-lg text-label-lg md:font-headline-sm md:text-headline-sm hover:bg-surface-container transition-colors flex flex-row items-center justify-center gap-sm shadow-sm border border-outline-variant">
+                                <span class="material-symbols-outlined text-xl md:text-2xl">download</span>
+                                تصدير
+                            </a>
+                            <button
+                                class="bg-primary text-on-primary rounded-full px-md py-sm md:px-lg md:py-md font-label-lg text-label-lg md:font-headline-sm md:text-headline-sm hover:opacity-90 transition-opacity flex flex-row items-center justify-center gap-sm shadow-sm"
+                                onclick="openModal()">
+                                <span class="material-symbols-outlined text-xl md:text-2xl">add</span>
+                                إضافة فاتورة
+                            </button>
                         </div>
                     </div>
-                    <a href="#" id="summaryProfileLink" target="_blank" class="p-sm text-primary hover:bg-primary/10 rounded-lg transition-colors flex items-center justify-center" title="فتح ملف العميل">
-                        <span class="material-symbols-outlined">open_in_new</span>
-                    </a>
-                </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-lg">
-                    <div class="flex flex-col gap-xs relative">
-                        <label class="font-label-md text-label-md text-on-surface-variant mb-xs">اسم العميل <span
-                                class="text-error">*</span></label>
-                        <div class="relative">
+                    <!-- Search and Filter -->
+                    <div
+                        class="bg-white rounded-xl border border-slate-200 shadow-sm p-md mb-lg flex flex-col md:flex-row gap-md items-center">
+                        <div class="relative flex-1 w-full text-right">
                             <span
-                                class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline">person</span>
+                                class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline">search</span>
                             <input
                                 class="w-full h-12 pr-10 pl-md rounded-xl bg-surface-container-low border border-outline-variant form-input-focus transition-all text-right"
-                                id="clientName" placeholder="مثال: أحمد محمد علي" type="text" required autocomplete="off" />
-                        </div>
-                        <!-- Dropdown -->
-                        <div id="clientDropdown" class="hidden absolute top-[72px] left-0 right-0 mt-1 bg-surface border border-outline-variant rounded-xl shadow-lg z-[110] max-h-[300px] overflow-y-auto custom-scrollbar">
+                                id="searchInput" onkeyup="filterInvoices()"
+                                placeholder="ابحث باسم العميل أو رقم الجوال..." type="text" />
                         </div>
                     </div>
-                    <div class="flex flex-col gap-xs">
-                        <label class="font-label-md text-label-md text-on-surface-variant mb-xs">رقم الجوال</label>
-                        <div class="relative">
-                            <span
-                                class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline">call</span>
-                            <input
-                                class="w-full h-12 pr-10 pl-md rounded-xl bg-surface-container-low border border-outline-variant form-input-focus transition-all text-right"
-                                id="mobileNumber" placeholder="01XXXXXXXXX" type="tel" />
+                    <!-- Invoice List (Table) -->
+                    <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                        <div class="overflow-x-auto w-full max-w-[100vw]">
+                            <table class="w-full text-right border-collapse whitespace-nowrap" dir="rtl">
+                                <thead class="bg-surface-container-low border-b border-outline-variant">
+                                    <tr>
+                                        <th class="px-lg py-md font-label-md text-label-md text-secondary">العميل</th>
+                                        <th class="px-lg py-md font-label-md text-label-md text-secondary">المبلغ
+                                            المستحق</th>
+                                        <th class="px-lg py-md font-label-md text-label-md text-secondary" dir="ltr">رقم
+                                            الهاتف</th>
+                                        <th class="px-lg py-md font-label-md text-label-md text-secondary">تاريخ
+                                            الفاتورة</th>
+                                        <th class="p-md font-label-md text-on-surface-variant font-bold">التفاصيل</th>
+                                        <th class="p-md font-label-md text-on-surface-variant font-bold text-center">
+                                            الإجراءات
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-outline-variant" id="invoiceList">
+                                    <tr>
+                                        <td colspan="6" class="p-xl text-center text-secondary">جاري التحميل...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
                         </div>
-                        <p id="mobileNumberError" class="hidden text-error text-[11px] mt-1 pr-1 font-bold">يجب إدخال
-                            أرقام فقط</p>
-                    </div>
-                    <div class="flex flex-col gap-xs">
-                        <label class="font-label-md text-label-md text-on-surface-variant mb-xs">تاريخ الفاتورة <span
-                                class="text-error">*</span></label>
-                        <div class="relative">
-                            <span
-                                class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline pointer-events-none">calendar_today</span>
-                            <input
-                                class="w-full h-12 pr-10 pl-md rounded-xl bg-surface-container-low border border-outline-variant form-input-focus transition-all text-right cursor-pointer"
-                                id="invoiceDate" placeholder="اختر التاريخ" type="text" required />
-                        </div>
-                    </div>
-                    <div class="flex flex-col gap-xs">
-                        <label class="font-label-md text-label-md text-on-surface-variant mb-xs">المبلغ المستحق (جنيه)
-                            <span class="text-error">*</span></label>
-                        <div class="relative">
-                            <span
-                                class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline">payments</span>
-                            <input
-                                class="w-full h-12 pr-10 pl-md rounded-xl bg-surface-container-low border border-outline-variant form-input-focus transition-all text-right font-bold text-primary"
-                                id="invoiceAmount" placeholder="0.00" type="number" step="0.01" required />
+                        <div class="hidden p-xl text-center text-secondary font-body-md" id="noResults">
+                            لا توجد فواتير مطابقة للبحث
                         </div>
                     </div>
-                    <div class="md:col-span-2 flex flex-col gap-xs">
-                        <label class="font-label-md text-label-md text-on-surface-variant mb-xs">عنوان التوصيل <span class="text-error">*</span></label>
-                        <div class="relative">
-                            <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline">location_on</span>
-                            <input class="w-full h-12 pr-10 pl-md rounded-xl bg-surface-container-low border border-outline-variant form-input-focus transition-all text-right" id="deliveryAddress" placeholder="الحي، الشارع، رقم المبنى..." type="text" required />
-                        </div>
-                    </div>
-                    <div class="md:col-span-2 flex flex-col gap-xs">
-                        <label class="font-label-md text-label-md text-on-surface-variant mb-xs">التفاصيل / المشتريات <span class="text-error">*</span></label>
-                        <div class="relative">
-                            <span class="material-symbols-outlined absolute right-3 top-4 text-outline">inventory_2</span>
-                            <textarea class="w-full pr-10 pl-md pt-3 rounded-xl bg-surface-container-low border border-outline-variant form-input-focus transition-all text-right resize-none" id="invoiceDetails" placeholder="مثال: 1 طن أسمنت مقاوم، 500 حجر بلوك مقاس 20..." rows="4" required></textarea>
-                        </div>
-                    </div>
-                </div>
-                <div
-                    class="flex flex-col md:flex-row items-center gap-md pt-lg border-t border-outline-variant mt-xl">
-                    <button
-                        class="w-full md:w-auto min-w-[160px] bg-primary text-on-primary h-14 rounded-full font-headline-sm text-headline-sm flex items-center justify-center gap-sm hover:opacity-90 active:scale-95 transition-all"
-                        type="submit">
-                        <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">save</span>
-                        حفظ الفاتورة
-                    </button>
-                    <button
-                        class="w-full md:w-auto min-w-[160px] bg-white border border-outline-variant text-on-surface h-14 rounded-full font-headline-sm text-headline-sm flex items-center justify-center gap-sm hover:bg-surface-container-low active:scale-95 transition-all"
-                        onclick="closeModal()" type="button">
-                        إلغاء
+            </div>
+            <!-- Mobile Bottom NavBar -->
+            <%- include('partials/bottom-nav', { active: 'invoices' }) %>
+        </main>
+
+        <!-- Modal -->
+        <div class="fixed inset-0 z-[100] hidden items-center justify-center bg-black/50 p-4" id="invoiceModal">
+            <div class="bg-white rounded-xl shadow-lg w-full max-w-3xl max-h-[90vh] overflow-y-auto p-md md:p-xl">
+                <div class="flex flex-row justify-between items-center mb-lg border-b border-outline-variant pb-sm">
+                    <h2 class="font-headline-md text-headline-md font-bold text-on-surface">إضافة فاتورة جديدة</h2>
+                    <button class="text-secondary hover:text-on-surface" onclick="closeModal()" type="button">
+                        <span class="material-symbols-outlined">close</span>
                     </button>
                 </div>
-            </form>
-    </div>
-</div>
+                <p class="text-[13px] text-secondary mb-md -mt-sm">الحقول المشار إليها بنجمة (<span
+                        class="text-error font-bold">*</span>) هي حقول إجبارية</p>
+                <form class="space-y-lg" id="invoiceForm" novalidate>
+                    <input type="hidden" id="clientId">
 
-<!-- Transaction Details Modal -->
-<div class="fixed inset-0 z-[100] hidden items-center justify-center bg-black/50 p-4" id="transactionDetailsModal">
-    <div class="bg-surface rounded-xl shadow-lg w-full max-w-lg max-h-[90vh] overflow-y-auto p-md md:p-xl">
-        <div class="flex flex-row justify-between items-center mb-lg border-b border-outline-variant pb-sm">
-            <h2 class="font-headline-md text-headline-md font-bold text-on-surface">تفاصيل المعاملة</h2>
-            <button class="text-secondary hover:text-on-surface" onclick="closeTransactionDetails()" type="button">
-                <span class="material-symbols-outlined">close</span>
-            </button>
+                    <!-- Client Summary Card (Hidden initially) -->
+                    <div id="clientSummaryCard"
+                        class="hidden bg-primary/10 border border-primary/20 rounded-xl p-md mb-md flex flex-row items-center justify-between">
+                        <div class="flex flex-col gap-xs">
+                            <div class="flex items-center gap-sm">
+                                <span class="material-symbols-outlined text-primary text-[20px]">account_circle</span>
+                                <span class="font-body-md text-on-surface font-bold">عميل موجود بالخزينة</span>
+                            </div>
+                            <div class="text-sm text-secondary mr-7">
+                                <p>الرصيد: <span id="summaryBalance" class="font-bold dir-ltr inline-block">0</span></p>
+                                <p>آخر معاملة: <span id="summaryLastTransaction">--</span></p>
+                            </div>
+                        </div>
+                        <a href="#" id="summaryProfileLink" target="_blank"
+                            class="p-sm text-primary hover:bg-primary/10 rounded-lg transition-colors flex items-center justify-center"
+                            title="فتح ملف العميل">
+                            <span class="material-symbols-outlined">open_in_new</span>
+                        </a>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-lg">
+                        <div class="flex flex-col gap-xs relative">
+                            <label class="font-label-md text-label-md text-on-surface-variant mb-xs">اسم العميل <span
+                                    class="text-error">*</span></label>
+                            <div class="relative">
+                                <span
+                                    class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline">person</span>
+                                <input
+                                    class="w-full h-12 pr-10 pl-md rounded-xl bg-surface-container-low border border-outline-variant form-input-focus transition-all text-right"
+                                    id="clientName" placeholder="مثال: أحمد محمد علي" type="text" required
+                                    autocomplete="off" />
+                            </div>
+                            <!-- Dropdown -->
+                            <div id="clientDropdown"
+                                class="hidden absolute top-[72px] left-0 right-0 mt-1 bg-surface border border-outline-variant rounded-xl shadow-lg z-[110] max-h-[300px] overflow-y-auto custom-scrollbar">
+                            </div>
+                        </div>
+                        <div class="flex flex-col gap-xs">
+                            <label class="font-label-md text-label-md text-on-surface-variant mb-xs">رقم الجوال</label>
+                            <div class="relative">
+                                <span
+                                    class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline">call</span>
+                                <input
+                                    class="w-full h-12 pr-10 pl-md rounded-xl bg-surface-container-low border border-outline-variant form-input-focus transition-all text-right"
+                                    id="mobileNumber" placeholder="01XXXXXXXXX" type="tel" />
+                            </div>
+                            <p id="mobileNumberError" class="hidden text-error text-[11px] mt-1 pr-1 font-bold">يجب
+                                إدخال
+                                أرقام فقط</p>
+                        </div>
+                        <div class="flex flex-col gap-xs">
+                            <label class="font-label-md text-label-md text-on-surface-variant mb-xs">تاريخ الفاتورة
+                                <span class="text-error">*</span></label>
+                            <div class="relative">
+                                <span
+                                    class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline pointer-events-none">calendar_today</span>
+                                <input
+                                    class="w-full h-12 pr-10 pl-md rounded-xl bg-surface-container-low border border-outline-variant form-input-focus transition-all text-right cursor-pointer"
+                                    id="invoiceDate" placeholder="اختر التاريخ" type="text" required />
+                            </div>
+                        </div>
+                        <div class="flex flex-col gap-xs">
+                            <label class="font-label-md text-label-md text-on-surface-variant mb-xs">المبلغ المستحق
+                                (جنيه)
+                                <span class="text-error">*</span></label>
+                            <div class="relative">
+                                <span
+                                    class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline">payments</span>
+                                <input
+                                    class="w-full h-12 pr-10 pl-md rounded-xl bg-surface-container-low border border-outline-variant form-input-focus transition-all text-right font-bold text-primary"
+                                    id="invoiceAmount" placeholder="0.00" type="number" step="0.01" required />
+                            </div>
+                        </div>
+                        <div class="md:col-span-2 flex flex-col gap-xs">
+                            <label class="font-label-md text-label-md text-on-surface-variant mb-xs">عنوان التوصيل <span
+                                    class="text-error">*</span></label>
+                            <div class="relative">
+                                <span
+                                    class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline">location_on</span>
+                                <input
+                                    class="w-full h-12 pr-10 pl-md rounded-xl bg-surface-container-low border border-outline-variant form-input-focus transition-all text-right"
+                                    id="deliveryAddress" placeholder="الحي، الشارع، رقم المبنى..." type="text"
+                                    required />
+                            </div>
+                        </div>
+                        <div class="md:col-span-2 flex flex-col gap-xs">
+                            <label class="font-label-md text-label-md text-on-surface-variant mb-xs">التفاصيل /
+                                المشتريات <span class="text-error">*</span></label>
+                            <div class="relative">
+                                <span
+                                    class="material-symbols-outlined absolute right-3 top-4 text-outline">inventory_2</span>
+                                <textarea
+                                    class="w-full pr-10 pl-md pt-3 rounded-xl bg-surface-container-low border border-outline-variant form-input-focus transition-all text-right resize-none"
+                                    id="invoiceDetails" placeholder="مثال: 1 طن أسمنت مقاوم، 500 حجر بلوك مقاس 20..."
+                                    rows="4" required></textarea>
+                            </div>
+                        </div>
+                    </div>
+                    <div
+                        class="flex flex-col md:flex-row items-center gap-md pt-lg border-t border-outline-variant mt-xl">
+                        <button
+                            class="w-full md:w-auto min-w-[160px] bg-primary text-on-primary h-14 rounded-full font-headline-sm text-headline-sm flex items-center justify-center gap-sm hover:opacity-90 active:scale-95 transition-all"
+                            type="submit">
+                            <span class="material-symbols-outlined"
+                                style="font-variation-settings: 'FILL' 1;">save</span>
+                            حفظ الفاتورة
+                        </button>
+                        <button
+                            class="w-full md:w-auto min-w-[160px] bg-white border border-outline-variant text-on-surface h-14 rounded-full font-headline-sm text-headline-sm flex items-center justify-center gap-sm hover:bg-surface-container-low active:scale-95 transition-all"
+                            onclick="closeModal()" type="button">
+                            إلغاء
+                        </button>
+                    </div>
+                </form>
+            </div>
         </div>
-        <div class="space-y-md">
-            <div class="flex justify-between border-b border-outline-variant pb-xs">
-                <span class="text-secondary font-label-md">تاريخ المعاملة</span>
-                <span class="font-body-md text-on-surface font-bold" id="tdDate"></span>
-            </div>
-            <div class="flex justify-between border-b border-outline-variant pb-xs">
-                <span class="text-secondary font-label-md">العميل</span>
-                <span class="font-body-md text-on-surface font-bold" id="tdClient"></span>
-            </div>
-            <div class="flex justify-between border-b border-outline-variant pb-xs">
-                <span class="text-secondary font-label-md">نوع المعاملة</span>
-                <span class="font-body-md text-on-surface font-bold" id="tdType"></span>
-            </div>
-            <div class="flex justify-between border-b border-outline-variant pb-xs">
-                <span class="text-secondary font-label-md">المبلغ المستحق</span>
-                <span class="font-body-md font-bold" id="tdAmount"></span>
-            </div>
-            <div class="flex flex-col gap-xs border-b border-outline-variant pb-xs">
-                <span class="text-secondary font-label-md">عنوان التوصيل</span>
-                <span class="font-body-md text-on-surface" id="tdAddress"></span>
-            </div>
-            <div class="flex flex-col gap-xs pb-xs">
-                <span class="text-secondary font-label-md">التفاصيل / المشتريات</span>
-                <span class="font-body-md text-on-surface whitespace-pre-wrap" id="tdNotes"></span>
+
+        <!-- Transaction Details Modal -->
+        <div class="fixed inset-0 z-[100] hidden items-center justify-center bg-black/50 p-4"
+            id="transactionDetailsModal">
+            <div class="bg-surface rounded-xl shadow-lg w-full max-w-lg max-h-[90vh] overflow-y-auto p-md md:p-xl">
+                <div class="flex flex-row justify-between items-center mb-lg border-b border-outline-variant pb-sm">
+                    <h2 class="font-headline-md text-headline-md font-bold text-on-surface">تفاصيل المعاملة</h2>
+                    <button class="text-secondary hover:text-on-surface" onclick="closeTransactionDetails()"
+                        type="button">
+                        <span class="material-symbols-outlined">close</span>
+                    </button>
+                </div>
+                <div class="space-y-md">
+                    <div class="flex justify-between border-b border-outline-variant pb-xs">
+                        <span class="text-secondary font-label-md">تاريخ المعاملة</span>
+                        <span class="font-body-md text-on-surface font-bold" id="tdDate"></span>
+                    </div>
+                    <div class="flex justify-between border-b border-outline-variant pb-xs">
+                        <span class="text-secondary font-label-md">العميل</span>
+                        <span class="font-body-md text-on-surface font-bold" id="tdClient"></span>
+                    </div>
+                    <div class="flex justify-between border-b border-outline-variant pb-xs">
+                        <span class="text-secondary font-label-md">نوع المعاملة</span>
+                        <span class="font-body-md text-on-surface font-bold" id="tdType"></span>
+                    </div>
+                    <div class="flex justify-between border-b border-outline-variant pb-xs">
+                        <span class="text-secondary font-label-md">المبلغ المستحق</span>
+                        <span class="font-body-md font-bold" id="tdAmount"></span>
+                    </div>
+                    <div class="flex flex-col gap-xs border-b border-outline-variant pb-xs">
+                        <span class="text-secondary font-label-md">عنوان التوصيل</span>
+                        <span class="font-body-md text-on-surface" id="tdAddress"></span>
+                    </div>
+                    <div class="flex flex-col gap-xs pb-xs">
+                        <span class="text-secondary font-label-md">التفاصيل / المشتريات</span>
+                        <span class="font-body-md text-on-surface whitespace-pre-wrap" id="tdNotes"></span>
+                    </div>
+                </div>
+                <div class="pt-md mt-lg text-center">
+                    <button
+                        class="bg-surface-container-low text-on-surface px-xl rounded-full py-sm font-label-md hover:bg-surface-container transition-colors"
+                        onclick="closeTransactionDetails()" type="button">إغلاق</button>
+                </div>
             </div>
         </div>
-        <div class="pt-md mt-lg text-center">
-            <button class="bg-surface-container-low text-on-surface px-xl rounded-full py-sm font-label-md hover:bg-surface-container transition-colors" onclick="closeTransactionDetails()" type="button">إغلاق</button>
         </div>
-    </div>
-</div>
-    </div>
 
-    <script src="/js/shared-ui.js"></script>
-    <script>
-        let allInvoices = [];
-        let allClientsList = [];
+        <script src="/js/shared-ui.js"></script>
+        <script>
+            let allInvoices = [];
+            let allClientsList = [];
 
-        async function loadClients() {
-            try {
-                const res = await fetch('/api/clients');
-                const data = await res.json();
-                allClientsList = data.data || [];
-            } catch (err) {
-                console.error('Failed to load clients:', err);
+            async function loadClients() {
+                try {
+                    const res = await fetch('/api/clients');
+                    const data = await res.json();
+                    allClientsList = data.data || [];
+                } catch (err) {
+                    console.error('Failed to load clients:', err);
+                }
             }
-        }
 
-        async function loadInvoices() {
-            const user = await checkAuth();
-            if (!user) return;
+            async function loadInvoices() {
+                const user = await checkAuth();
+                if (!user) return;
 
-            // Update user display names
-            document.querySelectorAll('.user-display-name').forEach(el => el.textContent = user.displayName || user.username);
-            document.querySelectorAll('.user-role-name').forEach(el => el.textContent = user.role === 'admin' ? 'المدير' : 'مستخدم');
+                // Update user display names
+                document.querySelectorAll('.user-display-name').forEach(el => el.textContent = user.displayName || user.username);
+                document.querySelectorAll('.user-role-name').forEach(el => el.textContent = user.role === 'admin' ? 'المدير' : 'مستخدم');
 
-            // Setup Validation
-            setupPhoneValidation('mobileNumber', 'mobileNumberError');
+                // Setup Validation
+                setupPhoneValidation('mobileNumber', 'mobileNumberError');
 
-            // Setup Calendar
-            flatpickr("#invoiceDate", {
-                locale: "ar",
-                defaultDate: "today",
-                dateFormat: "Y-m-d",
-                disableMobile: true
-            });
+                // Setup Calendar
+                flatpickr("#invoiceDate", {
+                    locale: "ar",
+                    defaultDate: "today",
+                    dateFormat: "Y-m-d",
+                    disableMobile: true
+                });
 
-            try {
-                const res = await fetch('/api/invoices');
-                const responseData = await res.json();
-                allInvoices = responseData.data || [];
-                renderInvoices(allInvoices);
-            } catch (err) {
-                console.error('Failed to load invoices:', err);
-                showToast('فشل في تحميل الفواتير', 'error');
+                try {
+                    const res = await fetch('/api/invoices');
+                    const responseData = await res.json();
+                    allInvoices = responseData.data || [];
+                    renderInvoices(allInvoices);
+                } catch (err) {
+                    console.error('Failed to load invoices:', err);
+                    showToast('فشل في تحميل الفواتير', 'error');
+                }
             }
-        }
 
-        function renderInvoices(invoices) {
-            const tbody = document.getElementById('invoiceList');
-            const query = document.getElementById('searchInput').value;
-            if (invoices.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" class="p-xl text-center text-secondary">لا توجد فواتير بعد</td></tr>';
-                return;
-            }
-            tbody.innerHTML = invoices.map(inv => `
+            function renderInvoices(invoices) {
+                const tbody = document.getElementById('invoiceList');
+                const query = document.getElementById('searchInput').value;
+                if (invoices.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" class="p-xl text-center text-secondary">لا توجد فواتير بعد</td></tr>';
+                    return;
+                }
+                tbody.innerHTML = invoices.map(inv => `
         <tr class="invoice-item cursor-pointer hover:bg-primary/5 transition-colors group" onclick="openTransactionDetails(${inv._id})">
             <td class="p-md font-body-md text-on-surface client-name">${highlightArabic(inv.clientName, query)}</td>
             <td class="p-md font-body-md font-bold ${inv.type === 'payment' ? 'text-green-600' : 'text-primary'}">${inv.type === 'payment' ? '-' : ''}${formatCurrency(inv.amount)}</td>
@@ -315,231 +342,231 @@
             </td>
         </tr>
     `).join('');
-        }
+            }
 
-        // Search/Filter
-        function filterInvoices() {
-            const filter = normalizeArabic(document.getElementById('searchInput').value);
-            const filtered = allInvoices.filter(inv =>
-                normalizeArabic(inv.clientName).includes(filter) ||
-                (inv.clientPhone && inv.clientPhone.includes(filter))
-            );
-            renderInvoices(filtered);
-            document.getElementById('noResults').classList.toggle('hidden', filtered.length > 0);
-        }
+            // Search/Filter
+            function filterInvoices() {
+                const filter = normalizeArabic(document.getElementById('searchInput').value);
+                const filtered = allInvoices.filter(inv =>
+                    normalizeArabic(inv.clientName).includes(filter) ||
+                    (inv.clientPhone && inv.clientPhone.includes(filter))
+                );
+                renderInvoices(filtered);
+                document.getElementById('noResults').classList.toggle('hidden', filtered.length > 0);
+            }
 
-        // Delete invoice
-        async function deleteInvoice(id) {
-            const confirmed = await showConfirm('هل أنت متأكد من حذف هذه الفاتورة؟');
-            if (!confirmed) return;
-            try {
-                const res = await fetch(`/api/invoices/${id}`, { method: 'DELETE' });
-                if (res.ok) {
-                    showToast('تم حذف الفاتورة بنجاح', 'success');
-                    loadInvoices();
-                } else {
+            // Delete invoice
+            async function deleteInvoice(id) {
+                const confirmed = await showConfirm('هل أنت متأكد من حذف هذه الفاتورة؟');
+                if (!confirmed) return;
+                try {
+                    const res = await fetch(`/api/invoices/${id}`, { method: 'DELETE' });
+                    if (res.ok) {
+                        showToast('تم حذف الفاتورة بنجاح', 'success');
+                        loadInvoices();
+                    } else {
+                        showToast('فشل في حذف الفاتورة', 'error');
+                    }
+                } catch (err) {
                     showToast('فشل في حذف الفاتورة', 'error');
                 }
-            } catch (err) {
-                showToast('فشل في حذف الفاتورة', 'error');
             }
-        }
 
-        // Transaction Details Modal
-        function openTransactionDetails(id) {
-            const inv = allInvoices.find(i => String(i._id) === String(id));
-            if (!inv) return;
-            
-            document.getElementById('tdDate').textContent = formatDate(inv.date);
-            document.getElementById('tdClient').textContent = inv.clientName;
-            document.getElementById('tdType').textContent = inv.type === 'payment' ? 'دفعة' : 'عملية شراء';
-            
-            const amountEl = document.getElementById('tdAmount');
-            amountEl.textContent = formatCurrency(inv.amount);
-            amountEl.className = `font-body-md font-bold ${inv.type === 'payment' ? 'text-green-600' : 'text-primary'}`;
-            
-            document.getElementById('tdAddress').textContent = inv.address || '-';
-            document.getElementById('tdNotes').textContent = inv.details || '-';
-            
-            const modal = document.getElementById('transactionDetailsModal');
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
-            document.body.style.overflow = 'hidden';
-        }
+            // Transaction Details Modal
+            function openTransactionDetails(id) {
+                const inv = allInvoices.find(i => String(i._id) === String(id));
+                if (!inv) return;
 
-        function closeTransactionDetails() {
-            const modal = document.getElementById('transactionDetailsModal');
-            modal.classList.add('hidden');
-            modal.classList.remove('flex');
-            document.body.style.overflow = '';
-        }
+                document.getElementById('tdDate').textContent = formatDate(inv.date);
+                document.getElementById('tdClient').textContent = inv.clientName;
+                document.getElementById('tdType').textContent = inv.type === 'payment' ? 'دفعة' : 'عملية شراء';
 
-        document.getElementById('transactionDetailsModal').addEventListener('click', function(e) {
-            if (e.target === this) closeTransactionDetails();
-        });
+                const amountEl = document.getElementById('tdAmount');
+                amountEl.textContent = formatCurrency(inv.amount);
+                amountEl.className = `font-body-md font-bold ${inv.type === 'payment' ? 'text-green-600' : 'text-primary'}`;
 
-        // Modal functions
-        function openModal() {
-            const modal = document.getElementById('invoiceModal');
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
-            document.body.style.overflow = 'hidden';
-            document.getElementById('invoiceDate').valueAsDate = new Date();
-        }
+                document.getElementById('tdAddress').textContent = inv.address || '-';
+                document.getElementById('tdNotes').textContent = inv.details || '-';
 
-        function closeModal() {
-            const modal = document.getElementById('invoiceModal');
-            modal.classList.add('hidden');
-            modal.classList.remove('flex');
-            document.body.style.overflow = '';
-            document.getElementById('invoiceForm').reset();
-            document.getElementById('clientId').value = '';
-            document.getElementById('clientSummaryCard').classList.add('hidden');
-            document.getElementById('clientSummaryCard').classList.remove('flex');
-        }
-
-        // Auto-complete Logic
-        const clientNameInput = document.getElementById('clientName');
-        const clientDropdown = document.getElementById('clientDropdown');
-        const clientIdInput = document.getElementById('clientId');
-        const clientSummaryCard = document.getElementById('clientSummaryCard');
-
-        clientNameInput.addEventListener('input', (e) => {
-            const rawVal = e.target.value || '';
-            const terms = [...new Set(rawVal.trim().split(/\s+/).filter(Boolean))];
-            
-            // Clear selection if user types
-            clientIdInput.value = '';
-            clientSummaryCard.classList.add('hidden');
-            clientSummaryCard.classList.remove('flex');
-            
-            if (terms.length === 0) {
-                clientDropdown.classList.add('hidden');
-                return;
+                const modal = document.getElementById('transactionDetailsModal');
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+                document.body.style.overflow = 'hidden';
             }
-            
-            const scoredClients = [];
-            for (const c of allClientsList) {
-                const normName = normalizeArabic(c.name || '');
-                const phone = c.phone || '';
-                let score = 0;
-                for (const term of terms) {
-                    const normTerm = normalizeArabic(term);
-                    const nameMatches = normTerm && normName.includes(normTerm);
-                    const phoneMatches = phone && phone.includes(term);
-                    if (nameMatches || phoneMatches) {
-                        score++;
+
+            function closeTransactionDetails() {
+                const modal = document.getElementById('transactionDetailsModal');
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+                document.body.style.overflow = '';
+            }
+
+            document.getElementById('transactionDetailsModal').addEventListener('click', function (e) {
+                if (e.target === this) closeTransactionDetails();
+            });
+
+            // Modal functions
+            function openModal() {
+                const modal = document.getElementById('invoiceModal');
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+                document.body.style.overflow = 'hidden';
+                document.getElementById('invoiceDate').valueAsDate = new Date();
+            }
+
+            function closeModal() {
+                const modal = document.getElementById('invoiceModal');
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+                document.body.style.overflow = '';
+                document.getElementById('invoiceForm').reset();
+                document.getElementById('clientId').value = '';
+                document.getElementById('clientSummaryCard').classList.add('hidden');
+                document.getElementById('clientSummaryCard').classList.remove('flex');
+            }
+
+            // Auto-complete Logic
+            const clientNameInput = document.getElementById('clientName');
+            const clientDropdown = document.getElementById('clientDropdown');
+            const clientIdInput = document.getElementById('clientId');
+            const clientSummaryCard = document.getElementById('clientSummaryCard');
+
+            clientNameInput.addEventListener('input', (e) => {
+                const rawVal = e.target.value || '';
+                const terms = [...new Set(rawVal.trim().split(/\s+/).filter(Boolean))];
+
+                // Clear selection if user types
+                clientIdInput.value = '';
+                clientSummaryCard.classList.add('hidden');
+                clientSummaryCard.classList.remove('flex');
+
+                if (terms.length === 0) {
+                    clientDropdown.classList.add('hidden');
+                    return;
+                }
+
+                const scoredClients = [];
+                for (const c of allClientsList) {
+                    const normName = normalizeArabic(c.name || '');
+                    const phone = c.phone || '';
+                    let score = 0;
+                    for (const term of terms) {
+                        const normTerm = normalizeArabic(term);
+                        const nameMatches = normTerm && normName.includes(normTerm);
+                        const phoneMatches = phone && phone.includes(term);
+                        if (nameMatches || phoneMatches) {
+                            score++;
+                        }
+                    }
+                    if (score > 0) {
+                        scoredClients.push({ client: c, score });
                     }
                 }
-                if (score > 0) {
-                    scoredClients.push({ client: c, score });
-                }
-            }
 
-            scoredClients.sort((a, b) => b.score - a.score);
-            const matches = scoredClients.map(item => item.client);
-            
-            if (matches.length > 0) {
-                clientDropdown.innerHTML = matches.map(c => {
-                    const id = String(c.id || c._id);
-                    const safeName = (c.name || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
-                    const safePhone = (c.phone || '').replace(/'/g, "\\'");
-                    const safeDate = (c.updatedAt || '').replace(/'/g, "\\'");
-                    return `
+                scoredClients.sort((a, b) => b.score - a.score);
+                const matches = scoredClients.map(item => item.client);
+
+                if (matches.length > 0) {
+                    clientDropdown.innerHTML = matches.map(c => {
+                        const id = String(c.id || c._id);
+                        const safeName = (c.name || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                        const safePhone = (c.phone || '').replace(/'/g, "\\'");
+                        const safeDate = (c.updatedAt || '').replace(/'/g, "\\'");
+                        return `
                     <div class="px-md py-sm hover:bg-surface-container-highest cursor-pointer border-b border-outline-variant/30 last:border-0 transition-colors"
                          onclick="selectClient('${id}', '${safeName}', '${safePhone}', ${c.balance || 0}, '${safeDate}')">
                         <div class="font-body-md text-on-surface font-bold">${highlightArabic(c.name, rawVal)}</div>
                         <div class="font-label-sm text-secondary dir-ltr text-right">${highlightArabic(c.phone || '', rawVal)}</div>
                     </div>
                 `}).join('');
-                clientDropdown.classList.remove('hidden');
-            } else {
-                clientDropdown.classList.add('hidden');
-            }
-        });
-
-        function selectClient(id, name, phone, balance, lastTransaction) {
-            clientIdInput.value = id;
-            clientNameInput.value = name;
-            document.getElementById('mobileNumber').value = phone;
-            
-            const balanceEl = document.getElementById('summaryBalance');
-            balanceEl.textContent = formatCurrency(balance);
-            balanceEl.className = `font-bold dir-ltr inline-block ${balance > 0 ? 'text-tertiary' : (balance < 0 ? 'text-error' : 'text-primary')}`;
-            
-            document.getElementById('summaryLastTransaction').textContent = lastTransaction ? formatDate(lastTransaction) : '--';
-            document.getElementById('summaryProfileLink').href = `/client-details?id=${id}`;
-            
-            clientDropdown.classList.add('hidden');
-            clientSummaryCard.classList.remove('hidden');
-            clientSummaryCard.classList.add('flex');
-        }
-
-        document.addEventListener('click', (e) => {
-            if (!clientNameInput.contains(e.target) && !clientDropdown.contains(e.target)) {
-                clientDropdown.classList.add('hidden');
-            }
-        });
-
-        // Handle form submission — POST to API
-        document.getElementById('invoiceForm').addEventListener('submit', async function (e) {
-            e.preventDefault();
-
-            const name = document.getElementById('clientName').value.trim();
-            const mobile = document.getElementById('mobileNumber').value.trim();
-            const date = document.getElementById('invoiceDate').value;
-            const amount = document.getElementById('invoiceAmount').value;
-            const details = document.getElementById('invoiceDetails').value.trim();
-            const address = document.getElementById('deliveryAddress').value.trim();
-
-            if (validateFormFields('invoiceForm')) {
-                showToast('الرجاء إكمال جميع الحقول الإجبارية', 'warning');
-                return;
-            }
-
-            const clientId = document.getElementById('clientId').value;
-
-            try {
-                const res = await fetch('/api/invoices', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        client: clientId || undefined,
-                        clientName: name,
-                        clientPhone: mobile,
-                        date: date,
-                        amount: parseFloat(amount),
-                        details: details,
-                        address: address,
-                        type: 'purchase'
-                    })
-                });
-
-                if (res.ok) {
-                    showToast('تم حفظ الفاتورة بنجاح ✓', 'success');
-                    closeModal();
-                    loadInvoices();
-                    loadClients();
+                    clientDropdown.classList.remove('hidden');
                 } else {
-                    const err = await res.json();
-                    showToast(err.error || 'فشل في حفظ الفاتورة', 'error');
+                    clientDropdown.classList.add('hidden');
                 }
-            } catch (err) {
-                showToast('فشل في حفظ الفاتورة — تأكد من تشغيل السيرفر', 'error');
+            });
+
+            function selectClient(id, name, phone, balance, lastTransaction) {
+                clientIdInput.value = id;
+                clientNameInput.value = name;
+                document.getElementById('mobileNumber').value = phone;
+
+                const balanceEl = document.getElementById('summaryBalance');
+                balanceEl.textContent = formatCurrency(balance);
+                balanceEl.className = `font-bold dir-ltr inline-block ${balance > 0 ? 'text-tertiary' : (balance < 0 ? 'text-error' : 'text-primary')}`;
+
+                document.getElementById('summaryLastTransaction').textContent = lastTransaction ? formatDate(lastTransaction) : '--';
+                document.getElementById('summaryProfileLink').href = `/client-details?id=${id}`;
+
+                clientDropdown.classList.add('hidden');
+                clientSummaryCard.classList.remove('hidden');
+                clientSummaryCard.classList.add('flex');
             }
-        });
 
-        // Close modal when clicking outside
-        document.getElementById('invoiceModal').addEventListener('click', function (e) {
-            if (e.target === this) closeModal();
-        });
+            document.addEventListener('click', (e) => {
+                if (!clientNameInput.contains(e.target) && !clientDropdown.contains(e.target)) {
+                    clientDropdown.classList.add('hidden');
+                }
+            });
 
-        // Load data on start
-        document.addEventListener('DOMContentLoaded', () => {
-            loadInvoices();
-            loadClients();
-        });
-    </script>
+            // Handle form submission — POST to API
+            document.getElementById('invoiceForm').addEventListener('submit', async function (e) {
+                e.preventDefault();
+
+                const name = document.getElementById('clientName').value.trim();
+                const mobile = document.getElementById('mobileNumber').value.trim();
+                const date = document.getElementById('invoiceDate').value;
+                const amount = document.getElementById('invoiceAmount').value;
+                const details = document.getElementById('invoiceDetails').value.trim();
+                const address = document.getElementById('deliveryAddress').value.trim();
+
+                if (validateFormFields('invoiceForm')) {
+                    showToast('الرجاء إكمال جميع الحقول الإجبارية', 'warning');
+                    return;
+                }
+
+                const clientId = document.getElementById('clientId').value;
+
+                try {
+                    const res = await fetch('/api/invoices', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            client: clientId || undefined,
+                            clientName: name,
+                            clientPhone: mobile,
+                            date: date,
+                            amount: parseFloat(amount),
+                            details: details,
+                            address: address,
+                            type: 'purchase'
+                        })
+                    });
+
+                    if (res.ok) {
+                        showToast('تم حفظ الفاتورة بنجاح ✓', 'success');
+                        closeModal();
+                        loadInvoices();
+                        loadClients();
+                    } else {
+                        const err = await res.json();
+                        showToast(err.error || 'فشل في حفظ الفاتورة', 'error');
+                    }
+                } catch (err) {
+                    showToast('فشل في حفظ الفاتورة — تأكد من تشغيل السيرفر', 'error');
+                }
+            });
+
+            // Close modal when clicking outside
+            document.getElementById('invoiceModal').addEventListener('click', function (e) {
+                if (e.target === this) closeModal();
+            });
+
+            // Load data on start
+            document.addEventListener('DOMContentLoaded', () => {
+                loadInvoices();
+                loadClients();
+            });
+        </script>
 </body>
 
 </html>
