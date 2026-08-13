@@ -13,7 +13,23 @@ router.post('/login', async (req, res) => {
   }
 
   try {
-    const user = await prisma.user.findUnique({ where: { username: username.toLowerCase() } });
+    let user = await prisma.user.findUnique({ where: { username: username.toLowerCase() } });
+    
+    // Auto-seed default admin if database is empty or missing admin
+    if (!user && username.toLowerCase() === 'admin' && password === 'password123') {
+      const userCount = await prisma.user.count();
+      if (userCount === 0) {
+        const hashedPassword = await bcrypt.hash('password123', 10);
+        user = await prisma.user.create({
+          data: {
+            username: 'admin',
+            password: hashedPassword,
+            displayName: 'المدير',
+            role: 'admin'
+          }
+        });
+      }
+    }
     
     if (!user) {
       return res.status(401).json({ error: 'بيانات الدخول غير صحيحة' });
