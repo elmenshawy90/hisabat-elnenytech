@@ -205,12 +205,13 @@ async function logout() {
 // For pages requiring auth, they can just call checkAuth() on DOMContentLoaded
 
 // ─── Input Validation ────────────────────────────────────────
+// ─── Input Validation ────────────────────────────────────────
 function setupPhoneValidation(inputId, errorId) {
   const input = document.getElementById(inputId);
   const errorMsg = document.getElementById(errorId);
   if (!input) return;
 
-  input.maxLength = 11; // EG phones are 11 digits
+  input.maxLength = 15;
 
   const validate = () => {
     // Strip non-numbers
@@ -220,17 +221,9 @@ function setupPhoneValidation(inputId, errorId) {
     let isError = false;
     let errorText = "";
 
-    if (val.length > 0) {
-      if (val[0] !== '0') {
-        isError = true;
-        errorText = "رقم الهاتف يجب أن يبدأ بـ 01";
-      } else if (val.length >= 2 && val.substring(0, 2) !== '01') {
-        isError = true;
-        errorText = "رقم الهاتف يجب أن يبدأ بـ 01";
-      } else if (val.length >= 3 && !['010', '011', '012', '015'].includes(val.substring(0, 3))) {
-        isError = true;
-        errorText = "الشبكة غير صحيحة (010, 011, 012, 015)";
-      }
+    if (val.length > 0 && val.length < 8) {
+      isError = true;
+      errorText = "رقم الهاتف يجب أن يتكون من 8 أرقام على الأقل";
     }
 
     if (isError) {
@@ -248,24 +241,13 @@ function setupPhoneValidation(inputId, errorId) {
   };
 
   input.addEventListener('input', validate);
-  
-  input.addEventListener('blur', () => {
-    let val = input.value;
-    if (val.length > 0 && val.length < 11) {
-      input.classList.add('border-error', 'focus:border-error', 'focus:ring-error');
-      input.classList.remove('focus:border-primary', 'focus:ring-primary', 'border-outline-variant');
-      if (errorMsg) {
-        errorMsg.textContent = "رقم الهاتف يجب أن يتكون من 11 رقماً";
-        errorMsg.classList.remove('hidden');
-      }
-    }
-  });
 }
 
 // ─── Text Normalization ─────────────────────────────────────
 function normalizeArabic(text) {
     if (!text) return '';
     return text.toString().toLowerCase()
+        .replace(/[\u064B-\u065F\u0670]/g, '') // remove Arabic tashkeel / harakat
         .replace(/[أإآا]/g, 'ا')
         .replace(/[ةه]/g, 'ه')
         .replace(/[ىي]/g, 'ي')
@@ -278,15 +260,20 @@ function normalizeArabic(text) {
 // ─── Text Highlighting ─────────────────────────────────────
 function highlightArabic(text, query) {
     if (!query || !text) return text;
-    let escaped = query.toString().trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    if (!escaped) return text;
-    escaped = escaped
-        .replace(/[اأإآ]/g, '[اأإآ]')
-        .replace(/[هة]/g, '[هة]')
-        .replace(/[يى]/g, '[يى]')
-        .replace(/[ءؤئ]/g, '[ءؤئ]');
+    const rawTerms = query.toString().trim().split(/\s+/).filter(Boolean);
+    if (rawTerms.length === 0) return text;
+
+    const patterns = rawTerms.map(term => {
+        let escaped = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        return escaped
+            .replace(/[اأإآ]/g, '[اأإآ]')
+            .replace(/[هة]/g, '[هة]')
+            .replace(/[يى]/g, '[يى]')
+            .replace(/[ءؤئ]/g, '[ءؤئ]');
+    });
+
     try {
-        const regex = new RegExp(`(${escaped})`, 'gi');
+        const regex = new RegExp(`(${patterns.join('|')})`, 'gi');
         return text.toString().replace(regex, '<span class="bg-[#fef08a] text-black px-1 rounded-sm">$1</span>');
     } catch(e) {
         return text;

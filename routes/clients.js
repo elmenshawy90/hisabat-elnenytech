@@ -14,13 +14,19 @@ router.get('/', async (req, res) => {
     const limit = parseInt(req.query.limit) || 20;
     const skip = (page - 1) * limit;
     const search = req.query.search;
+    let where = {};
 
-    const where = search ? {
-      OR: [
-        { name: { contains: search } },
-        { phone: { contains: search } }
-      ]
-    } : {};
+    if (search && typeof search === 'string') {
+      const terms = [...new Set(search.trim().split(/\s+/).filter(Boolean))];
+      if (terms.length > 0) {
+        where = {
+          OR: terms.flatMap(term => [
+            { name: { contains: term } },
+            { phone: { contains: term } }
+          ])
+        };
+      }
+    }
 
     const total = await prisma.client.count({ where });
     const clients = await prisma.client.findMany({
@@ -89,14 +95,39 @@ router.post('/', async (req, res) => {
   try {
     const { name, phone, address, notes, balance } = req.body;
     
-    if (!name || !phone) {
+    if (!name || !name.trim() || !phone || !phone.trim()) {
       return res.status(400).json({ error: 'اسم العميل ورقم الهاتف مطلوبان' });
+    }
+
+    const trimmedName = name.trim();
+    const trimmedPhone = phone.trim();
+
+    // Normalization helper for duplicate check
+    const normalize = (str) => {
+      if (!str) return '';
+      return str.toString().toLowerCase()
+        .replace(/[\u064B-\u065F\u0670]/g, '')
+        .replace(/[أإآا]/g, 'ا')
+        .replace(/[ةه]/g, 'ه')
+        .replace(/[ىي]/g, 'ي')
+        .replace(/[ؤئ]/g, 'ء')
+        .replace(/ـ/g, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+    };
+
+    const normNewName = normalize(trimmedName);
+    const existingClients = await prisma.client.findMany({ select: { id: true, name: true, phone: true } });
+    const duplicate = existingClients.find(c => normalize(c.name) === normNewName);
+
+    if (duplicate) {
+      return res.status(400).json({ error: 'العميل مسجل مسبقاً، الرجاء تغيير الاسم للمتابعة' });
     }
 
     const client = await prisma.client.create({
       data: {
-        name,
-        phone,
+        name: trimmedName,
+        phone: trimmedPhone,
         address: address || '',
         notes: notes || '',
         balance: balance ? parseFloat(balance) : 0
