@@ -63,9 +63,9 @@ app.use('/api/*', (req, res) => {
   res.status(404).json({ error: 'الرابط غير موجود' });
 });
 
-// Catch-all frontend route to support client-side routing if needed
+// Catch-all frontend route fallback
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  res.redirect('/dashboard');
 });
 
 // Global Error Handler
@@ -74,14 +74,18 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: 'حدث خطأ غير متوقع' });
 });
 
-// Start Server
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on http://localhost:${PORT}`);
-});
+// Start Server when run directly
+if (require.main === module) {
+  const PORT = process.env.PORT || 3000;
+  app.listen(PORT, () => {
+    console.log(`🚀 Server running on http://localhost:${PORT}`);
+  });
 
-// Graceful shutdown
-process.on('SIGINT', () => {
-  console.log('\n👋 Shutting down gracefully...');
-  process.exit();
-});
+  // Graceful shutdown
+  process.on('SIGINT', () => {
+    console.log('\n👋 Shutting down gracefully...');
+    process.exit();
+  });
+}
+
+module.exports = app;

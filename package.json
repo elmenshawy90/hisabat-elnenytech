@@ -7,7 +7,8 @@
     "start": "node server.js",
     "dev": "nodemon server.js",
     "seed": "node db/seed.js",
-    "test": "node --test test_search.js"
+    "test": "node --test test_search.js",
+    "build": "npx prisma generate"
   },
   "dependencies": {
     "@prisma/client": "^6.19.3",
@@ -19,6 +20,7 @@
     "express": "^4.18.2",
     "express-session": "^1.19.0",
     "pdfkit": "^0.15.0",
-    "prisma": "^6.19.3"
+    "prisma": "^6.19.3",
+    "serverless-http": "^4.0.0"
   }
 }
