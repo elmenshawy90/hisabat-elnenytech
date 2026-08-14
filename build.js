@@ -8,7 +8,7 @@ if (process.env.DATABASE_URL) {
   try {
     execSync('npx prisma migrate deploy', { stdio: 'inherit' });
   } catch (e) {
-    console.error('❌ prisma db push failed:', e.message);
+    console.error('❌ prisma migrate deploy failed:', e.message);
     process.exit(1);
   }
 
@@ -20,7 +20,7 @@ if (process.env.DATABASE_URL) {
     process.exit(1);
   }
 } else {
-  console.log('⚠️  DATABASE_URL not set - skipping prisma db push and seed');
+  console.log('⚠️  DATABASE_URL not set - skipping prisma migrate deploy and seed');
 }
 
 console.log('✅ Build complete');
