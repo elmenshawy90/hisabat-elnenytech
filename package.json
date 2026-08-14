@@ -8,11 +8,12 @@
     "dev": "nodemon server.js",
     "seed": "node db/seed.js",
     "test": "node --test test_search.js",
-    "build": "npx prisma generate && npx prisma db push && node db/seed.js"
+    "build": "node build.js"
   },
   "dependencies": {
     "@prisma/client": "^6.19.3",
     "@quixo3/prisma-session-store": "^3.1.21",
+    "@vercel/speed-insights": "^2.0.0",
     "bcrypt": "^5.1.1",
     "dotenv": "^16.4.0",
     "ejs": "^6.0.1",
@@ -22,5 +23,8 @@
     "pdfkit": "^0.15.0",
     "prisma": "^6.19.3",
     "serverless-http": "^4.0.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14"
   }
 }
