@@ -8,7 +8,7 @@
     "dev": "nodemon server.js",
     "seed": "node db/seed.js",
     "test": "node --test test_search.js",
-    "build": "npx prisma generate && npx prisma db push && node db/seed.js"
+    "build": "node build.js"
   },
   "dependencies": {
     "@prisma/client": "^6.19.3",
