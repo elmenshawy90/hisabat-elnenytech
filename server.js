@@ -2,10 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const path = require('path');
 const session = require('express-session');
-const { PrismaClient } = require('@prisma/client');
-const { PrismaSessionStore } = require('@quixo3/prisma-session-store');
-
-const prisma = new PrismaClient();
+const prisma = require('./lib/prisma');
 
 const app = express();
 
@@ -21,20 +18,27 @@ app.set('views', path.join(__dirname, 'views'));
 app.set('trust proxy', 1);
 
 // Session Configuration
+const isServerless = process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME || process.env.LAMBDA_TASK_ROOT;
+
+let sessionStore;
+if (isServerless) {
+  sessionStore = new session.MemoryStore();
+} else {
+  const { PrismaSessionStore } = require('@quixo3/prisma-session-store');
+  sessionStore = new PrismaSessionStore(prisma, {
+    checkPeriod: 2 * 60 * 1000,
+    dbRecordIdIsSessionId: true,
+    dbRecordIdFunction: undefined,
+  });
+}
+
 app.use(session({
   secret: process.env.SESSION_SECRET || 'fallback-secret-for-dev',
   resave: false,
   saveUninitialized: false,
-  store: new PrismaSessionStore(
-    prisma,
-    {
-      checkPeriod: 2 * 60 * 1000, // ms
-      dbRecordIdIsSessionId: true,
-      dbRecordIdFunction: undefined,
-    }
-  ),
+  store: sessionStore,
   cookie: {
-    maxAge: 1000 * 60 * 60 * 24 * 7, // 1 week
+    maxAge: 1000 * 60 * 60 * 24 * 7,
     httpOnly: true,
     secure: 'auto',
     sameSite: 'lax'
@@ -55,6 +59,11 @@ app.get('/dashboard', (req, res) => res.render('dashboard'));
 app.get('/clients', (req, res) => res.render('clients'));
 app.get('/new-invoice', (req, res) => res.render('new-invoice'));
 app.get('/client-details', (req, res) => res.render('client-details'));
+
+// Health check for Vercel debugging
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
+});
 
 // Serve Static Files
 app.use(express.static(path.join(__dirname, 'public')));
