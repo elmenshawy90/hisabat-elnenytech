@@ -68,39 +68,63 @@ router.post('/', async (req, res) => {
       }
       
       clientName = client.name;
-      clientPhone = client.phone;
+      clientPhone = client.phone && client.phone !== '0000000000' ? client.phone : '-';
 
-      if (data.clientPhone && data.clientPhone.trim() !== '') {
+      if (data.clientPhone && data.clientPhone.trim() !== '' && data.clientPhone.trim() !== '-') {
         const newPhone = data.clientPhone.trim();
-        const existingPhones = client.phone.split(' - ').map(p => p.trim());
-        if (!existingPhones.includes(newPhone)) {
-          clientPhone = client.phone + ' - ' + newPhone;
-          // Update client phone
+        if (!client.phone || client.phone === '-' || client.phone === '0000000000') {
+          clientPhone = newPhone;
           await prisma.client.update({
             where: { id: clientId },
             data: { phone: clientPhone }
           });
+        } else {
+          const existingPhones = client.phone.split(' - ').map(p => p.trim());
+          if (!existingPhones.includes(newPhone)) {
+            clientPhone = client.phone + ' - ' + newPhone;
+            await prisma.client.update({
+              where: { id: clientId },
+              data: { phone: clientPhone }
+            });
+          }
         }
       }
     } else {
+      // Normalization helper
+      const normalize = (str) => {
+        if (!str) return '';
+        return str.toString().toLowerCase()
+          .replace(/[\u064B-\u065F\u0670\u0640]/g, '')
+          .replace(/[أإآاٱ]/g, 'ا')
+          .replace(/[ةه]/g, 'ه')
+          .replace(/[ىي]/g, 'ي')
+          .replace(/[ؤئء]/g, 'ء')
+          .replace(/ـ/g, '')
+          .replace(/\s+/g, ' ')
+          .trim();
+      };
+
       // Find or create client based on name if no ID provided (legacy support)
-      let client = await prisma.client.findFirst({ where: { name: data.clientName } });
+      const allClients = await prisma.client.findMany();
+      const normInputName = normalize(data.clientName);
+      let client = allClients.find(c => normalize(c.name) === normInputName);
+
       if (!client) {
         client = await prisma.client.create({
           data: {
             name: data.clientName,
-            phone: data.clientPhone || '0000000000'
+            phone: (data.clientPhone && data.clientPhone.trim() && data.clientPhone.trim() !== '-') ? data.clientPhone.trim() : '-'
           }
         });
       }
       clientId = client.id;
       clientName = client.name;
-      clientPhone = client.phone;
+      clientPhone = client.phone && client.phone !== '0000000000' ? client.phone : '-';
     }
 
-    const amount = parseFloat(data.amount);
-    if (isNaN(amount) || amount <= 0) {
-      return res.status(400).json({ error: 'المبلغ يجب أن يكون أكبر من صفر' });
+    const amount = isNaN(parseFloat(data.amount)) ? 0 : parseFloat(data.amount);
+    if (amount < 0) {
+      return res.status(400).json({ error: 'المبلغ لا يمكن أن يكون سالباً' });
     }
 
     const amountChange = data.type === 'purchase' ? amount : (data.type === 'payment' ? -amount : 0);
@@ -112,10 +136,10 @@ router.post('/', async (req, res) => {
         data: {
           clientId,
           clientName,
-          clientPhone,
+          clientPhone: clientPhone || '-',
           type: data.type,
           amount,
-          details: data.details,
+          details: data.details || '-',
           address: data.address || '-',
           status: data.status || 'pending',
           date: data.date ? new Date(data.date) : new Date()

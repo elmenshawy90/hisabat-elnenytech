@@ -94,22 +94,22 @@ router.post('/', async (req, res) => {
   try {
     const { name, phone, address, notes, balance } = req.body;
     
-    if (!name || !name.trim() || !phone || !phone.trim()) {
-      return res.status(400).json({ error: 'اسم العميل ورقم الهاتف مطلوبان' });
+    if (!name || !name.trim()) {
+      return res.status(400).json({ error: 'اسم العميل مطلوب' });
     }
 
     const trimmedName = name.trim();
-    const trimmedPhone = phone.trim();
+    const trimmedPhone = phone && phone.trim() ? phone.trim() : '-';
 
     // Normalization helper for duplicate check
     const normalize = (str) => {
       if (!str) return '';
       return str.toString().toLowerCase()
-        .replace(/[\u064B-\u065F\u0670]/g, '')
-        .replace(/[أإآا]/g, 'ا')
+        .replace(/[\u064B-\u065F\u0670\u0640]/g, '') // remove Arabic tashkeel / harakat & tatweel
+        .replace(/[أإآاٱ]/g, 'ا')
         .replace(/[ةه]/g, 'ه')
         .replace(/[ىي]/g, 'ي')
-        .replace(/[ؤئ]/g, 'ء')
+        .replace(/[ؤئء]/g, 'ء')
         .replace(/ـ/g, '')
         .replace(/\s+/g, ' ')
         .trim();

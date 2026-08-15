@@ -160,17 +160,17 @@
                 </div>
             </div>
             <div class="flex flex-col gap-xs">
-                <label id="addressLabel" class="font-label-md text-label-md text-on-surface-variant mb-xs">عنوان التوصيل <span class="text-error">*</span></label>
+                <label id="addressLabel" class="font-label-md text-label-md text-on-surface-variant mb-xs">عنوان التوصيل</label>
                 <div class="relative">
                     <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline">location_on</span>
-                    <input class="w-full h-12 pr-10 pl-md rounded-xl bg-surface-container-low border border-outline-variant form-input-focus transition-all text-right" id="deliveryAddress" placeholder="الحي، الشارع، رقم المبنى..." type="text" required />
+                    <input class="w-full h-12 pr-10 pl-md rounded-xl bg-surface-container-low border border-outline-variant form-input-focus transition-all text-right" id="deliveryAddress" placeholder="الحي، الشارع، رقم المبنى..." type="text" />
                 </div>
             </div>
             <div class="flex flex-col gap-xs">
-                <label id="detailsLabel" class="font-label-md text-label-md text-on-surface-variant mb-xs">التفاصيل / المشتريات <span class="text-error">*</span></label>
+                <label id="detailsLabel" class="font-label-md text-label-md text-on-surface-variant mb-xs">التفاصيل / المشتريات</label>
                 <div class="relative">
                     <span class="material-symbols-outlined absolute right-3 top-4 text-outline">inventory_2</span>
-                    <textarea class="w-full h-24 pr-10 pl-md py-sm rounded-xl bg-surface-container-low border border-outline-variant form-input-focus transition-all text-right resize-none" id="invoiceDetails" placeholder="اكتب التفاصيل..." required></textarea>
+                    <textarea class="w-full h-24 pr-10 pl-md py-sm rounded-xl bg-surface-container-low border border-outline-variant form-input-focus transition-all text-right resize-none" id="invoiceDetails" placeholder="اكتب التفاصيل..."></textarea>
                 </div>
             </div>
             <div class="flex flex-row gap-sm pt-md border-t border-outline-variant mt-lg">
@@ -399,13 +399,13 @@ function openInvoiceModal(type = 'purchase') {
     
     if (type === 'payment') {
         title.textContent = 'تسديد دفعة';
-        addressLabel.innerHTML = 'المستلم / ملاحظات <span class="text-error">*</span>';
-        detailsLabel.innerHTML = 'تفاصيل السداد <span class="text-error">*</span>';
+        addressLabel.textContent = 'المستلم / ملاحظات';
+        detailsLabel.textContent = 'تفاصيل السداد';
         submitBtn.textContent = 'حفظ السداد';
     } else {
         title.textContent = 'إضافة فاتورة جديدة';
-        addressLabel.innerHTML = 'عنوان التوصيل <span class="text-error">*</span>';
-        detailsLabel.innerHTML = 'التفاصيل / المشتريات <span class="text-error">*</span>';
+        addressLabel.textContent = 'عنوان التوصيل';
+        detailsLabel.textContent = 'التفاصيل / المشتريات';
         submitBtn.textContent = 'حفظ الفاتورة';
     }
     
@@ -445,7 +445,7 @@ document.getElementById('invoiceForm').addEventListener('submit', async function
     const address = document.getElementById('deliveryAddress').value.trim();
     
     if (validateFormFields('invoiceForm')) {
-        showToast('الرجاء إكمال جميع الحقول الإجبارية', 'warning');
+        showToast('الرجاء إكمال الحقول الإجبارية', 'warning');
         return;
     }
     
@@ -457,10 +457,10 @@ document.getElementById('invoiceForm').addEventListener('submit', async function
                 client: getClientId(),
                 clientName: document.getElementById('clientName').textContent,
                 clientPhone: document.getElementById('clientPhone').textContent,
-                date: date,
-                amount: parseFloat(amount),
-                details: details,
-                address: address,
+                date: date || undefined,
+                amount: parseFloat(amount) || 0,
+                details: details || (currentTransactionType === 'payment' ? 'سداد دفعة' : '-'),
+                address: address || '-',
                 type: currentTransactionType
             })
         });

@@ -247,11 +247,11 @@ function setupPhoneValidation(inputId, errorId) {
 function normalizeArabic(text) {
     if (!text) return '';
     return text.toString().toLowerCase()
-        .replace(/[\u064B-\u065F\u0670]/g, '') // remove Arabic tashkeel / harakat
-        .replace(/[أإآا]/g, 'ا')
+        .replace(/[\u064B-\u065F\u0670\u0640]/g, '') // remove Arabic tashkeel / harakat & tatweel
+        .replace(/[أإآاٱ]/g, 'ا')
         .replace(/[ةه]/g, 'ه')
         .replace(/[ىي]/g, 'ي')
-        .replace(/[ؤئ]/g, 'ء')
+        .replace(/[ؤئء]/g, 'ء')
         .replace(/ـ/g, '')
         .replace(/\s+/g, ' ')
         .trim();

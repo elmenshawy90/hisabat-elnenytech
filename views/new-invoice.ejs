@@ -164,50 +164,46 @@
                                 أرقام فقط</p>
                         </div>
                         <div class="flex flex-col gap-xs">
-                            <label class="font-label-md text-label-md text-on-surface-variant mb-xs">تاريخ الفاتورة
-                                <span class="text-error">*</span></label>
+                            <label class="font-label-md text-label-md text-on-surface-variant mb-xs">تاريخ الفاتورة</label>
                             <div class="relative">
                                 <span
                                     class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline pointer-events-none">calendar_today</span>
                                 <input
                                     class="w-full h-12 pr-10 pl-md rounded-xl bg-surface-container-low border border-outline-variant form-input-focus transition-all text-right cursor-pointer"
-                                    id="invoiceDate" placeholder="اختر التاريخ" type="text" required />
+                                    id="invoiceDate" placeholder="اختر التاريخ" type="text" />
                             </div>
                         </div>
                         <div class="flex flex-col gap-xs">
                             <label class="font-label-md text-label-md text-on-surface-variant mb-xs">المبلغ المستحق
-                                (جنيه)
-                                <span class="text-error">*</span></label>
+                                (جنيه)</label>
                             <div class="relative">
                                 <span
                                     class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline">payments</span>
                                 <input
                                     class="w-full h-12 pr-10 pl-md rounded-xl bg-surface-container-low border border-outline-variant form-input-focus transition-all text-right font-bold text-primary"
-                                    id="invoiceAmount" placeholder="0.00" type="number" step="0.01" required />
+                                    id="invoiceAmount" placeholder="0.00" type="number" step="0.01" />
                             </div>
                         </div>
                         <div class="md:col-span-2 flex flex-col gap-xs">
-                            <label class="font-label-md text-label-md text-on-surface-variant mb-xs">عنوان التوصيل <span
-                                    class="text-error">*</span></label>
+                            <label class="font-label-md text-label-md text-on-surface-variant mb-xs">عنوان التوصيل</label>
                             <div class="relative">
                                 <span
                                     class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline">location_on</span>
                                 <input
                                     class="w-full h-12 pr-10 pl-md rounded-xl bg-surface-container-low border border-outline-variant form-input-focus transition-all text-right"
-                                    id="deliveryAddress" placeholder="الحي، الشارع، رقم المبنى..." type="text"
-                                    required />
+                                    id="deliveryAddress" placeholder="الحي، الشارع، رقم المبنى..." type="text" />
                             </div>
                         </div>
                         <div class="md:col-span-2 flex flex-col gap-xs">
                             <label class="font-label-md text-label-md text-on-surface-variant mb-xs">التفاصيل /
-                                المشتريات <span class="text-error">*</span></label>
+                                المشتريات</label>
                             <div class="relative">
                                 <span
                                     class="material-symbols-outlined absolute right-3 top-4 text-outline">inventory_2</span>
                                 <textarea
                                     class="w-full pr-10 pl-md pt-3 rounded-xl bg-surface-container-low border border-outline-variant form-input-focus transition-all text-right resize-none"
                                     id="invoiceDetails" placeholder="مثال: 1 طن أسمنت مقاوم، 500 حجر بلوك مقاس 20..."
-                                    rows="4" required></textarea>
+                                    rows="4"></textarea>
                             </div>
                         </div>
                     </div>
@@ -520,7 +516,7 @@
                 const address = document.getElementById('deliveryAddress').value.trim();
 
                 if (validateFormFields('invoiceForm')) {
-                    showToast('الرجاء إكمال جميع الحقول الإجبارية', 'warning');
+                    showToast('الرجاء إدخال اسم العميل', 'warning');
                     return;
                 }
 
@@ -533,11 +529,11 @@
                         body: JSON.stringify({
                             client: clientId || undefined,
                             clientName: name,
-                            clientPhone: mobile,
-                            date: date,
-                            amount: parseFloat(amount),
-                            details: details,
-                            address: address,
+                            clientPhone: mobile || undefined,
+                            date: date || undefined,
+                            amount: parseFloat(amount) || 0,
+                            details: details || '-',
+                            address: address || '-',
                             type: 'purchase'
                         })
                     });

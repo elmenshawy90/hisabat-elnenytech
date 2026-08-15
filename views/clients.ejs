@@ -122,7 +122,7 @@
 <label class="font-label-md text-label-md text-on-surface-variant">رقم الهاتف</label>
 <div class="relative">
 <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline">call</span>
-<input class="w-full h-12 pr-10 pl-md rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all text-right" id="newClientPhone" placeholder="01XXXXXXXXX" type="tel" required/>
+<input class="w-full h-12 pr-10 pl-md rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all text-right" id="newClientPhone" placeholder="01XXXXXXXXX" type="tel"/>
 </div>
 <p id="newClientPhoneError" class="hidden text-error text-[11px] mt-1 pr-1 font-bold">يجب إدخال أرقام فقط في رقم الهاتف</p>
 </div>
@@ -361,7 +361,7 @@ document.getElementById('addClientForm').addEventListener('submit', async (e) =>
         const res = await fetch('/api/clients', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name, phone })
+            body: JSON.stringify({ name, phone: phone || '-' })
         });
         
         if (res.ok) {

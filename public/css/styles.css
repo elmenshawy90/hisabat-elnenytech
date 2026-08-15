@@ -10,6 +10,12 @@ body {
     vertical-align: middle;
 }
 
+.material-symbols-filled,
+.material-symbols-outlined.fill,
+.material-symbols-outlined.filled {
+    font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24 !important;
+}
+
 /* ─── Scrollbar ───────────────────────────────────────────── */
 .custom-scrollbar::-webkit-scrollbar {
     width: 5px;
@@ -22,11 +28,16 @@ body {
     border-radius: 10px;
 }
 
-/* ─── Form Focus ──────────────────────────────────────────── */
+/* ─── Form Focus & Error States ──────────────────────────── */
 .form-input-focus:focus {
     outline: none;
     border-color: #1B8354;
     box-shadow: 0 0 0 2px rgba(27, 131, 84, 0.1);
+}
+
+.border-error, input.border-error, textarea.border-error, select.border-error {
+    border-color: #ba1a1a !important;
+    box-shadow: 0 0 0 1px #ba1a1a !important;
 }
 
 /* ─── Glass Card ──────────────────────────────────────────── */

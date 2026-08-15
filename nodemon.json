@@ -1,0 +1,18 @@
+{
+  "watch": [
+    "server.js",
+    "routes",
+    "lib",
+    "views",
+    "public",
+    "middleware"
+  ],
+  "ext": "js,ejs,json,css,html",
+  "ignore": [
+    "node_modules",
+    ".git",
+    "prisma/dev.db*",
+    "*.log"
+  ],
+  "delay": 300
+}
