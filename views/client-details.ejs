@@ -49,19 +49,23 @@
 </p>
 </div>
 </div>
-<div class="flex gap-sm w-full md:w-auto mt-sm md:mt-0">
-<a href="#" onclick="event.preventDefault(); openInvoiceModal('payment');" class="flex-1 md:flex-none px-md py-sm md:px-lg md:py-md bg-green-600 text-white rounded-full font-label-lg text-label-lg md:font-headline-sm md:text-headline-sm hover:opacity-90 transition-all flex items-center justify-center gap-xs shadow-sm">
+<div class="flex flex-wrap gap-xs sm:gap-sm w-full md:w-auto mt-sm md:mt-0">
+<a href="#" onclick="exportClientExcel(event)" id="exportExcelBtn" class="flex-1 sm:flex-none px-md py-sm border border-outline-variant bg-surface hover:bg-surface-container-high text-on-surface rounded-full font-label-md text-label-md hover:text-primary transition-all flex items-center justify-center gap-xs shadow-xs" title="تصدير كشف حساب إلى Excel">
+<span class="material-symbols-outlined text-green-600 text-xl">description</span>
+تصدير Excel
+</a>
+<a href="#" onclick="exportClientPdf(event)" id="exportPdfBtn" class="flex-1 sm:flex-none px-md py-sm border border-outline-variant bg-surface hover:bg-surface-container-high text-on-surface rounded-full font-label-md text-label-md hover:text-error transition-all flex items-center justify-center gap-xs shadow-xs" title="تصدير / طباعة كشف حساب PDF">
+<span class="material-symbols-outlined text-error text-xl">picture_as_pdf</span>
+تصدير PDF
+</a>
+<a href="#" onclick="event.preventDefault(); openInvoiceModal('payment');" class="flex-1 sm:flex-none px-md py-sm md:px-lg md:py-md bg-green-600 text-white rounded-full font-label-lg text-label-lg md:font-headline-sm md:text-headline-sm hover:opacity-90 transition-all flex items-center justify-center gap-xs shadow-sm">
 <span class="material-symbols-outlined text-xl md:text-2xl">payments</span>
 تسديد دفعة
 </a>
-<a href="#" onclick="event.preventDefault(); openInvoiceModal('purchase');" class="flex-1 md:flex-none px-md py-sm md:px-lg md:py-md bg-primary text-on-primary rounded-full font-label-lg text-label-lg md:font-headline-sm md:text-headline-sm hover:opacity-90 transition-all flex items-center justify-center gap-xs shadow-sm">
+<a href="#" onclick="event.preventDefault(); openInvoiceModal('purchase');" class="flex-1 sm:flex-none px-md py-sm md:px-lg md:py-md bg-primary text-on-primary rounded-full font-label-lg text-label-lg md:font-headline-sm md:text-headline-sm hover:opacity-90 transition-all flex items-center justify-center gap-xs shadow-sm">
 <span class="material-symbols-outlined text-xl md:text-2xl">add_circle</span>
 + عملية شراء
 </a>
-<button onclick="goBack()" class="flex-1 md:flex-none px-md py-sm md:px-lg md:py-md border border-outline text-on-surface rounded-full font-label-lg text-label-lg md:font-headline-sm md:text-headline-sm hover:bg-surface-container transition-all flex items-center justify-center gap-xs shadow-sm">
-<span class="material-symbols-outlined text-xl md:text-2xl">arrow_forward</span>
-رجوع
-</button>
 </div>
 </div>
 <!-- Bento Layout -->
@@ -125,8 +129,47 @@
 
 <!-- Transaction History Table -->
 <div class="bg-white rounded-xl border border-outline-variant overflow-hidden shadow-sm mt-lg">
-<div class="p-md border-b border-outline-variant flex justify-between items-center">
-<h3 class="font-headline-sm text-headline-sm">سجل المعاملات</h3>
+<div class="p-md border-b border-outline-variant flex flex-col sm:flex-row justify-between items-start sm:items-center gap-sm">
+    <div class="flex items-center gap-xs">
+        <span class="material-symbols-outlined text-primary text-xl">receipt_long</span>
+        <h3 class="font-headline-sm text-headline-sm font-bold text-on-surface">سجل المعاملات</h3>
+    </div>
+    <div class="flex items-center gap-xs">
+        <!-- Custom Tx Sort Dropdown -->
+        <div class="relative" id="txSortDropdownContainer">
+            <button id="txSortDropdownBtn" type="button" class="h-9 px-sm bg-surface-container-low border border-outline-variant hover:border-primary/60 focus:border-primary rounded-lg flex items-center justify-between gap-xs text-on-surface text-xs transition-all shadow-sm active:scale-98">
+                <div class="flex items-center gap-1">
+                    <span class="material-symbols-outlined text-primary text-base">sort</span>
+                    <span class="text-[11px] text-secondary whitespace-nowrap">الترتيب:</span>
+                    <span id="txSortSelectedLabel" class="font-bold text-on-surface text-xs whitespace-nowrap">تاريخ المعاملة</span>
+                </div>
+                <span class="material-symbols-outlined text-outline text-base transition-transform duration-200" id="txSortDropdownArrow">expand_more</span>
+            </button>
+            
+            <!-- Custom Dropdown Menu -->
+            <div id="txSortDropdownMenu" class="hidden absolute top-[calc(100%+4px)] left-0 w-44 bg-surface border border-outline-variant/80 rounded-xl shadow-xl z-50 py-1.5 overflow-hidden transition-all duration-150 transform opacity-0 scale-95 origin-top">
+                <button type="button" onclick="selectTxSortOption('date', 'تاريخ المعاملة')" class="tx-sort-option w-full px-sm py-2 flex items-center justify-between text-xs hover:bg-primary/10 transition-colors text-right font-medium text-on-surface" data-value="date">
+                    <span class="flex items-center gap-1.5">
+                        <span class="material-symbols-outlined text-sm text-secondary">event</span>
+                        تاريخ المعاملة
+                    </span>
+                    <span class="material-symbols-outlined text-primary text-base font-bold tx-sort-check" id="tx-check-date">check</span>
+                </button>
+                <button type="button" onclick="selectTxSortOption('createdAt', 'تاريخ الإضافة')" class="tx-sort-option w-full px-sm py-2 flex items-center justify-between text-xs hover:bg-primary/10 transition-colors text-right font-medium text-on-surface" data-value="createdAt">
+                    <span class="flex items-center gap-1.5">
+                        <span class="material-symbols-outlined text-sm text-secondary">schedule</span>
+                        تاريخ الإضافة
+                    </span>
+                    <span class="material-symbols-outlined text-primary text-base font-bold tx-sort-check hidden" id="tx-check-createdAt">check</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Sort Direction Toggle Button -->
+        <button id="txSortOrderToggle" class="h-9 w-9 flex-shrink-0 flex items-center justify-center bg-surface-container-low border border-outline-variant hover:border-primary/60 rounded-lg hover:bg-primary/5 text-primary transition-all active:scale-95 shadow-sm" title="تبديل الترتيب تصاعدي / تنازلي" type="button">
+            <span class="material-symbols-outlined text-base transition-transform duration-200" id="txSortOrderIcon">arrow_downward</span>
+        </button>
+    </div>
 </div>
 <div class="overflow-x-auto w-full max-w-[100vw]">
 <table class="w-full text-right border-collapse whitespace-nowrap">
@@ -137,12 +180,55 @@
 <th class="px-md py-sm">الوصف</th>
 <th class="px-md py-sm">العميل النهائي</th>
 <th class="px-md py-sm">المبلغ</th>
+<th class="px-md py-sm font-bold text-on-surface">الرصيد بعد العملية</th>
 </tr>
 </thead>
 <tbody class="divide-y divide-outline-variant" id="transactionsBody">
-<tr><td colspan="5" class="p-xl text-center text-secondary">جاري التحميل...</td></tr>
+<tr><td colspan="6" class="p-xl text-center text-secondary">جاري التحميل...</td></tr>
 </tbody>
 </table>
+</div>
+<!-- Pagination Footer -->
+<div class="px-md py-sm border-t border-outline-variant bg-surface-container-lowest flex flex-col sm:flex-row items-center justify-between gap-sm text-xs text-secondary" id="txPaginationContainer">
+    <div class="flex items-center gap-md w-full sm:w-auto justify-between sm:justify-start">
+        <div class="flex items-center gap-xs">
+            <span>عرض:</span>
+            <!-- Custom Page Size Dropdown -->
+            <div class="relative" id="txPageSizeContainer">
+                <button id="txPageSizeBtn" type="button" class="h-8 px-2.5 bg-surface-container-low border border-outline-variant hover:border-primary/60 focus:border-primary rounded-lg flex items-center justify-between gap-1 text-on-surface text-xs font-bold transition-all shadow-xs active:scale-98">
+                    <span id="txPageSizeLabel">10</span>
+                    <span class="material-symbols-outlined text-outline text-base transition-transform duration-200" id="txPageSizeArrow">expand_less</span>
+                </button>
+                
+                <!-- Dropdown Menu (opens upward) -->
+                <div id="txPageSizeMenu" class="hidden absolute bottom-[calc(100%+4px)] right-0 w-28 bg-surface border border-outline-variant/80 rounded-xl shadow-xl z-50 py-1 overflow-hidden transition-all duration-150 transform opacity-0 scale-95 origin-bottom">
+                    <button type="button" onclick="selectTxPageSize(10)" class="w-full px-sm py-1.5 flex items-center justify-between text-xs hover:bg-primary/10 transition-colors text-right font-medium text-on-surface">
+                        <span>10 سجلات</span>
+                        <span class="material-symbols-outlined text-primary text-base font-bold tx-size-check" id="tx-size-check-10">check</span>
+                    </button>
+                    <button type="button" onclick="selectTxPageSize(25)" class="w-full px-sm py-1.5 flex items-center justify-between text-xs hover:bg-primary/10 transition-colors text-right font-medium text-on-surface">
+                        <span>25 سجل</span>
+                        <span class="material-symbols-outlined text-primary text-base font-bold tx-size-check hidden" id="tx-size-check-25">check</span>
+                    </button>
+                    <button type="button" onclick="selectTxPageSize(50)" class="w-full px-sm py-1.5 flex items-center justify-between text-xs hover:bg-primary/10 transition-colors text-right font-medium text-on-surface">
+                        <span>50 سجل</span>
+                        <span class="material-symbols-outlined text-primary text-base font-bold tx-size-check hidden" id="tx-size-check-50">check</span>
+                    </button>
+                    <button type="button" onclick="selectTxPageSize(100)" class="w-full px-sm py-1.5 flex items-center justify-between text-xs hover:bg-primary/10 transition-colors text-right font-medium text-on-surface">
+                        <span>100 سجل</span>
+                        <span class="material-symbols-outlined text-primary text-base font-bold tx-size-check hidden" id="tx-size-check-100">check</span>
+                    </button>
+                </div>
+            </div>
+            <span>معاملة لكل صفحة</span>
+        </div>
+        <div class="text-secondary font-medium" id="txPaginationInfo">
+            عرض 0 - 0 من أصل 0 معاملة
+        </div>
+    </div>
+    <div id="txPaginationControls">
+        <!-- Rendered dynamically -->
+    </div>
 </div>
 </div>
 </div>
@@ -283,6 +369,28 @@ function getClientId() {
     return params.get('id');
 }
 
+function exportClientPdf(e) {
+    if (e) e.preventDefault();
+    const id = getClientId();
+    if (!id) {
+        showToast('لم يتم تحديد العميل', 'error');
+        return;
+    }
+    showToast('جاري تحميل كشف الحساب بصيغة PDF...', 'info');
+    window.location.href = `/api/export/client/${id}/pdf`;
+}
+
+function exportClientExcel(e) {
+    if (e) e.preventDefault();
+    const id = getClientId();
+    if (!id) {
+        showToast('لم يتم تحديد العميل', 'error');
+        return;
+    }
+    showToast('جاري تحميل كشف الحساب بصيغة Excel...', 'info');
+    window.location.href = `/api/export/client/${id}/excel`;
+}
+
 // Load client data from API
 async function loadClientDetails() {
     const user = await checkAuth();
@@ -298,6 +406,12 @@ async function loadClientDetails() {
         setTimeout(() => window.location.href = '/clients', 1500);
         return;
     }
+
+    // Set export links immediately
+    const excelBtn = document.getElementById('exportExcelBtn');
+    const pdfBtn = document.getElementById('exportPdfBtn');
+    if (excelBtn) excelBtn.href = `/api/export/client/${clientId}/excel`;
+    if (pdfBtn) pdfBtn.href = `/api/export/client/${clientId}/pdf`;
 
     try {
         const res = await fetch(`/api/clients/${clientId}`);
@@ -322,6 +436,12 @@ async function loadClientDetails() {
         document.getElementById('clientPhone').textContent = client.phone;
         document.getElementById('clientBalance').textContent = formatCurrency(client.balance);
         document.title = `${client.name} - سجل الديون`;
+
+        // Set Export links
+        const excelBtn = document.getElementById('exportExcelBtn');
+        const pdfBtn = document.getElementById('exportPdfBtn');
+        if (excelBtn) excelBtn.href = `/api/export/client/${clientId}/excel`;
+        if (pdfBtn) pdfBtn.href = `/api/export/client/${clientId}/pdf`;
 
         // Status badge
         const statusEl = document.getElementById('clientStatus');
@@ -435,29 +555,163 @@ function renderEndClientBreakdown(invoices) {
     container.classList.remove('hidden');
 }
 
-function renderTransactions(invoices) {
+let currentTxSortField = 'date'; // 'date' or 'createdAt'
+let currentTxSortOrder = 'desc'; // 'desc' or 'asc'
+
+let currentTxList = [];
+let txCurrentPage = 1;
+let txPageSize = 10;
+
+// Custom Transaction Page Size Dropdown Functions
+function toggleTxPageSizeDropdown(e) {
+    e.stopPropagation();
+    const menu = document.getElementById('txPageSizeMenu');
+    const arrow = document.getElementById('txPageSizeArrow');
+    const isHidden = menu.classList.contains('hidden');
+    
+    if (isHidden) {
+        menu.classList.remove('hidden');
+        requestAnimationFrame(() => {
+            menu.classList.remove('opacity-0', 'scale-95');
+            menu.classList.add('opacity-100', 'scale-100');
+        });
+        arrow.classList.add('rotate-180');
+    } else {
+        menu.classList.add('opacity-0', 'scale-95');
+        menu.classList.remove('opacity-100', 'scale-100');
+        arrow.classList.remove('rotate-180');
+        setTimeout(() => menu.classList.add('hidden'), 150);
+    }
+}
+
+function selectTxPageSize(val) {
+    txPageSize = Number(val);
+    document.getElementById('txPageSizeLabel').textContent = val;
+    
+    // Update checkmarks
+    [10, 25, 50, 100].forEach(size => {
+        const check = document.getElementById(`tx-size-check-${size}`);
+        if (check) check.classList.toggle('hidden', size !== txPageSize);
+    });
+    
+    // Close menu
+    const menu = document.getElementById('txPageSizeMenu');
+    const arrow = document.getElementById('txPageSizeArrow');
+    menu.classList.add('opacity-0', 'scale-95');
+    menu.classList.remove('opacity-100', 'scale-100');
+    arrow.classList.remove('rotate-180');
+    setTimeout(() => menu.classList.add('hidden'), 150);
+    
+    txCurrentPage = 1;
+    renderTransactions(currentTxList);
+}
+
+document.getElementById('txPageSizeBtn').addEventListener('click', toggleTxPageSizeDropdown);
+
+document.addEventListener('click', (e) => {
+    const container = document.getElementById('txPageSizeContainer');
+    if (container && !container.contains(e.target)) {
+        const menu = document.getElementById('txPageSizeMenu');
+        const arrow = document.getElementById('txPageSizeArrow');
+        if (menu && !menu.classList.contains('hidden')) {
+            menu.classList.add('opacity-0', 'scale-95');
+            menu.classList.remove('opacity-100', 'scale-100');
+            arrow.classList.remove('rotate-180');
+            setTimeout(() => menu.classList.add('hidden'), 150);
+        }
+    }
+});
+
+function renderTransactions(invoices, resetPage = false) {
+    currentTxList = invoices;
+    if (resetPage) txCurrentPage = 1;
+
     const tbody = document.getElementById('transactionsBody');
-    if (invoices.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" class="p-xl text-center text-secondary">لا توجد معاملات لهذا العميل</td></tr>';
+    const totalRecords = invoices.length;
+
+    if (totalRecords === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="p-xl text-center text-secondary">لا توجد معاملات لهذا العميل</td></tr>';
+        renderPaginationControls({
+            containerId: 'txPaginationControls',
+            infoId: 'txPaginationInfo',
+            currentPage: 1,
+            pageSize: txPageSize,
+            totalRecords: 0,
+            unitLabel: 'معاملة',
+            onPageChange: () => {}
+        });
         return;
     }
 
-    // Sort newest records first: by date desc, then by createdAt desc, then by id desc
-    invoices.sort((a, b) => {
-        const dateDiff = new Date(b.date || 0) - new Date(a.date || 0);
-        if (dateDiff !== 0) return dateDiff;
-        const createdDiff = new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
-        if (createdDiff !== 0) return createdDiff;
-        return (Number(b._id || b.id) || 0) - (Number(a._id || a.id) || 0);
+    // 1. Calculate true chronological running balance (from oldest to newest)
+    const chronological = [...invoices].sort((a, b) => {
+        const dateA = new Date(a.date || 0).getTime();
+        const dateB = new Date(b.date || 0).getTime();
+        if (dateA !== dateB) return dateA - dateB;
+        const createdA = new Date(a.createdAt || 0).getTime() || (Number(a._id || a.id) || 0);
+        const createdB = new Date(b.createdAt || 0).getTime() || (Number(b._id || b.id) || 0);
+        if (createdA !== createdB) return createdA - createdB;
+        return (Number(a._id || a.id) || 0) - (Number(b._id || b.id) || 0);
     });
 
-    tbody.innerHTML = invoices.map(inv => {
+    let running = 0;
+    const balanceMap = new Map();
+    for (const inv of chronological) {
+        if (inv.type === 'purchase') {
+            running += (Number(inv.amount) || 0);
+        } else if (inv.type === 'payment') {
+            running -= (Number(inv.amount) || 0);
+        }
+        const key = String(inv._id || inv.id);
+        balanceMap.set(key, running);
+        inv.runningBalance = running;
+    }
+
+    // 2. Apply user selected sorting
+    invoices.sort((a, b) => {
+        let diff = 0;
+        if (currentTxSortField === 'createdAt') {
+            const timeA = new Date(a.createdAt || 0).getTime() || (Number(a._id || a.id) || 0);
+            const timeB = new Date(b.createdAt || 0).getTime() || (Number(b._id || b.id) || 0);
+            diff = timeA - timeB;
+        } else {
+            const dateA = new Date(a.date || 0).getTime();
+            const dateB = new Date(b.date || 0).getTime();
+            diff = dateA - dateB;
+        }
+
+        if (diff === 0) {
+            const timeA = new Date(a.createdAt || 0).getTime() || (Number(a._id || a.id) || 0);
+            const timeB = new Date(b.createdAt || 0).getTime() || (Number(b._id || b.id) || 0);
+            diff = timeA - timeB;
+        }
+
+        return currentTxSortOrder === 'asc' ? diff : -diff;
+    });
+
+    const totalPages = Math.ceil(totalRecords / txPageSize) || 1;
+    if (txCurrentPage > totalPages) txCurrentPage = totalPages;
+    if (txCurrentPage < 1) txCurrentPage = 1;
+
+    const startIndex = (txCurrentPage - 1) * txPageSize;
+    const endIndex = Math.min(startIndex + txPageSize, totalRecords);
+    const pagedInvoices = invoices.slice(startIndex, endIndex);
+
+    tbody.innerHTML = pagedInvoices.map(inv => {
         const isPurchase = inv.type === 'purchase';
         const typeBadge = isPurchase
             ? '<span class="px-sm py-1 rounded-full bg-primary-fixed text-on-primary-fixed font-label-sm text-label-sm">شراء</span>'
             : '<span class="px-sm py-1 rounded-full bg-secondary-container text-on-secondary-container font-label-sm text-label-sm">دفع</span>';
         const amountClass = isPurchase ? 'font-bold' : 'text-primary font-bold';
         const amountPrefix = isPurchase ? '+' : '-';
+
+        const runBal = inv.runningBalance !== undefined ? inv.runningBalance : (balanceMap.get(String(inv._id || inv.id)) || 0);
+        let balanceBadge = '';
+        if (runBal <= 0) {
+            balanceBadge = `<span class="text-green-600 font-bold dir-ltr inline-block">${formatCurrency(runBal)}</span>`;
+        } else {
+            balanceBadge = `<span class="text-primary font-bold dir-ltr inline-block">${formatCurrency(runBal)}</span>`;
+        }
 
         return `
             <tr class="cursor-pointer hover:bg-primary/5 transition-colors group" onclick="openTransactionDetails(${inv._id})">
@@ -466,10 +720,88 @@ function renderTransactions(invoices) {
                 <td class="px-md py-md font-body-md text-body-md">${inv.details || '-'}</td>
                 <td class="px-md py-md font-body-md text-body-md text-secondary">${inv.endClientName || '-'}</td>
                 <td class="px-md py-md font-body-md text-body-md ${amountClass}">${amountPrefix}${formatCurrency(inv.amount)}</td>
+                <td class="px-md py-md font-body-md text-body-md">${balanceBadge}</td>
             </tr>
         `;
     }).join('');
+
+    renderPaginationControls({
+        containerId: 'txPaginationControls',
+        infoId: 'txPaginationInfo',
+        currentPage: txCurrentPage,
+        pageSize: txPageSize,
+        totalRecords: totalRecords,
+        unitLabel: 'معاملة',
+        onPageChange: (newPage) => {
+            txCurrentPage = newPage;
+            renderTransactions(currentTxList);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    });
 }
+
+// Custom Transaction Sort Dropdown Functions
+function toggleTxSortDropdown(e) {
+    e.stopPropagation();
+    const menu = document.getElementById('txSortDropdownMenu');
+    const arrow = document.getElementById('txSortDropdownArrow');
+    const isHidden = menu.classList.contains('hidden');
+    
+    if (isHidden) {
+        menu.classList.remove('hidden');
+        requestAnimationFrame(() => {
+            menu.classList.remove('opacity-0', 'scale-95');
+            menu.classList.add('opacity-100', 'scale-100');
+        });
+        arrow.classList.add('rotate-180');
+    } else {
+        menu.classList.add('opacity-0', 'scale-95');
+        menu.classList.remove('opacity-100', 'scale-100');
+        arrow.classList.remove('rotate-180');
+        setTimeout(() => menu.classList.add('hidden'), 150);
+    }
+}
+
+function selectTxSortOption(field, label) {
+    currentTxSortField = field;
+    document.getElementById('txSortSelectedLabel').textContent = label;
+    
+    // Update checkmarks
+    document.getElementById('tx-check-date').classList.toggle('hidden', field !== 'date');
+    document.getElementById('tx-check-createdAt').classList.toggle('hidden', field !== 'createdAt');
+    
+    // Close menu
+    const menu = document.getElementById('txSortDropdownMenu');
+    const arrow = document.getElementById('txSortDropdownArrow');
+    menu.classList.add('opacity-0', 'scale-95');
+    menu.classList.remove('opacity-100', 'scale-100');
+    arrow.classList.remove('rotate-180');
+    setTimeout(() => menu.classList.add('hidden'), 150);
+    
+    renderTransactions(clientInvoices);
+}
+
+document.getElementById('txSortDropdownBtn').addEventListener('click', toggleTxSortDropdown);
+
+document.addEventListener('click', (e) => {
+    const container = document.getElementById('txSortDropdownContainer');
+    if (container && !container.contains(e.target)) {
+        const menu = document.getElementById('txSortDropdownMenu');
+        const arrow = document.getElementById('txSortDropdownArrow');
+        if (menu && !menu.classList.contains('hidden')) {
+            menu.classList.add('opacity-0', 'scale-95');
+            menu.classList.remove('opacity-100', 'scale-100');
+            arrow.classList.remove('rotate-180');
+            setTimeout(() => menu.classList.add('hidden'), 150);
+        }
+    }
+});
+
+document.getElementById('txSortOrderToggle').addEventListener('click', () => {
+    currentTxSortOrder = currentTxSortOrder === 'asc' ? 'desc' : 'asc';
+    document.getElementById('txSortOrderIcon').textContent = currentTxSortOrder === 'asc' ? 'arrow_upward' : 'arrow_downward';
+    renderTransactions(clientInvoices);
+});
 
 // Ripple effect for buttons
 document.querySelectorAll('button').forEach(button => {

@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+    <meta charset="utf-8">
+    <title>كشف حساب - <%= client.name %></title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, 'Arial', 'Cairo', 'Tajawal', sans-serif;
+            background: #ffffff;
+            color: #141b2b;
+            direction: rtl;
+            text-align: right;
+            padding: 24px;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+        .container {
+            max-width: 850px;
+            margin: 0 auto;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #006840;
+            padding-bottom: 16px;
+            margin-bottom: 20px;
+        }
+        .brand-title {
+            font-size: 22px;
+            font-weight: 800;
+            color: #006840;
+            letter-spacing: -0.5px;
+        }
+        .brand-subtitle {
+            font-size: 12px;
+            color: #585f6c;
+            margin-top: 2px;
+        }
+        .doc-meta {
+            text-align: left;
+            font-size: 12px;
+            color: #585f6c;
+        }
+        .doc-meta strong {
+            color: #141b2b;
+        }
+        .doc-title-badge {
+            background: #006840;
+            color: #ffffff;
+            font-size: 14px;
+            font-weight: 700;
+            padding: 4px 14px;
+            border-radius: 20px;
+            display: inline-block;
+            margin-bottom: 6px;
+        }
+
+        /* Client Info & Summary Cards */
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1.2fr 1fr;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .info-box {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 14px 18px;
+        }
+        .info-box h3 {
+            font-size: 14px;
+            font-weight: 700;
+            color: #0f172a;
+            margin-bottom: 8px;
+            border-bottom: 1px dashed #cbd5e1;
+            padding-bottom: 6px;
+        }
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-size: 12px;
+        }
+        .info-label {
+            color: #64748b;
+        }
+        .info-value {
+            font-weight: 600;
+            color: #0f172a;
+        }
+
+        /* Summary Stats Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+        .stat-card {
+            border-radius: 10px;
+            padding: 12px;
+            text-align: center;
+            border: 1px solid #e2e8f0;
+        }
+        .stat-card.purchases {
+            background: #f0fdf4;
+            border-color: #bbf7d0;
+        }
+        .stat-card.payments {
+            background: #eff6ff;
+            border-color: #bfdbfe;
+        }
+        .stat-card.balance {
+            background: #fef2f2;
+            border-color: #fecaca;
+        }
+        .stat-card.balance-clear {
+            background: #f0fdf4;
+            border-color: #bbf7d0;
+        }
+        .stat-label {
+            font-size: 11px;
+            font-weight: 600;
+            color: #64748b;
+            margin-bottom: 4px;
+        }
+        .stat-val {
+            font-size: 16px;
+            font-weight: 800;
+        }
+        .stat-card.purchases .stat-val { color: #166534; }
+        .stat-card.payments .stat-val { color: #1e40af; }
+        .stat-card.balance .stat-val { color: #991b1b; }
+        .stat-card.balance-clear .stat-val { color: #166534; }
+
+        /* Statement Table */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 24px;
+            font-size: 12px;
+        }
+        thead th {
+            background-color: #006840;
+            color: #ffffff;
+            font-weight: 700;
+            padding: 10px 8px;
+            text-align: right;
+            border: 1px solid #005a37;
+        }
+        tbody td {
+            padding: 8px;
+            border: 1px solid #e2e8f0;
+            text-align: right;
+            vertical-align: middle;
+        }
+        tbody tr:nth-child(even) {
+            background-color: #f8fafc;
+        }
+        .text-center { text-align: center; }
+        .text-left { text-align: left; }
+        .font-bold { font-weight: 700; }
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 700;
+        }
+        .badge-purchase {
+            background-color: #dcfce7;
+            color: #15803d;
+        }
+        .badge-payment {
+            background-color: #dbeafe;
+            color: #1d4ed8;
+        }
+
+        /* Footer & Signatures */
+        .footer {
+            margin-top: 36px;
+            padding-top: 16px;
+            border-top: 1px solid #e2e8f0;
+        }
+        .signatures {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 30px;
+            padding: 0 40px;
+        }
+        .signature-box {
+            text-align: center;
+            font-size: 12px;
+            color: #475569;
+        }
+        .signature-line {
+            width: 160px;
+            border-bottom: 1px dashed #94a3b8;
+            margin-top: 40px;
+            margin-bottom: 4px;
+        }
+        .doc-note {
+            font-size: 11px;
+            color: #94a3b8;
+            text-align: center;
+            margin-top: 24px;
+        }
+
+        @media print {
+            body {
+                padding: 0;
+            }
+            .no-print {
+                display: none !important;
+            }
+            @page {
+                size: A4;
+                margin: 15mm;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Action Toolbar for Web Viewing -->
+        <div class="no-print" style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; background: #f8fafc; padding: 12px 18px; border-radius: 12px; border: 1px solid #cbd5e1; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+            <div style="font-weight: 700; color: #0f172a; display: flex; align-items: center; gap: 8px;">
+                <span style="display: inline-block; width: 10px; height: 10px; background: #006840; border-radius: 50%;"></span>
+                <span>كشف حساب جاهز للطباعة أو الحفظ كـ PDF</span>
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <button onclick="window.print()" style="background: #006840; color: white; border: none; padding: 8px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; font-family: inherit; font-size: 13px; display: flex; align-items: center; gap: 6px;">
+                    🖨️ طباعة / حفظ كـ PDF
+                </button>
+                <button onclick="window.close()" style="background: #e2e8f0; color: #334155; border: none; padding: 8px 14px; border-radius: 8px; font-weight: 600; cursor: pointer; font-family: inherit; font-size: 13px;">
+                    إغلاق
+                </button>
+            </div>
+        </div>
+
+        <!-- Header -->
+        <div class="header">
+            <div>
+                <div class="brand-title">حسابات</div>
+                <div class="brand-subtitle">نظام إدارة ديون وتوريدات مواد البناء</div>
+            </div>
+            <div class="doc-meta">
+                <div class="doc-title-badge">كشف حساب عميل</div>
+                <div>تاريخ الطباعة: <strong><%= printDate %></strong></div>
+                <div>عدد العمليات: <strong><%= invoices.length %></strong></div>
+            </div>
+        </div>
+
+        <!-- Client Info -->
+        <div class="info-grid">
+            <div class="info-box">
+                <h3>بيانات العميل / المقاول</h3>
+                <div class="info-row">
+                    <span class="info-label">اسم العميل:</span>
+                    <span class="info-value"><%= client.name %></span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">رقم الهاتف:</span>
+                    <span class="info-value" dir="ltr"><%= client.phone || '-' %></span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">ملاحظات / العنوان:</span>
+                    <span class="info-value"><%= client.notes || '-' %></span>
+                </div>
+            </div>
+
+            <div class="info-box">
+                <h3>ملخص الحساب الحالي</h3>
+                <div class="info-row">
+                    <span class="info-label">تاريخ أول معاملة:</span>
+                    <span class="info-value"><%= firstTxDate %></span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">تاريخ آخر معاملة:</span>
+                    <span class="info-value"><%= lastTxDate %></span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">حالة الحساب:</span>
+                    <span class="info-value" style="color: <%= currentBalance > 0 ? '#b91c1c' : '#15803d' %>;">
+                        <%= currentBalance > 0 ? 'عليه مستحقات قائمة' : 'خالص / لا توجد ديون' %>
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Summary Stats Cards -->
+        <div class="stats-grid">
+            <div class="stat-card purchases">
+                <div class="stat-label">إجمالي المشتريات (شراء)</div>
+                <div class="stat-val"><%= formatCurrency(totalPurchases) %></div>
+            </div>
+            <div class="stat-card payments">
+                <div class="stat-label">إجمالي المدفوعات (سداد)</div>
+                <div class="stat-val"><%= formatCurrency(totalPayments) %></div>
+            </div>
+            <div class="stat-card <%= currentBalance > 0 ? 'balance' : 'balance-clear' %>">
+                <div class="stat-label">الرصيد النهائي المستحق</div>
+                <div class="stat-val"><%= formatCurrency(currentBalance) %></div>
+            </div>
+        </div>
+
+        <!-- Transactions Table -->
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 35px;" class="text-center">#</th>
+                    <th style="width: 85px;">التاريخ</th>
+                    <th style="width: 65px;" class="text-center">النوع</th>
+                    <th>البيان / التفاصيل</th>
+                    <th style="width: 120px;">العميل النهائي</th>
+                    <th style="width: 95px;" class="text-left">المبلغ</th>
+                    <th style="width: 110px;" class="text-left">الرصيد بعد العملية</th>
+                </tr>
+            </thead>
+            <tbody>
+                <% if (invoices.length === 0) { %>
+                    <tr>
+                        <td colspan="7" class="text-center" style="padding: 24px; color: #64748b;">لا توجد معاملات مسجلة لهذا العميل</td>
+                    </tr>
+                <% } else { %>
+                    <% invoices.forEach(function(inv, idx) { %>
+                        <tr>
+                            <td class="text-center" style="color: #64748b;"><%= idx + 1 %></td>
+                            <td><%= formatDate(inv.date) %></td>
+                            <td class="text-center">
+                                <% if (inv.type === 'purchase') { %>
+                                    <span class="badge badge-purchase">شراء</span>
+                                <% } else { %>
+                                    <span class="badge badge-payment">دفع</span>
+                                <% } %>
+                            </td>
+                            <td><%= inv.details || '-' %></td>
+                            <td style="color: #475569;"><%= inv.endClientName || '-' %></td>
+                            <td class="text-left font-bold" style="color: <%= inv.type === 'payment' ? '#16a34a' : '#0f172a' %>;">
+                                <%= inv.type === 'payment' ? '-' : '+' %><%= formatCurrency(inv.amount) %>
+                            </td>
+                            <td class="text-left font-bold" style="color: <%= inv.runningBalance <= 0 ? '#16a34a' : '#006840' %>;">
+                                <%= formatCurrency(inv.runningBalance) %>
+                            </td>
+                        </tr>
+                    <% }); %>
+                <% } %>
+            </tbody>
+        </table>
+
+        <!-- Signatures & Footer -->
+        <div class="footer">
+            <div class="signatures">
+                <div class="signature-box">
+                    <span>توقيع المحاسب المسؤول</span>
+                    <div class="signature-line"></div>
+                </div>
+                <div class="signature-box">
+                    <span>توقيع المستلم / العميل</span>
+                    <div class="signature-line"></div>
+                </div>
+            </div>
+            <p class="doc-note">تم استخراج هذا التقرير آلياً من نظام حسابات بتاريخ <%= printDate %></p>
+        </div>
+    </div>
+</body>
+</html>

@@ -38,36 +38,43 @@ router.get('/', async (req, res) => {
       getAllClientBalances(prisma)
     ]);
 
-    const contractorsWithEndClients = await Promise.all(
-      contractors.map(async (c) => {
-        const distinctInvoices = await prisma.invoice.findMany({
-          where: {
-            clientId: c.id,
-            endClientName: { not: '' }
-          },
-          distinct: ['endClientName'],
-          select: { endClientName: true },
-          orderBy: { updatedAt: 'desc' },
-          take: 20
-        });
+    const contractorIds = contractors.map(c => c.id);
+    let invoicesForContractors = [];
+    if (contractorIds.length > 0) {
+      invoicesForContractors = await prisma.invoice.findMany({
+        where: {
+          clientId: { in: contractorIds },
+          endClientName: { not: '' }
+        },
+        select: { clientId: true, endClientName: true },
+        orderBy: { updatedAt: 'desc' }
+      });
+    }
 
-        const validEndClientNames = distinctInvoices
-          .map(inv => inv.endClientName)
-          .filter(name => name && name.trim() && name.trim() !== '-');
+    const contractorEndClientsMap = new Map();
+    for (const inv of invoicesForContractors) {
+      if (!inv.endClientName || !inv.endClientName.trim() || inv.endClientName.trim() === '-') continue;
+      if (!contractorEndClientsMap.has(inv.clientId)) {
+        contractorEndClientsMap.set(inv.clientId, new Set());
+      }
+      contractorEndClientsMap.get(inv.clientId).add(inv.endClientName.trim());
+    }
 
-        return {
-          id: c.id,
-          _id: c.id,
-          name: c.name,
-          phone: c.phone,
-          balance: balanceMap.get(c.id) || 0,
-          lastTransaction: c.updatedAt,
-          notes: c.notes,
-          matchedEndClients: validEndClientNames,
-          matchedEndClientsCount: validEndClientNames.length
-        };
-      })
-    );
+    const contractorsWithEndClients = contractors.map(c => {
+      const endClientsSet = contractorEndClientsMap.get(c.id) || new Set();
+      const validEndClientNames = Array.from(endClientsSet);
+      return {
+        id: c.id,
+        _id: c.id,
+        name: c.name,
+        phone: c.phone,
+        balance: balanceMap.get(c.id) || 0,
+        lastTransaction: c.updatedAt,
+        notes: c.notes,
+        matchedEndClients: validEndClientNames,
+        matchedEndClientsCount: validEndClientNames.length
+      };
+    });
 
     // 2. Search Invoices for End Clients matching terms
     const endClientInvoices = await prisma.invoice.findMany({
