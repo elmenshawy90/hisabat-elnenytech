@@ -1,15 +1,16 @@
 require('dotenv').config();
 const express = require('express');
 const path = require('path');
-const session = require('express-session');
+const cookieParser = require('cookie-parser');
+const jwt = require('jsonwebtoken');
 
 console.log('[server] Starting app initialization...');
 
 const app = express();
 
-// Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
 
 // View Engine
 app.set('view engine', 'ejs');
@@ -18,40 +19,23 @@ app.set('views', path.join(__dirname, 'views'));
 // Trust proxy for Render/Vercel (required for secure cookies)
 app.set('trust proxy', 1);
 
-// Session Configuration
-const isServerless = process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME || process.env.LAMBDA_TASK_ROOT;
-
-console.log('[server] Is serverless:', isServerless);
-
-let sessionStore;
-if (isServerless) {
-  sessionStore = new session.MemoryStore();
-} else {
-  console.log('[server] Loading PrismaSessionStore...');
-  const { PrismaSessionStore } = require('@quixo3/prisma-session-store');
-  const prisma = require('./lib/prisma');
-  sessionStore = new PrismaSessionStore(prisma, {
-    checkPeriod: 2 * 60 * 1000,
-    dbRecordIdIsSessionId: true,
-    dbRecordIdFunction: undefined,
-  });
-  console.log('[server] PrismaSessionStore loaded');
-}
-
-app.use(session({
-  secret: process.env.SESSION_SECRET || 'fallback-secret-for-dev',
-  resave: false,
-  saveUninitialized: false,
-  store: sessionStore,
-  cookie: {
-    maxAge: 1000 * 60 * 60 * 24 * 7,
-    httpOnly: true,
-    secure: 'auto',
-    sameSite: 'lax'
+// JWT Cookie Middleware
+app.use((req, res, next) => {
+  const token = req.cookies.token;
+  if (!token) {
+    req.user = null;
+    return next();
   }
-}));
+  try {
+    const decoded = jwt.verify(token, process.env.SESSION_SECRET || 'fallback-secret-for-dev');
+    req.user = decoded;
+  } catch (err) {
+    req.user = null;
+  }
+  return next();
+});
 
-console.log('[server] Session middleware configured');
+console.log('[server] JWT middleware configured');
 
 // API Routes
 app.use('/api/auth', require('./routes/auth'));
