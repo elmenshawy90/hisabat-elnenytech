@@ -69,12 +69,48 @@
 </div>
 </div>
 </div>
-<!-- Search -->
-<div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-md mb-md shadow-sm">
-<div class="relative w-full">
-<span class="material-symbols-outlined absolute right-md top-1/2 -translate-y-1/2 text-outline">search</span>
-<input class="w-full h-12 pr-12 pl-md rounded-xl bg-background border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none font-body-md text-body-md transition-all" placeholder="البحث باسم العميل أو رقم الهاتف..." type="text" id="searchInput"/>
-</div>
+<!-- Search & Sort Controls -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-md mb-md shadow-sm flex flex-col md:flex-row gap-sm items-center justify-between">
+    <div class="relative w-full flex-1">
+        <span class="material-symbols-outlined absolute right-md top-1/2 -translate-y-1/2 text-outline">search</span>
+        <input class="w-full h-12 pr-12 pl-md rounded-xl bg-background border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none font-body-md text-body-md transition-all" placeholder="البحث باسم العميل أو رقم الهاتف..." type="text" id="searchInput"/>
+    </div>
+    <div class="flex items-center gap-xs w-full md:w-auto">
+        <!-- Custom Sort Dropdown -->
+        <div class="relative flex-1 md:flex-initial" id="sortDropdownContainer">
+            <button id="sortDropdownBtn" type="button" class="w-full md:w-auto h-12 px-md bg-background border border-outline-variant hover:border-primary/60 focus:border-primary rounded-xl flex items-center justify-between gap-sm text-on-surface font-body-md text-sm transition-all shadow-sm active:scale-98">
+                <div class="flex items-center gap-xs">
+                    <span class="material-symbols-outlined text-primary text-lg">sort</span>
+                    <span class="text-xs text-secondary whitespace-nowrap">الترتيب:</span>
+                    <span id="sortSelectedLabel" class="font-bold text-on-surface text-xs whitespace-nowrap">تاريخ الإضافة</span>
+                </div>
+                <span class="material-symbols-outlined text-outline text-lg transition-transform duration-200" id="sortDropdownArrow">expand_more</span>
+            </button>
+            
+            <!-- Custom Dropdown Menu -->
+            <div id="sortDropdownMenu" class="hidden absolute top-[calc(100%+6px)] right-0 left-0 md:left-auto md:w-48 bg-surface border border-outline-variant/80 rounded-xl shadow-xl z-50 py-1.5 overflow-hidden transition-all duration-150 transform opacity-0 scale-95 origin-top">
+                <button type="button" onclick="selectSortOption('createdAt', 'تاريخ الإضافة')" class="sort-option w-full px-md py-2.5 flex items-center justify-between text-xs hover:bg-primary/10 transition-colors text-right font-medium text-on-surface" data-value="createdAt">
+                    <span class="flex items-center gap-xs">
+                        <span class="material-symbols-outlined text-base text-secondary">calendar_today</span>
+                        تاريخ الإضافة
+                    </span>
+                    <span class="material-symbols-outlined text-primary text-base font-bold sort-check" id="check-createdAt">check</span>
+                </button>
+                <button type="button" onclick="selectSortOption('name', 'الاسم')" class="sort-option w-full px-md py-2.5 flex items-center justify-between text-xs hover:bg-primary/10 transition-colors text-right font-medium text-on-surface" data-value="name">
+                    <span class="flex items-center gap-xs">
+                        <span class="material-symbols-outlined text-base text-secondary">badge</span>
+                        الاسم
+                    </span>
+                    <span class="material-symbols-outlined text-primary text-base font-bold sort-check hidden" id="check-name">check</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Sort Direction Toggle Button -->
+        <button id="sortOrderToggle" class="h-12 w-12 flex-shrink-0 flex items-center justify-center bg-background border border-outline-variant hover:border-primary/60 rounded-xl hover:bg-primary/5 text-primary transition-all active:scale-95 shadow-sm" title="تبديل الترتيب تصاعدي / تنازلي" type="button">
+            <span class="material-symbols-outlined text-xl transition-transform duration-200" id="sortOrderIcon">arrow_downward</span>
+        </button>
+    </div>
 </div>
 <!-- Table Container -->
 <div class="bg-surface-container-lowest border border-outline-variant rounded-xl shadow-sm overflow-hidden">
@@ -93,6 +129,48 @@
 <tr><td colspan="5" class="p-xl text-center text-secondary">جاري التحميل...</td></tr>
 </tbody>
 </table>
+</div>
+<!-- Pagination Footer -->
+<div class="px-md py-sm border-t border-outline-variant bg-surface-container-lowest flex flex-col sm:flex-row items-center justify-between gap-sm text-xs text-secondary" id="clientsPaginationContainer">
+    <div class="flex items-center gap-md w-full sm:w-auto justify-between sm:justify-start">
+        <div class="flex items-center gap-xs">
+            <span>عرض:</span>
+            <!-- Custom Page Size Dropdown -->
+            <div class="relative" id="clientsPageSizeContainer">
+                <button id="clientsPageSizeBtn" type="button" class="h-8 px-2.5 bg-surface-container-low border border-outline-variant hover:border-primary/60 focus:border-primary rounded-lg flex items-center justify-between gap-1 text-on-surface text-xs font-bold transition-all shadow-xs active:scale-98">
+                    <span id="clientsPageSizeLabel">10</span>
+                    <span class="material-symbols-outlined text-outline text-base transition-transform duration-200" id="clientsPageSizeArrow">expand_less</span>
+                </button>
+                
+                <!-- Dropdown Menu (opens upward) -->
+                <div id="clientsPageSizeMenu" class="hidden absolute bottom-[calc(100%+4px)] right-0 w-28 bg-surface border border-outline-variant/80 rounded-xl shadow-xl z-50 py-1 overflow-hidden transition-all duration-150 transform opacity-0 scale-95 origin-bottom">
+                    <button type="button" onclick="selectClientsPageSize(10)" class="w-full px-sm py-1.5 flex items-center justify-between text-xs hover:bg-primary/10 transition-colors text-right font-medium text-on-surface">
+                        <span>10 سجلات</span>
+                        <span class="material-symbols-outlined text-primary text-base font-bold size-check" id="size-check-10">check</span>
+                    </button>
+                    <button type="button" onclick="selectClientsPageSize(25)" class="w-full px-sm py-1.5 flex items-center justify-between text-xs hover:bg-primary/10 transition-colors text-right font-medium text-on-surface">
+                        <span>25 سجل</span>
+                        <span class="material-symbols-outlined text-primary text-base font-bold size-check hidden" id="size-check-25">check</span>
+                    </button>
+                    <button type="button" onclick="selectClientsPageSize(50)" class="w-full px-sm py-1.5 flex items-center justify-between text-xs hover:bg-primary/10 transition-colors text-right font-medium text-on-surface">
+                        <span>50 سجل</span>
+                        <span class="material-symbols-outlined text-primary text-base font-bold size-check hidden" id="size-check-50">check</span>
+                    </button>
+                    <button type="button" onclick="selectClientsPageSize(100)" class="w-full px-sm py-1.5 flex items-center justify-between text-xs hover:bg-primary/10 transition-colors text-right font-medium text-on-surface">
+                        <span>100 سجل</span>
+                        <span class="material-symbols-outlined text-primary text-base font-bold size-check hidden" id="size-check-100">check</span>
+                    </button>
+                </div>
+            </div>
+            <span>عميل لكل صفحة</span>
+        </div>
+        <div class="text-secondary font-medium" id="clientsPaginationInfo">
+            عرض 0 - 0 من أصل 0 عميل
+        </div>
+    </div>
+    <div id="clientsPaginationControls">
+        <!-- Rendered dynamically -->
+    </div>
 </div>
 </div>
 
@@ -149,6 +227,25 @@
 <script src="/js/shared-ui.js"></script>
 <script>
 let allClients = [];
+let currentSortField = 'createdAt'; // 'createdAt' or 'name'
+let currentSortOrder = 'desc'; // 'asc' or 'desc'
+
+function sortClientsList(clients) {
+    const list = [...clients];
+    list.sort((a, b) => {
+        if (currentSortField === 'name') {
+            const nameA = (a.name || '').trim();
+            const nameB = (b.name || '').trim();
+            const cmp = nameA.localeCompare(nameB, 'ar', { sensitivity: 'base' });
+            return currentSortOrder === 'asc' ? cmp : -cmp;
+        } else {
+            const timeA = new Date(a.createdAt || 0).getTime() || (Number(a.id) || 0);
+            const timeB = new Date(b.createdAt || 0).getTime() || (Number(b.id) || 0);
+            return currentSortOrder === 'asc' ? timeA - timeB : timeB - timeA;
+        }
+    });
+    return list;
+}
 
 // Load clients from API
 async function loadClients() {
@@ -166,7 +263,7 @@ async function loadClients() {
         const res = await fetch('/api/clients?limit=1000');
         const responseData = await res.json();
         allClients = responseData.data || [];
-        renderClients(allClients);
+        renderClients(sortClientsList(allClients));
         updateStats(allClients);
     } catch (err) {
         console.error('Failed to load clients:', err);
@@ -182,24 +279,111 @@ function updateStats(clients) {
     document.getElementById('statClear').textContent = clearClients;
 }
 
-function renderClients(clients) {
+let currentClientsList = [];
+let clientsCurrentPage = 1;
+let clientsPageSize = 10;
+
+// Custom Page Size Dropdown Functions
+function toggleClientsPageSizeDropdown(e) {
+    e.stopPropagation();
+    const menu = document.getElementById('clientsPageSizeMenu');
+    const arrow = document.getElementById('clientsPageSizeArrow');
+    const isHidden = menu.classList.contains('hidden');
+    
+    if (isHidden) {
+        menu.classList.remove('hidden');
+        requestAnimationFrame(() => {
+            menu.classList.remove('opacity-0', 'scale-95');
+            menu.classList.add('opacity-100', 'scale-100');
+        });
+        arrow.classList.add('rotate-180');
+    } else {
+        menu.classList.add('opacity-0', 'scale-95');
+        menu.classList.remove('opacity-100', 'scale-100');
+        arrow.classList.remove('rotate-180');
+        setTimeout(() => menu.classList.add('hidden'), 150);
+    }
+}
+
+function selectClientsPageSize(val) {
+    clientsPageSize = Number(val);
+    document.getElementById('clientsPageSizeLabel').textContent = val;
+    
+    // Update checkmarks
+    [10, 25, 50, 100].forEach(size => {
+        const check = document.getElementById(`size-check-${size}`);
+        if (check) check.classList.toggle('hidden', size !== clientsPageSize);
+    });
+    
+    // Close menu
+    const menu = document.getElementById('clientsPageSizeMenu');
+    const arrow = document.getElementById('clientsPageSizeArrow');
+    menu.classList.add('opacity-0', 'scale-95');
+    menu.classList.remove('opacity-100', 'scale-100');
+    arrow.classList.remove('rotate-180');
+    setTimeout(() => menu.classList.add('hidden'), 150);
+    
+    clientsCurrentPage = 1;
+    renderClients(currentClientsList);
+}
+
+document.getElementById('clientsPageSizeBtn').addEventListener('click', toggleClientsPageSizeDropdown);
+
+document.addEventListener('click', (e) => {
+    const container = document.getElementById('clientsPageSizeContainer');
+    if (container && !container.contains(e.target)) {
+        const menu = document.getElementById('clientsPageSizeMenu');
+        const arrow = document.getElementById('clientsPageSizeArrow');
+        if (menu && !menu.classList.contains('hidden')) {
+            menu.classList.add('opacity-0', 'scale-95');
+            menu.classList.remove('opacity-100', 'scale-100');
+            arrow.classList.remove('rotate-180');
+            setTimeout(() => menu.classList.add('hidden'), 150);
+        }
+    }
+});
+
+function renderClients(clients, resetPage = false) {
+    currentClientsList = clients;
+    if (resetPage) clientsCurrentPage = 1;
+
     const tbody = document.getElementById('clientsTableBody');
     const query = document.getElementById('searchInput').value;
-    if (clients.length === 0) {
+    const totalRecords = clients.length;
+
+    if (totalRecords === 0) {
         tbody.innerHTML = '<tr><td colspan="5" class="p-xl text-center text-secondary">لا يوجد عملاء مسجلين</td></tr>';
+        renderPaginationControls({
+            containerId: 'clientsPaginationControls',
+            infoId: 'clientsPaginationInfo',
+            currentPage: 1,
+            pageSize: clientsPageSize,
+            totalRecords: 0,
+            unitLabel: 'عميل',
+            onPageChange: () => {}
+        });
         return;
     }
-    tbody.innerHTML = clients.map((client, index) => {
+
+    const totalPages = Math.ceil(totalRecords / clientsPageSize) || 1;
+    if (clientsCurrentPage > totalPages) clientsCurrentPage = totalPages;
+    if (clientsCurrentPage < 1) clientsCurrentPage = 1;
+
+    const startIndex = (clientsCurrentPage - 1) * clientsPageSize;
+    const endIndex = Math.min(startIndex + clientsPageSize, totalRecords);
+    const pagedClients = clients.slice(startIndex, endIndex);
+
+    tbody.innerHTML = pagedClients.map((client, index) => {
         const initial = client.name.charAt(0);
         const balanceColor = client.balance > 0 ? 'text-tertiary' : 'text-primary-container';
         const hasMatchedEndClients = client.matchedEndClientsCount && client.matchedEndClientsCount > 0;
         return `
-            <tr class="hover:bg-primary-container/5 transition-colors group" style="opacity:0;transform:translateY(10px);animation:fadeInRow 0.4s ease ${index * 0.05}s forwards;">
+            <tr onclick="window.location.href='/client-details?id=${client.id}'" class="cursor-pointer hover:bg-primary/10 transition-all duration-200 group" style="opacity:0;transform:translateY(10px);animation:fadeInRow 0.4s ease ${index * 0.05}s forwards;">
                 <td class="px-lg py-md">
                     <div class="flex items-center gap-md">
-                        <div class="w-10 h-10 rounded-full bg-secondary-container flex items-center justify-center text-on-secondary-container font-bold">${initial}</div>
+                        <div class="w-10 h-10 rounded-full bg-secondary-container flex items-center justify-center text-on-secondary-container font-bold group-hover:scale-105 transition-transform">${initial}</div>
                         <div class="flex flex-col">
-                            <span class="font-body-md text-body-md text-on-surface font-bold">${highlightArabic(client.name, query)}</span>
+                            <span class="font-body-md text-body-md text-on-surface font-bold group-hover:text-primary transition-colors">${highlightArabic(client.name, query)}</span>
                             ${hasMatchedEndClients ? `
                                 <span class="text-xs text-secondary mt-0.5">
                                     طلب من خلاله: <strong class="text-on-surface-variant font-semibold">${client.matchedEndClients.slice(0, 3).map(n => highlightArabic(n, query)).join('، ')}</strong>${client.matchedEndClientsCount > 3 ? ` (+${client.matchedEndClientsCount - 3} آخرين)` : ''}
@@ -220,10 +404,10 @@ function renderClients(clients) {
                 </td>
                 <td class="px-lg py-md">
                     <div class="flex items-center justify-center gap-sm">
-                        <a href="/client-details?id=${client.id}" class="p-sm rounded-lg hover:bg-surface-container-highest text-primary transition-all active:scale-90" title="عرض">
+                        <a href="/client-details?id=${client.id}" onclick="event.stopPropagation();" class="p-sm rounded-lg hover:bg-surface-container-highest text-primary transition-all active:scale-90" title="عرض">
                             <span class="material-symbols-outlined">visibility</span>
                         </a>
-                        <button onclick="deleteClient('${client.id}', '${client.name}')" class="p-sm rounded-lg hover:bg-error-container/20 text-error transition-all active:scale-90" title="حذف">
+                        <button onclick="event.stopPropagation(); deleteClient('${client.id}', '${client.name}')" class="p-sm rounded-lg hover:bg-error-container/20 text-error transition-all active:scale-90" title="حذف">
                             <span class="material-symbols-outlined">delete</span>
                         </button>
                     </div>
@@ -231,7 +415,90 @@ function renderClients(clients) {
             </tr>
         `;
     }).join('');
+
+    renderPaginationControls({
+        containerId: 'clientsPaginationControls',
+        infoId: 'clientsPaginationInfo',
+        currentPage: clientsCurrentPage,
+        pageSize: clientsPageSize,
+        totalRecords: totalRecords,
+        unitLabel: 'عميل',
+        onPageChange: (newPage) => {
+            clientsCurrentPage = newPage;
+            renderClients(currentClientsList);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    });
 }
+
+// Custom Sort Dropdown Functions
+function toggleSortDropdown(e) {
+    e.stopPropagation();
+    const menu = document.getElementById('sortDropdownMenu');
+    const arrow = document.getElementById('sortDropdownArrow');
+    const isHidden = menu.classList.contains('hidden');
+    
+    if (isHidden) {
+        menu.classList.remove('hidden');
+        requestAnimationFrame(() => {
+            menu.classList.remove('opacity-0', 'scale-95');
+            menu.classList.add('opacity-100', 'scale-100');
+        });
+        arrow.classList.add('rotate-180');
+    } else {
+        menu.classList.add('opacity-0', 'scale-95');
+        menu.classList.remove('opacity-100', 'scale-100');
+        arrow.classList.remove('rotate-180');
+        setTimeout(() => menu.classList.add('hidden'), 150);
+    }
+}
+
+function selectSortOption(field, label) {
+    currentSortField = field;
+    document.getElementById('sortSelectedLabel').textContent = label;
+    
+    // Update checkmarks
+    document.getElementById('check-createdAt').classList.toggle('hidden', field !== 'createdAt');
+    document.getElementById('check-name').classList.toggle('hidden', field !== 'name');
+    
+    // Close menu
+    const menu = document.getElementById('sortDropdownMenu');
+    const arrow = document.getElementById('sortDropdownArrow');
+    menu.classList.add('opacity-0', 'scale-95');
+    menu.classList.remove('opacity-100', 'scale-100');
+    arrow.classList.remove('rotate-180');
+    setTimeout(() => menu.classList.add('hidden'), 150);
+    
+    const query = (document.getElementById('searchInput').value || '').trim();
+    if (query.length === 0) {
+        renderClients(sortClientsList(allClients));
+    }
+}
+
+document.getElementById('sortDropdownBtn').addEventListener('click', toggleSortDropdown);
+
+document.addEventListener('click', (e) => {
+    const container = document.getElementById('sortDropdownContainer');
+    if (container && !container.contains(e.target)) {
+        const menu = document.getElementById('sortDropdownMenu');
+        const arrow = document.getElementById('sortDropdownArrow');
+        if (menu && !menu.classList.contains('hidden')) {
+            menu.classList.add('opacity-0', 'scale-95');
+            menu.classList.remove('opacity-100', 'scale-100');
+            arrow.classList.remove('rotate-180');
+            setTimeout(() => menu.classList.add('hidden'), 150);
+        }
+    }
+});
+
+document.getElementById('sortOrderToggle').addEventListener('click', () => {
+    currentSortOrder = currentSortOrder === 'asc' ? 'desc' : 'asc';
+    document.getElementById('sortOrderIcon').textContent = currentSortOrder === 'asc' ? 'arrow_upward' : 'arrow_downward';
+    const query = (document.getElementById('searchInput').value || '').trim();
+    if (query.length === 0) {
+        renderClients(sortClientsList(allClients));
+    }
+});
 
 // Unified Search with 300ms Debounce
 let searchDebounceTimer = null;
@@ -245,7 +512,7 @@ document.getElementById('searchInput').addEventListener('input', (e) => {
 
     if (rawVal.length === 0) {
         endClientsSection.classList.add('hidden');
-        renderClients(allClients);
+        renderClients(sortClientsList(allClients), true);
         updateStats(allClients);
         return;
     }
@@ -260,7 +527,7 @@ document.getElementById('searchInput').addEventListener('input', (e) => {
             const endClientMatches = data.endClientMatches || [];
 
             // Render contractors table
-            renderClients(contractors);
+            renderClients(contractors, true);
 
             // Render End Clients results section
             if (endClientMatches.length > 0) {

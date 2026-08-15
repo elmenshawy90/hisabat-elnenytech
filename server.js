@@ -11,6 +11,9 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Serve Static Files early (so static assets don't hit PrismaSessionStore / DB)
+app.use(express.static(path.join(__dirname, 'public')));
+
 // View Engine
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
@@ -76,9 +79,6 @@ app.get('/client-details', (req, res) => res.render('client-details'));
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
 });
-
-// Serve Static Files
-app.use(express.static(path.join(__dirname, 'public')));
 
 // Catch-all API 404
 app.use('/api/*', (req, res) => {

@@ -305,3 +305,88 @@ function validateFormFields(formId) {
     return hasEmpty;
 }
 
+// ─── Pagination Component Helper ────────────────────────────
+function renderPaginationControls({
+  containerId,
+  infoId,
+  currentPage,
+  pageSize,
+  totalRecords,
+  unitLabel = 'عنصر',
+  onPageChange
+}) {
+  const container = document.getElementById(containerId);
+  const infoEl = document.getElementById(infoId);
+  if (!container) return;
+
+  const totalPages = Math.ceil(totalRecords / pageSize) || 1;
+  const startRecord = totalRecords > 0 ? (currentPage - 1) * pageSize + 1 : 0;
+  const endRecord = Math.min(currentPage * pageSize, totalRecords);
+
+  if (infoEl) {
+    infoEl.textContent = `عرض ${startRecord} - ${endRecord} من أصل ${totalRecords} ${unitLabel}`;
+  }
+
+  // Calculate visible page numbers
+  let pages = [];
+  if (totalPages <= 7) {
+    for (let i = 1; i <= totalPages; i++) pages.push(i);
+  } else {
+    pages.push(1);
+    if (currentPage > 3) pages.push('...');
+    const start = Math.max(2, currentPage - 1);
+    const end = Math.min(totalPages - 1, currentPage + 1);
+    for (let i = start; i <= end; i++) {
+      if (!pages.includes(i)) pages.push(i);
+    }
+    if (currentPage < totalPages - 2) pages.push('...');
+    if (!pages.includes(totalPages)) pages.push(totalPages);
+  }
+
+  const prevDisabled = currentPage <= 1 ? 'disabled class="opacity-40 cursor-not-allowed"' : '';
+  const nextDisabled = currentPage >= totalPages ? 'disabled class="opacity-40 cursor-not-allowed"' : '';
+
+  let html = `
+    <div class="flex items-center gap-1">
+      <button ${prevDisabled} data-page="${currentPage - 1}" class="pagination-btn h-8 px-2.5 flex items-center justify-center rounded-lg border border-outline-variant bg-surface hover:bg-surface-container text-on-surface text-xs transition-all active:scale-95 disabled:hover:bg-surface">
+        <span class="material-symbols-outlined text-base">chevron_right</span>
+        <span class="mr-0.5 hidden sm:inline">السابق</span>
+      </button>
+  `;
+
+  pages.forEach(p => {
+    if (p === '...') {
+      html += `<span class="px-2 text-secondary text-xs">...</span>`;
+    } else {
+      const isActive = p === currentPage;
+      const activeClass = isActive
+        ? 'bg-primary text-white font-bold border-primary shadow-xs'
+        : 'bg-surface hover:bg-surface-container text-on-surface border-outline-variant';
+      html += `
+        <button data-page="${p}" class="pagination-btn h-8 min-w-[32px] px-2 flex items-center justify-center rounded-lg border text-xs transition-all active:scale-95 ${activeClass}">
+          ${p}
+        </button>
+      `;
+    }
+  });
+
+  html += `
+      <button ${nextDisabled} data-page="${currentPage + 1}" class="pagination-btn h-8 px-2.5 flex items-center justify-center rounded-lg border border-outline-variant bg-surface hover:bg-surface-container text-on-surface text-xs transition-all active:scale-95 disabled:hover:bg-surface">
+        <span class="ml-0.5 hidden sm:inline">التالي</span>
+        <span class="material-symbols-outlined text-base">chevron_left</span>
+      </button>
+    </div>
+  `;
+
+  container.innerHTML = html;
+
+  container.querySelectorAll('.pagination-btn:not([disabled])').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const p = parseInt(btn.getAttribute('data-page'), 10);
+      if (p && p !== currentPage && p >= 1 && p <= totalPages) {
+        onPageChange(p);
+      }
+    });
+  });
+}
+
