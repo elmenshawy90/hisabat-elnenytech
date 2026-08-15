@@ -1,24 +1,27 @@
 <aside
     class="hidden md:flex flex-col gap-lg p-md fixed right-0 h-full w-64 bg-surface-container-low border-l border-outline-variant z-40 transition-all duration-300"
     id="sidebar">
-    <div class="flex flex-col items-center py-md px-md border-b border-outline-variant/30 mb-sm text-center">
-        <img src="/images/logo.svg" alt="سجل الديون" class="w-40 h-40 object-contain mb-4" />
+    <div class="flex flex-col items-center border-b border-outline-variant/30 mb-sm text-center">
+        <img src="/images/logo.svg" alt="سجل الديون" class="w-[100px] object-contain mb-4" />
     </div>
     <div class="text-start px-md">
         <h1 class="font-headline-md text-headline-md font-bold text-primary leading-tight">سجل الديون</h1>
         <p class="text-[10px] text-secondary">إدارة مواد البناء</p>
     </div>
     <nav class="flex flex-col gap-sm flex-grow">
-        <a class="flex flex-row items-center gap-md <%= active === 'dashboard' ? 'bg-primary-container text-on-primary-container' : 'text-secondary' %> rounded-lg px-md py-sm hover:bg-surface-container-highest transition-all" href="/dashboard">
-            <span class="material-symbols-outlined" <%- active === 'dashboard' ? 'style="font-variation-settings: \'FILL\' 1;"' : '' %>>dashboard</span>
+        <a class="flex flex-row items-center gap-md <%= active === 'dashboard' ? 'bg-primary-container text-on-primary-container' : 'text-secondary' %> rounded-lg px-md py-sm hover:bg-surface-container-highest transition-all"
+            href="/dashboard">
+            <span class="material-symbols-outlined <%= active === 'dashboard' ? 'filled' : '' %>">dashboard</span>
             <span class="font-label-md text-label-md flex-grow text-right">لوحة القيادة</span>
         </a>
-        <a class="flex flex-row items-center gap-md <%= active === 'clients' ? 'bg-primary-container text-on-primary-container' : 'text-secondary' %> px-md py-sm hover:bg-surface-container-highest transition-all rounded-lg" href="/clients">
-            <span class="material-symbols-outlined" <%- active === 'clients' ? 'style="font-variation-settings: \'FILL\' 1;"' : '' %>>group</span>
+        <a class="flex flex-row items-center gap-md <%= active === 'clients' ? 'bg-primary-container text-on-primary-container' : 'text-secondary' %> px-md py-sm hover:bg-surface-container-highest transition-all rounded-lg"
+            href="/clients">
+            <span class="material-symbols-outlined <%= active === 'clients' ? 'filled' : '' %>">group</span>
             <span class="font-label-md text-label-md flex-grow text-right">العملاء</span>
         </a>
-        <a class="flex flex-row items-center gap-md <%= active === 'invoices' ? 'bg-primary-container text-on-primary-container' : 'text-secondary' %> px-md py-sm hover:bg-surface-container-highest transition-all rounded-lg" href="/new-invoice">
-            <span class="material-symbols-outlined" <%- active === 'invoices' ? 'style="font-variation-settings: \'FILL\' 1;"' : '' %>>add_circle</span>
+        <a class="flex flex-row items-center gap-md <%= active === 'invoices' ? 'bg-primary-container text-on-primary-container' : 'text-secondary' %> px-md py-sm hover:bg-surface-container-highest transition-all rounded-lg"
+            href="/new-invoice">
+            <span class="material-symbols-outlined <%= active === 'invoices' ? 'filled' : '' %>">add_circle</span>
             <span class="font-label-md text-label-md flex-grow text-right">إضافة معاملة</span>
         </a>
         <div class="mt-auto border-t border-outline-variant/30 pt-md">

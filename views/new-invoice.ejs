@@ -71,6 +71,7 @@
                                 <thead class="bg-surface-container-low border-b border-outline-variant">
                                     <tr>
                                         <th class="px-lg py-md font-label-md text-label-md text-secondary">العميل</th>
+                                        <th class="px-lg py-md font-label-md text-label-md text-secondary">العميل النهائي</th>
                                         <th class="px-lg py-md font-label-md text-label-md text-secondary">المبلغ
                                             المستحق</th>
                                         <th class="px-lg py-md font-label-md text-label-md text-secondary" dir="ltr">رقم
@@ -85,7 +86,7 @@
                                 </thead>
                                 <tbody class="divide-y divide-outline-variant" id="invoiceList">
                                     <tr>
-                                        <td colspan="6" class="p-xl text-center text-secondary">جاري التحميل...</td>
+                                        <td colspan="7" class="p-xl text-center text-secondary">جاري التحميل...</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -112,6 +113,7 @@
                         class="text-error font-bold">*</span>) هي حقول إجبارية</p>
                 <form class="space-y-lg" id="invoiceForm" novalidate>
                     <input type="hidden" id="clientId">
+                    <input type="hidden" id="endClientId">
 
                     <!-- Client Summary Card (Hidden initially) -->
                     <div id="clientSummaryCard"
@@ -150,6 +152,21 @@
                                 class="hidden absolute top-[72px] left-0 right-0 mt-1 bg-surface border border-outline-variant rounded-xl shadow-lg z-[110] max-h-[300px] overflow-y-auto custom-scrollbar">
                             </div>
                         </div>
+                        <div class="flex flex-col gap-xs relative">
+                            <label class="font-label-md text-label-md text-on-surface-variant mb-xs">اسم العميل النهائي (اختياري)</label>
+                            <div class="relative">
+                                <span
+                                    class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline">person_pin</span>
+                                <input
+                                    class="w-full h-12 pr-10 pl-md rounded-xl bg-surface-container-low border border-outline-variant form-input-focus transition-all text-right"
+                                    id="endClientName" placeholder="مثال: محمد إبراهيم (اختياري)" type="text"
+                                    autocomplete="off" />
+                            </div>
+                            <!-- End Client Dropdown -->
+                            <div id="endClientDropdown"
+                                class="hidden absolute top-[72px] left-0 right-0 mt-1 bg-surface border border-outline-variant rounded-xl shadow-lg z-[110] max-h-[300px] overflow-y-auto custom-scrollbar">
+                            </div>
+                        </div>
                         <div class="flex flex-col gap-xs">
                             <label class="font-label-md text-label-md text-on-surface-variant mb-xs">رقم الجوال</label>
                             <div class="relative">
@@ -164,50 +181,46 @@
                                 أرقام فقط</p>
                         </div>
                         <div class="flex flex-col gap-xs">
-                            <label class="font-label-md text-label-md text-on-surface-variant mb-xs">تاريخ الفاتورة
-                                <span class="text-error">*</span></label>
+                            <label class="font-label-md text-label-md text-on-surface-variant mb-xs">تاريخ الفاتورة</label>
                             <div class="relative">
                                 <span
                                     class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline pointer-events-none">calendar_today</span>
                                 <input
                                     class="w-full h-12 pr-10 pl-md rounded-xl bg-surface-container-low border border-outline-variant form-input-focus transition-all text-right cursor-pointer"
-                                    id="invoiceDate" placeholder="اختر التاريخ" type="text" required />
+                                    id="invoiceDate" placeholder="اختر التاريخ" type="text" />
                             </div>
                         </div>
                         <div class="flex flex-col gap-xs">
                             <label class="font-label-md text-label-md text-on-surface-variant mb-xs">المبلغ المستحق
-                                (جنيه)
-                                <span class="text-error">*</span></label>
+                                (جنيه)</label>
                             <div class="relative">
                                 <span
                                     class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline">payments</span>
                                 <input
                                     class="w-full h-12 pr-10 pl-md rounded-xl bg-surface-container-low border border-outline-variant form-input-focus transition-all text-right font-bold text-primary"
-                                    id="invoiceAmount" placeholder="0.00" type="number" step="0.01" required />
+                                    id="invoiceAmount" placeholder="0.00" type="number" step="0.01" />
                             </div>
                         </div>
                         <div class="md:col-span-2 flex flex-col gap-xs">
-                            <label class="font-label-md text-label-md text-on-surface-variant mb-xs">عنوان التوصيل <span
-                                    class="text-error">*</span></label>
+                            <label class="font-label-md text-label-md text-on-surface-variant mb-xs">عنوان التوصيل</label>
                             <div class="relative">
                                 <span
                                     class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline">location_on</span>
                                 <input
                                     class="w-full h-12 pr-10 pl-md rounded-xl bg-surface-container-low border border-outline-variant form-input-focus transition-all text-right"
-                                    id="deliveryAddress" placeholder="الحي، الشارع، رقم المبنى..." type="text"
-                                    required />
+                                    id="deliveryAddress" placeholder="الحي، الشارع، رقم المبنى..." type="text" />
                             </div>
                         </div>
                         <div class="md:col-span-2 flex flex-col gap-xs">
                             <label class="font-label-md text-label-md text-on-surface-variant mb-xs">التفاصيل /
-                                المشتريات <span class="text-error">*</span></label>
+                                المشتريات</label>
                             <div class="relative">
                                 <span
                                     class="material-symbols-outlined absolute right-3 top-4 text-outline">inventory_2</span>
                                 <textarea
                                     class="w-full pr-10 pl-md pt-3 rounded-xl bg-surface-container-low border border-outline-variant form-input-focus transition-all text-right resize-none"
                                     id="invoiceDetails" placeholder="مثال: 1 طن أسمنت مقاوم، 500 حجر بلوك مقاس 20..."
-                                    rows="4" required></textarea>
+                                    rows="4"></textarea>
                             </div>
                         </div>
                     </div>
@@ -251,6 +264,10 @@
                         <span class="font-body-md text-on-surface font-bold" id="tdClient"></span>
                     </div>
                     <div class="flex justify-between border-b border-outline-variant pb-xs">
+                        <span class="text-secondary font-label-md">العميل النهائي</span>
+                        <span class="font-body-md text-on-surface font-bold" id="tdEndClient"></span>
+                    </div>
+                    <div class="flex justify-between border-b border-outline-variant pb-xs">
                         <span class="text-secondary font-label-md">نوع المعاملة</span>
                         <span class="font-body-md text-on-surface font-bold" id="tdType"></span>
                     </div>
@@ -280,6 +297,7 @@
         <script>
             let allInvoices = [];
             let allClientsList = [];
+            let allEndClientsList = [];
 
             async function loadClients() {
                 try {
@@ -288,6 +306,16 @@
                     allClientsList = data.data || [];
                 } catch (err) {
                     console.error('Failed to load clients:', err);
+                }
+            }
+
+            async function loadEndClients() {
+                try {
+                    const res = await fetch('/api/end-clients');
+                    const data = await res.json();
+                    allEndClientsList = data.data || [];
+                } catch (err) {
+                    console.error('Failed to load end clients:', err);
                 }
             }
 
@@ -325,12 +353,13 @@
                 const tbody = document.getElementById('invoiceList');
                 const query = document.getElementById('searchInput').value;
                 if (invoices.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="6" class="p-xl text-center text-secondary">لا توجد فواتير بعد</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="7" class="p-xl text-center text-secondary">لا توجد فواتير بعد</td></tr>';
                     return;
                 }
                 tbody.innerHTML = invoices.map(inv => `
         <tr class="invoice-item cursor-pointer hover:bg-primary/5 transition-colors group" onclick="openTransactionDetails(${inv._id})">
             <td class="p-md font-body-md text-on-surface client-name">${highlightArabic(inv.clientName, query)}</td>
+            <td class="p-md font-body-md text-secondary end-client-name">${highlightArabic(inv.endClientName || '', query) || '-'}</td>
             <td class="p-md font-body-md font-bold ${inv.type === 'payment' ? 'text-green-600' : 'text-primary'}">${inv.type === 'payment' ? '-' : ''}${formatCurrency(inv.amount)}</td>
             <td class="p-md font-body-md text-secondary client-mobile" dir="ltr">${highlightArabic(inv.clientPhone || '', query) || '-'}</td>
             <td class="p-md font-body-md text-secondary">${formatDate(inv.date)}</td>
@@ -349,6 +378,7 @@
                 const filter = normalizeArabic(document.getElementById('searchInput').value);
                 const filtered = allInvoices.filter(inv =>
                     normalizeArabic(inv.clientName).includes(filter) ||
+                    (inv.endClientName && normalizeArabic(inv.endClientName).includes(filter)) ||
                     (inv.clientPhone && inv.clientPhone.includes(filter))
                 );
                 renderInvoices(filtered);
@@ -379,6 +409,7 @@
 
                 document.getElementById('tdDate').textContent = formatDate(inv.date);
                 document.getElementById('tdClient').textContent = inv.clientName;
+                document.getElementById('tdEndClient').textContent = inv.endClientName || '-';
                 document.getElementById('tdType').textContent = inv.type === 'payment' ? 'دفعة' : 'عملية شراء';
 
                 const amountEl = document.getElementById('tdAmount');
@@ -412,6 +443,8 @@
                 modal.classList.add('flex');
                 document.body.style.overflow = 'hidden';
                 document.getElementById('invoiceDate').valueAsDate = new Date();
+                loadClients();
+                loadEndClients();
             }
 
             function closeModal() {
@@ -421,11 +454,14 @@
                 document.body.style.overflow = '';
                 document.getElementById('invoiceForm').reset();
                 document.getElementById('clientId').value = '';
+                document.getElementById('endClientId').value = '';
                 document.getElementById('clientSummaryCard').classList.add('hidden');
                 document.getElementById('clientSummaryCard').classList.remove('flex');
+                document.getElementById('clientDropdown').classList.add('hidden');
+                document.getElementById('endClientDropdown').classList.add('hidden');
             }
 
-            // Auto-complete Logic
+            // Client Auto-complete Logic
             const clientNameInput = document.getElementById('clientName');
             const clientDropdown = document.getElementById('clientDropdown');
             const clientIdInput = document.getElementById('clientId');
@@ -488,7 +524,7 @@
             function selectClient(id, name, phone, balance, lastTransaction) {
                 clientIdInput.value = id;
                 clientNameInput.value = name;
-                document.getElementById('mobileNumber').value = phone;
+                document.getElementById('mobileNumber').value = phone && phone !== '-' ? phone : '';
 
                 const balanceEl = document.getElementById('summaryBalance');
                 balanceEl.textContent = formatCurrency(balance);
@@ -502,9 +538,72 @@
                 clientSummaryCard.classList.add('flex');
             }
 
+            // End Client Auto-complete Logic
+            const endClientNameInput = document.getElementById('endClientName');
+            const endClientDropdown = document.getElementById('endClientDropdown');
+            const endClientIdInput = document.getElementById('endClientId');
+
+            endClientNameInput.addEventListener('input', (e) => {
+                const rawVal = e.target.value || '';
+                const terms = [...new Set(rawVal.trim().split(/\s+/).filter(Boolean))];
+
+                endClientIdInput.value = '';
+
+                if (terms.length === 0) {
+                    endClientDropdown.classList.add('hidden');
+                    return;
+                }
+
+                const scoredEndClients = [];
+                for (const ec of allEndClientsList) {
+                    const normName = normalizeArabic(ec.name || '');
+                    const phone = ec.phone || '';
+                    let score = 0;
+                    for (const term of terms) {
+                        const normTerm = normalizeArabic(term);
+                        const nameMatches = normTerm && normName.includes(normTerm);
+                        const phoneMatches = phone && phone.includes(term);
+                        if (nameMatches || phoneMatches) {
+                            score++;
+                        }
+                    }
+                    if (score > 0) {
+                        scoredEndClients.push({ client: ec, score });
+                    }
+                }
+
+                scoredEndClients.sort((a, b) => b.score - a.score);
+                const matches = scoredEndClients.map(item => item.client);
+
+                if (matches.length > 0) {
+                    endClientDropdown.innerHTML = matches.map(ec => {
+                        const id = String(ec.id || ec._id);
+                        const safeName = (ec.name || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                        return `
+                    <div class="px-md py-sm hover:bg-surface-container-highest cursor-pointer border-b border-outline-variant/30 last:border-0 transition-colors"
+                         onclick="selectEndClient('${id}', '${safeName}')">
+                        <div class="font-body-md text-on-surface font-bold">${highlightArabic(ec.name, rawVal)}</div>
+                        ${ec.phone && ec.phone !== '-' ? `<div class="font-label-sm text-secondary dir-ltr text-right">${highlightArabic(ec.phone, rawVal)}</div>` : ''}
+                    </div>
+                `}).join('');
+                    endClientDropdown.classList.remove('hidden');
+                } else {
+                    endClientDropdown.classList.add('hidden');
+                }
+            });
+
+            function selectEndClient(id, name) {
+                endClientIdInput.value = id;
+                endClientNameInput.value = name;
+                endClientDropdown.classList.add('hidden');
+            }
+
             document.addEventListener('click', (e) => {
                 if (!clientNameInput.contains(e.target) && !clientDropdown.contains(e.target)) {
                     clientDropdown.classList.add('hidden');
+                }
+                if (!endClientNameInput.contains(e.target) && !endClientDropdown.contains(e.target)) {
+                    endClientDropdown.classList.add('hidden');
                 }
             });
 
@@ -513,6 +612,7 @@
                 e.preventDefault();
 
                 const name = document.getElementById('clientName').value.trim();
+                const endName = document.getElementById('endClientName').value.trim();
                 const mobile = document.getElementById('mobileNumber').value.trim();
                 const date = document.getElementById('invoiceDate').value;
                 const amount = document.getElementById('invoiceAmount').value;
@@ -520,11 +620,12 @@
                 const address = document.getElementById('deliveryAddress').value.trim();
 
                 if (validateFormFields('invoiceForm')) {
-                    showToast('الرجاء إكمال جميع الحقول الإجبارية', 'warning');
+                    showToast('الرجاء إدخال اسم العميل', 'warning');
                     return;
                 }
 
                 const clientId = document.getElementById('clientId').value;
+                const endClientId = document.getElementById('endClientId').value;
 
                 try {
                     const res = await fetch('/api/invoices', {
@@ -533,11 +634,13 @@
                         body: JSON.stringify({
                             client: clientId || undefined,
                             clientName: name,
-                            clientPhone: mobile,
-                            date: date,
-                            amount: parseFloat(amount),
-                            details: details,
-                            address: address,
+                            endClientId: endClientId || undefined,
+                            endClientName: endName || undefined,
+                            clientPhone: mobile || undefined,
+                            date: date || undefined,
+                            amount: parseFloat(amount) || 0,
+                            details: details || '-',
+                            address: address || '-',
                             type: 'purchase'
                         })
                     });
@@ -547,6 +650,7 @@
                         closeModal();
                         loadInvoices();
                         loadClients();
+                        loadEndClients();
                     } else {
                         const err = await res.json();
                         showToast(err.error || 'فشل في حفظ الفاتورة', 'error');
@@ -565,6 +669,7 @@
             document.addEventListener('DOMContentLoaded', () => {
                 loadInvoices();
                 loadClients();
+                loadEndClients();
             });
         </script>
 </body>

@@ -58,8 +58,7 @@ async function seedData() {
       const client = await prisma.client.create({
         data: {
           name: c.name,
-          phone: c.phone || '0000000000',
-          balance: c.balance || 0,
+          phone: c.phone || '-',
           createdAt: c.createdAt ? new Date(c.createdAt) : new Date(),
           updatedAt: c.lastTransaction ? new Date(c.lastTransaction) : new Date(),
           notes: c.lastTransactionNote || ''
@@ -78,7 +77,7 @@ async function seedData() {
         data: {
           clientId,
           clientName: inv.clientName || 'Unknown',
-          clientPhone: inv.clientPhone || '0000000000',
+          clientPhone: inv.clientPhone || '-',
           type: inv.type || 'purchase',
           amount: parseFloat(inv.amount) || 0,
           details: inv.details || '-',

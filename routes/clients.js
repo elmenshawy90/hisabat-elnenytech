@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const prisma = require('../lib/prisma');
 const { requireAuth } = require('../middleware/auth');
+const { normalize } = require('../lib/normalize');
+const { getClientBalance, getAllClientBalances } = require('../lib/balance');
 
 // Apply auth middleware to all routes
 router.use(requireAuth);
@@ -27,18 +29,22 @@ router.get('/', async (req, res) => {
       }
     }
 
-    const total = await prisma.client.count({ where });
-    const clients = await prisma.client.findMany({
-      where,
-      orderBy: { updatedAt: 'desc' },
-      skip,
-      take: limit
-    });
+    const [total, clients, balanceMap] = await Promise.all([
+      prisma.client.count({ where }),
+      prisma.client.findMany({
+        where,
+        orderBy: { updatedAt: 'desc' },
+        skip,
+        take: limit
+      }),
+      getAllClientBalances(prisma)
+    ]);
 
     res.json({
       data: clients.map(c => ({
         ...c,
         _id: c.id,
+        balance: balanceMap.get(c.id) || 0,
         lastTransaction: c.updatedAt,
         lastTransactionNote: c.notes || '',
         initials: c.name.split(' ').slice(0, 2).map(w => w[0]).join(' ')
@@ -62,14 +68,21 @@ router.get('/:id', async (req, res) => {
     const id = Number(req.params.id);
     if (isNaN(id) || !Number.isInteger(id)) return res.status(400).json({ error: 'معرف غير صالح' });
 
-    const client = await prisma.client.findUnique({
-      where: { id },
-      include: {
-        invoices: {
-          orderBy: { date: 'desc' }
+    const [client, balance] = await Promise.all([
+      prisma.client.findUnique({
+        where: { id },
+        include: {
+          invoices: {
+            orderBy: [
+              { date: 'desc' },
+              { createdAt: 'desc' },
+              { id: 'desc' }
+            ]
+          }
         }
-      }
-    });
+      }),
+      getClientBalance(prisma, id)
+    ]);
 
     if (!client) {
       return res.status(404).json({ error: 'العميل غير موجود' });
@@ -78,6 +91,7 @@ router.get('/:id', async (req, res) => {
     res.json({
       ...client,
       _id: client.id,
+      balance,
       lastTransaction: client.updatedAt,
       lastTransactionNote: client.notes || '',
       invoices: client.invoices.map(inv => ({ ...inv, _id: inv.id })),
@@ -92,28 +106,14 @@ router.get('/:id', async (req, res) => {
 // POST /api/clients - Create new client
 router.post('/', async (req, res) => {
   try {
-    const { name, phone, address, notes, balance } = req.body;
+    const { name, phone, address, notes } = req.body;
     
-    if (!name || !name.trim() || !phone || !phone.trim()) {
-      return res.status(400).json({ error: 'اسم العميل ورقم الهاتف مطلوبان' });
+    if (!name || !name.trim()) {
+      return res.status(400).json({ error: 'اسم العميل مطلوب' });
     }
 
     const trimmedName = name.trim();
-    const trimmedPhone = phone.trim();
-
-    // Normalization helper for duplicate check
-    const normalize = (str) => {
-      if (!str) return '';
-      return str.toString().toLowerCase()
-        .replace(/[\u064B-\u065F\u0670]/g, '')
-        .replace(/[أإآا]/g, 'ا')
-        .replace(/[ةه]/g, 'ه')
-        .replace(/[ىي]/g, 'ي')
-        .replace(/[ؤئ]/g, 'ء')
-        .replace(/ـ/g, '')
-        .replace(/\s+/g, ' ')
-        .trim();
-    };
+    const trimmedPhone = phone && phone.trim() ? phone.trim() : '-';
 
     const normNewName = normalize(trimmedName);
     const existingClients = await prisma.client.findMany({ select: { id: true, name: true, phone: true } });
@@ -128,11 +128,10 @@ router.post('/', async (req, res) => {
         name: trimmedName,
         phone: trimmedPhone,
         address: address || '',
-        notes: notes || '',
-        balance: balance ? parseFloat(balance) : 0
+        notes: notes || ''
       }
     });
-    res.status(201).json({ ...client, _id: client.id });
+    res.status(201).json({ ...client, _id: client.id, balance: 0 });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'فشل في إنشاء العميل' });
@@ -145,21 +144,21 @@ router.put('/:id', async (req, res) => {
     const id = Number(req.params.id);
     if (isNaN(id) || !Number.isInteger(id)) return res.status(400).json({ error: 'معرف غير صالح' });
 
-    const { name, phone, address, notes, balance } = req.body;
+    const { name, phone, address, notes } = req.body;
 
     const dataToUpdate = {};
     if (name !== undefined) dataToUpdate.name = name;
     if (phone !== undefined) dataToUpdate.phone = phone;
     if (address !== undefined) dataToUpdate.address = address;
     if (notes !== undefined) dataToUpdate.notes = notes;
-    if (balance !== undefined) dataToUpdate.balance = parseFloat(balance);
 
     const client = await prisma.client.update({
       where: { id },
       data: dataToUpdate
     });
     
-    res.json({ ...client, _id: client.id });
+    const balance = await getClientBalance(prisma, id);
+    res.json({ ...client, _id: client.id, balance });
   } catch (err) {
     console.error(err);
     if (err.code === 'P2025') {

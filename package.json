@@ -5,7 +5,7 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "nodemon server.js",
+    "dev": "nodemon -e js,ejs,json,css,html server.js",
     "seed": "node db/seed.js",
     "test": "node --test test_search.js",
     "build": "node build.js",

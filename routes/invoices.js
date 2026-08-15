@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const prisma = require('../lib/prisma');
 const { requireAuth } = require('../middleware/auth');
+const { normalize } = require('../lib/normalize');
+const { getClientBalance } = require('../lib/balance');
 
 // Apply auth middleware to all routes
 router.use(requireAuth);
@@ -68,54 +70,94 @@ router.post('/', async (req, res) => {
       }
       
       clientName = client.name;
-      clientPhone = client.phone;
+      clientPhone = client.phone && client.phone !== '0000000000' ? client.phone : '-';
 
-      if (data.clientPhone && data.clientPhone.trim() !== '') {
+      if (data.clientPhone && data.clientPhone.trim() !== '' && data.clientPhone.trim() !== '-') {
         const newPhone = data.clientPhone.trim();
-        const existingPhones = client.phone.split(' - ').map(p => p.trim());
-        if (!existingPhones.includes(newPhone)) {
-          clientPhone = client.phone + ' - ' + newPhone;
-          // Update client phone
+        if (!client.phone || client.phone === '-' || client.phone === '0000000000') {
+          clientPhone = newPhone;
           await prisma.client.update({
             where: { id: clientId },
             data: { phone: clientPhone }
           });
+        } else {
+          const existingPhones = client.phone.split(' - ').map(p => p.trim());
+          if (!existingPhones.includes(newPhone)) {
+            clientPhone = client.phone + ' - ' + newPhone;
+            await prisma.client.update({
+              where: { id: clientId },
+              data: { phone: clientPhone }
+            });
+          }
         }
       }
     } else {
       // Find or create client based on name if no ID provided (legacy support)
-      let client = await prisma.client.findFirst({ where: { name: data.clientName } });
+      const allClients = await prisma.client.findMany();
+      const normInputName = normalize(data.clientName);
+      let client = allClients.find(c => normalize(c.name) === normInputName);
+
       if (!client) {
         client = await prisma.client.create({
           data: {
             name: data.clientName,
-            phone: data.clientPhone || '0000000000'
+            phone: (data.clientPhone && data.clientPhone.trim() && data.clientPhone.trim() !== '-') ? data.clientPhone.trim() : '-'
           }
         });
       }
       clientId = client.id;
       clientName = client.name;
-      clientPhone = client.phone;
+      clientPhone = client.phone && client.phone !== '0000000000' ? client.phone : '-';
     }
 
-    const amount = parseFloat(data.amount);
-    if (isNaN(amount) || amount <= 0) {
-      return res.status(400).json({ error: 'المبلغ يجب أن يكون أكبر من صفر' });
+    // EndClient logic
+    let endClientId = null;
+    let endClientName = null;
+
+    if (data.endClientId) {
+      endClientId = parseInt(data.endClientId);
+      const endClient = await prisma.endClient.findUnique({ where: { id: endClientId } });
+      if (!endClient) {
+        return res.status(404).json({ error: 'العميل النهائي غير موجود' });
+      }
+      endClientName = endClient.name;
+    } else if (data.endClientName && data.endClientName.trim() !== '') {
+      const trimmedEndName = data.endClientName.trim();
+      const allEndClients = await prisma.endClient.findMany();
+      const normInputEndName = normalize(trimmedEndName);
+      let endClient = allEndClients.find(ec => normalize(ec.name) === normInputEndName);
+
+      if (!endClient) {
+        endClient = await prisma.endClient.create({
+          data: {
+            name: trimmedEndName,
+            phone: '-'
+          }
+        });
+      }
+      endClientId = endClient.id;
+      endClientName = endClient.name;
     }
 
-    const amountChange = data.type === 'purchase' ? amount : (data.type === 'payment' ? -amount : 0);
+    const amount = isNaN(parseFloat(data.amount)) ? 0 : parseFloat(data.amount);
+    if (amount < 0) {
+      return res.status(400).json({ error: 'المبلغ لا يمكن أن يكون سالباً' });
+    }
+
     const newNotes = data.details || (data.type === 'purchase' ? 'عملية شراء' : 'دفعة');
 
-    // Use transaction to create invoice and update client balance
+    // Use transaction to create invoice and update client notes
     const [invoice, updatedClient] = await prisma.$transaction([
       prisma.invoice.create({
         data: {
           clientId,
           clientName,
-          clientPhone,
+          clientPhone: clientPhone || '-',
+          endClientId: endClientId || null,
+          endClientName: endClientName || '',
           type: data.type,
           amount,
-          details: data.details,
+          details: data.details || '-',
           address: data.address || '-',
           status: data.status || 'pending',
           date: data.date ? new Date(data.date) : new Date()
@@ -124,16 +166,21 @@ router.post('/', async (req, res) => {
       prisma.client.update({
         where: { id: clientId },
         data: {
-          balance: { increment: amountChange },
           notes: newNotes
         }
       })
     ]);
 
+    // Compute live balance
+    const currentBalance = await getClientBalance(prisma, clientId);
+
     res.status(201).json({
       ...invoice,
       _id: invoice.id,
-      client: invoice.clientId // For frontend compatibility
+      client: invoice.clientId,
+      endClientId: invoice.endClientId,
+      endClientName: invoice.endClientName,
+      currentBalance
     });
   } catch (err) {
     console.error(err);
@@ -152,16 +199,7 @@ router.delete('/:id', async (req, res) => {
       return res.status(404).json({ error: 'الفاتورة غير موجودة' });
     }
 
-    const amountChange = invoice.type === 'purchase' ? -invoice.amount : (invoice.type === 'payment' ? invoice.amount : 0);
-
-    // Use transaction to delete invoice and revert client balance
-    await prisma.$transaction([
-      prisma.invoice.delete({ where: { id } }),
-      prisma.client.update({
-        where: { id: invoice.clientId },
-        data: { balance: { increment: amountChange } }
-      })
-    ]);
+    await prisma.invoice.delete({ where: { id } });
 
     res.json({ message: 'تم حذف الفاتورة بنجاح' });
   } catch (err) {
