@@ -1,7 +1,8 @@
 const express = require('express');
 const router = express.Router();
-const prisma = require('../lib/prisma');
 const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
+const prisma = require('../lib/prisma');
 
 // POST /api/auth/login
 router.post('/login', async (req, res) => {
@@ -14,7 +15,6 @@ router.post('/login', async (req, res) => {
   try {
     let user = await prisma.user.findUnique({ where: { username: username.toLowerCase() } });
     
-    // Auto-seed default admin if database is empty or missing admin
     if (!user && username.toLowerCase() === 'admin' && password === 'password123') {
       const userCount = await prisma.user.count();
       if (userCount === 0) {
@@ -40,10 +40,18 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ error: 'بيانات الدخول غير صحيحة' });
     }
 
-    // Set session
-    req.session.userId = user.id;
-    req.session.role = user.role;
-    req.session.username = user.username;
+    const token = jwt.sign(
+      { userId: user.id, username: user.username, role: user.role },
+      process.env.SESSION_SECRET || 'fallback-secret-for-dev',
+      { expiresIn: '7d' }
+    );
+
+    res.cookie('token', token, {
+      httpOnly: true,
+      secure: 'auto',
+      sameSite: 'lax',
+      maxAge: 1000 * 60 * 60 * 24 * 7
+    });
 
     res.json({
       message: 'تم تسجيل الدخول بنجاح',
@@ -61,31 +69,18 @@ router.post('/login', async (req, res) => {
 
 // POST /api/auth/logout
 router.post('/logout', (req, res) => {
-  if (req.session) {
-    req.session.userId = null;
-    req.session.role = null;
-    req.session.username = null;
-    req.session.destroy((err) => {
-      res.clearCookie('connect.sid', { path: '/' });
-      if (err) {
-        return res.status(500).json({ error: 'فشل في تسجيل الخروج' });
-      }
-      res.json({ message: 'تم تسجيل الخروج بنجاح' });
-    });
-  } else {
-    res.clearCookie('connect.sid', { path: '/' });
-    res.json({ message: 'تم تسجيل الخروج بنجاح' });
-  }
+  res.clearCookie('token', { path: '/' });
+  res.json({ message: 'تم تسجيل الخروج بنجاح' });
 });
 
 // GET /api/auth/me - Check current session
 router.get('/me', (req, res) => {
-  if (req.session && req.session.userId) {
+  if (req.user) {
     res.json({
       authenticated: true,
       user: {
-        username: req.session.username,
-        role: req.session.role
+        username: req.user.username,
+        role: req.user.role
       }
     });
   } else {
