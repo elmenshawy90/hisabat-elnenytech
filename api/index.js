@@ -1,6 +1,7 @@
 const serverless = require('serverless-http');
 const fs = require('fs');
 const path = require('path');
+const { execSync } = require('child_process');
 
 const isServerless = process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME || process.env.LAMBDA_TASK_ROOT;
 
@@ -36,6 +37,20 @@ if (isServerless) {
   }
   if (process.env.DATABASE_URL && !process.env.DATABASE_URL.includes('connection_limit=')) {
     process.env.DATABASE_URL += '&connection_limit=1';
+  }
+
+  if (process.env.DATABASE_URL && !process.env.DATABASE_URL.startsWith('file:')) {
+    try {
+      console.log('📦 Running prisma migrate deploy...');
+      execSync('npx prisma migrate deploy', { 
+        stdio: 'inherit', 
+        timeout: 30000,
+        cwd: process.cwd()
+      });
+      console.log('✅ Migrations applied');
+    } catch (e) {
+      console.error('⚠️  Migration failed (may already be applied):', e.message);
+    }
   }
 }
 
