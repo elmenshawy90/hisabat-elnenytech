@@ -39,11 +39,18 @@ if (isServerless) {
   }
 }
 
+console.log('[api/index.js] Starting initialization...');
+console.log('[api/index.js] DATABASE_URL set:', !!process.env.DATABASE_URL);
+console.log('[api/index.js] NODE_ENV:', process.env.NODE_ENV);
+
 let app;
 try {
+  console.log('[api/index.js] Requiring server...');
+  const startTime = Date.now();
   app = require('../server');
+  console.log(`[api/index.js] Server loaded in ${Date.now() - startTime}ms`);
 } catch (err) {
-  console.error('Failed to initialize app:', err);
+  console.error('[api/index.js] Failed to initialize app:', err);
   const express = require('express');
   app = express();
   app.use((req, res) => {
@@ -51,4 +58,6 @@ try {
   });
 }
 
+console.log('[api/index.js] Creating serverless handler...');
 module.exports = serverless(app);
+console.log('[api/index.js] Handler exported');

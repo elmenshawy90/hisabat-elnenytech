@@ -2,7 +2,8 @@ require('dotenv').config();
 const express = require('express');
 const path = require('path');
 const session = require('express-session');
-const prisma = require('./lib/prisma');
+
+console.log('[server] Starting app initialization...');
 
 const app = express();
 
@@ -20,16 +21,21 @@ app.set('trust proxy', 1);
 // Session Configuration
 const isServerless = process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME || process.env.LAMBDA_TASK_ROOT;
 
+console.log('[server] Is serverless:', isServerless);
+
 let sessionStore;
 if (isServerless) {
   sessionStore = new session.MemoryStore();
 } else {
+  console.log('[server] Loading PrismaSessionStore...');
   const { PrismaSessionStore } = require('@quixo3/prisma-session-store');
+  const prisma = require('./lib/prisma');
   sessionStore = new PrismaSessionStore(prisma, {
     checkPeriod: 2 * 60 * 1000,
     dbRecordIdIsSessionId: true,
     dbRecordIdFunction: undefined,
   });
+  console.log('[server] PrismaSessionStore loaded');
 }
 
 app.use(session({
@@ -45,12 +51,16 @@ app.use(session({
   }
 }));
 
+console.log('[server] Session middleware configured');
+
 // API Routes
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/clients', require('./routes/clients'));
 app.use('/api/invoices', require('./routes/invoices'));
 app.use('/api/dashboard', require('./routes/dashboard'));
 app.use('/api/export', require('./routes/export'));
+
+console.log('[server] Routes loaded');
 
 // Web Routes
 app.get('/', (req, res) => res.render('index'));
@@ -83,6 +93,8 @@ app.use((err, req, res, next) => {
   console.error('Unhandled Error:', err);
   res.status(500).json({ error: 'حدث خطأ غير متوقع' });
 });
+
+console.log('[server] App initialization complete');
 
 // Start Server when run directly
 if (require.main === module) {
