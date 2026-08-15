@@ -6,6 +6,7 @@ const fs = require('fs');
 const path = require('path');
 const prisma = require('../lib/prisma');
 const { requireAuth } = require('../middleware/auth');
+const { getAllClientBalances } = require('../lib/balance');
 
 // Apply auth middleware
 router.use(requireAuth);
@@ -29,9 +30,12 @@ const formatDate = (d) => {
 // GET /api/export/clients/excel - Export all clients
 router.get('/clients/excel', async (req, res) => {
   try {
-    const clients = await prisma.client.findMany({
-      orderBy: { name: 'asc' }
-    });
+    const [clients, balanceMap] = await Promise.all([
+      prisma.client.findMany({
+        orderBy: { name: 'asc' }
+      }),
+      getAllClientBalances(prisma)
+    ]);
     
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('العملاء', { views: [{ rightToLeft: true }] });
@@ -52,7 +56,7 @@ router.get('/clients/excel', async (req, res) => {
       worksheet.addRow({
         name: client.name,
         phone: client.phone,
-        balance: client.balance,
+        balance: balanceMap.get(client.id) || 0,
         createdAt: formatDate(client.createdAt),
         lastTransaction: formatDate(client.updatedAt)
       });

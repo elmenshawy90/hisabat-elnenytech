@@ -59,7 +59,6 @@ async function seedData() {
         data: {
           name: c.name,
           phone: c.phone || '-',
-          balance: c.balance || 0,
           createdAt: c.createdAt ? new Date(c.createdAt) : new Date(),
           updatedAt: c.lastTransaction ? new Date(c.lastTransaction) : new Date(),
           notes: c.lastTransactionNote || ''

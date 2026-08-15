@@ -95,6 +95,18 @@
 </table>
 </div>
 </div>
+
+<!-- End Client Search Results Section -->
+<div id="endClientResultsSection" class="hidden mt-lg space-y-md">
+    <div class="flex items-center gap-sm border-b border-outline-variant pb-xs">
+        <span class="material-symbols-outlined text-primary text-xl">person_search</span>
+        <h3 class="font-headline-sm text-headline-sm text-on-surface font-bold">نتائج عن عملاء نهائيين</h3>
+    </div>
+    <div id="endClientResultsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-md">
+        <!-- Rendered dynamically on search -->
+    </div>
+</div>
+
 </div>
 <%- include('partials/bottom-nav', { active: 'clients' }) %>
 </main>
@@ -180,12 +192,20 @@ function renderClients(clients) {
     tbody.innerHTML = clients.map((client, index) => {
         const initial = client.name.charAt(0);
         const balanceColor = client.balance > 0 ? 'text-tertiary' : 'text-primary-container';
+        const hasMatchedEndClients = client.matchedEndClientsCount && client.matchedEndClientsCount > 0;
         return `
             <tr class="hover:bg-primary-container/5 transition-colors group" style="opacity:0;transform:translateY(10px);animation:fadeInRow 0.4s ease ${index * 0.05}s forwards;">
                 <td class="px-lg py-md">
                     <div class="flex items-center gap-md">
                         <div class="w-10 h-10 rounded-full bg-secondary-container flex items-center justify-center text-on-secondary-container font-bold">${initial}</div>
-                        <span class="font-body-md text-body-md text-on-surface">${highlightArabic(client.name, query)}</span>
+                        <div class="flex flex-col">
+                            <span class="font-body-md text-body-md text-on-surface font-bold">${highlightArabic(client.name, query)}</span>
+                            ${hasMatchedEndClients ? `
+                                <span class="text-xs text-secondary mt-0.5">
+                                    طلب من خلاله: <strong class="text-on-surface-variant font-semibold">${client.matchedEndClients.slice(0, 3).map(n => highlightArabic(n, query)).join('، ')}</strong>${client.matchedEndClientsCount > 3 ? ` (+${client.matchedEndClientsCount - 3} آخرين)` : ''}
+                                </span>
+                            ` : ''}
+                        </div>
                     </div>
                 </td>
                 <td class="px-lg py-md">
@@ -195,7 +215,7 @@ function renderClients(clients) {
                 <td class="px-lg py-md">
                     <div class="flex flex-col">
                         <span class="font-body-md text-body-md text-on-surface">${formatDate(client.lastTransaction)}</span>
-                        <span class="font-label-sm text-label-sm text-outline">${client.lastTransactionNote || ''}</span>
+                        <span class="font-label-sm text-label-sm text-outline">${client.lastTransactionNote || client.notes || ''}</span>
                     </div>
                 </td>
                 <td class="px-lg py-md">
@@ -213,43 +233,72 @@ function renderClients(clients) {
     }).join('');
 }
 
-// Multi-term OR Search with Relevance Ranking
-document.getElementById('searchInput').addEventListener('input', (e) => {
-    const rawVal = e.target.value || '';
-    const terms = [...new Set(rawVal.trim().split(/\s+/).filter(Boolean))];
+// Unified Search with 300ms Debounce
+let searchDebounceTimer = null;
 
-    if (terms.length === 0) {
+document.getElementById('searchInput').addEventListener('input', (e) => {
+    const rawVal = (e.target.value || '').trim();
+    const endClientsSection = document.getElementById('endClientResultsSection');
+    const endClientsGrid = document.getElementById('endClientResultsGrid');
+
+    if (searchDebounceTimer) clearTimeout(searchDebounceTimer);
+
+    if (rawVal.length === 0) {
+        endClientsSection.classList.add('hidden');
         renderClients(allClients);
+        updateStats(allClients);
         return;
     }
 
-    const scoredClients = [];
+    searchDebounceTimer = setTimeout(async () => {
+        try {
+            const res = await fetch(`/api/search?q=${encodeURIComponent(rawVal)}`);
+            if (!res.ok) throw new Error('Search failed');
+            const data = await res.json();
+            
+            const contractors = data.contractors || [];
+            const endClientMatches = data.endClientMatches || [];
 
-    for (const client of allClients) {
-        const normName = normalizeArabic(client.name || '');
-        const phone = client.phone || '';
-        let score = 0;
+            // Render contractors table
+            renderClients(contractors);
 
-        for (const term of terms) {
-            const normTerm = normalizeArabic(term);
-            const nameMatches = normTerm && normName.includes(normTerm);
-            const phoneMatches = phone && phone.includes(term);
-
-            if (nameMatches || phoneMatches) {
-                score++;
+            // Render End Clients results section
+            if (endClientMatches.length > 0) {
+                endClientsGrid.innerHTML = endClientMatches.map(item => `
+                    <div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-md shadow-sm flex flex-col gap-sm">
+                        <div class="flex items-center gap-sm border-b border-outline-variant/40 pb-xs">
+                            <div class="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold">
+                                <span class="material-symbols-outlined text-lg">person_pin</span>
+                            </div>
+                            <h4 class="font-headline-sm text-headline-sm font-bold text-on-surface">${highlightArabic(item.endClientName, rawVal)}</h4>
+                        </div>
+                        <div class="text-xs text-secondary space-y-1">
+                            <span class="font-medium text-on-surface-variant block mb-1">عن طريق:</span>
+                            <div class="flex flex-wrap gap-xs">
+                                ${item.contractors.map(c => `
+                                    <a href="/client-details?id=${c.id}" class="inline-flex items-center gap-1 bg-surface-container-low hover:bg-primary/10 text-primary px-sm py-1 rounded-lg border border-outline-variant/60 transition-colors">
+                                        <span class="font-bold">${c.name}</span>
+                                        <span class="text-secondary text-[11px]">(${c.invoiceCount} فاتورة)</span>
+                                    </a>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+                endClientsSection.classList.remove('hidden');
+            } else {
+                endClientsSection.classList.add('hidden');
             }
+
+            // Empty state check
+            if (contractors.length === 0 && endClientMatches.length === 0) {
+                const tbody = document.getElementById('clientsTableBody');
+                tbody.innerHTML = '<tr><td colspan="5" class="p-xl text-center text-secondary">لا توجد نتائج مطابقة للبحث</td></tr>';
+            }
+        } catch (err) {
+            console.error('Search error:', err);
         }
-
-        if (score > 0) {
-            scoredClients.push({ client, score });
-        }
-    }
-
-    // Sort by relevance score (descending), preserving original sort within the same tier (stable sort)
-    scoredClients.sort((a, b) => b.score - a.score);
-
-    const filtered = scoredClients.map(item => item.client);
-    renderClients(filtered);
+    }, 300);
 });
 
 // Delete client

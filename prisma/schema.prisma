@@ -26,26 +26,49 @@ model Client {
   phone     String
   address   String    @default("")
   notes     String    @default("")
-  balance   Float     @default(0)
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   invoices  Invoice[]
+
+  @@index([name])
+  @@index([phone])
+}
+
+model EndClient {
+  id        Int       @id @default(autoincrement())
+  name      String
+  phone     String    @default("-")
+  address   String    @default("")
+  notes     String    @default("")
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  invoices  Invoice[]
+
+  @@index([name])
+  @@index([phone])
 }
 
 model Invoice {
-  id          Int      @id @default(autoincrement())
-  clientId    Int
-  client      Client   @relation(fields: [clientId], references: [id])
-  clientName  String
-  clientPhone String   @default("")
-  type        String   // 'purchase' or 'payment'
-  amount      Float
-  details     String
-  address     String
-  date        DateTime @default(now())
-  status      String   @default("pending") // 'pending', 'paid', 'overdue'
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id            Int        @id @default(autoincrement())
+  clientId      Int
+  client        Client     @relation(fields: [clientId], references: [id])
+  clientName    String
+  clientPhone   String     @default("")
+  endClientId   Int?
+  endClient     EndClient? @relation(fields: [endClientId], references: [id])
+  endClientName String?    @default("")
+  type          String     // 'purchase' or 'payment'
+  amount        Float
+  details       String
+  address       String
+  date          DateTime   @default(now())
+  status        String     @default("pending") // 'pending', 'paid', 'overdue'
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  @@index([clientId])
+  @@index([endClientId])
+  @@index([date])
 }
 
 model Session {

@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const prisma = require('../lib/prisma');
 const { requireAuth } = require('../middleware/auth');
+const { getAllClientBalances } = require('../lib/balance');
 
 // Apply auth middleware
 router.use(requireAuth);
@@ -9,56 +10,57 @@ router.use(requireAuth);
 // GET /api/dashboard - Aggregated stats
 router.get('/', async (req, res) => {
   try {
-    // Total Clients
-    const totalClients = await prisma.client.count();
-    
-    // Outstanding Balance (Sum of all positive balances)
-    const balanceAgg = await prisma.client.aggregate({
-      where: { balance: { gt: 0 } },
-      _sum: { balance: true }
-    });
-    const outstandingBalance = balanceAgg._sum.balance || 0;
-    
-    // Late Clients (Balance > 10000 for this demo context)
-    const lateClients = await prisma.client.count({
-      where: { balance: { gt: 10000 } }
-    });
-
-    // Today's transactions
     const startOfDay = new Date();
     startOfDay.setHours(0, 0, 0, 0);
     const endOfDay = new Date();
     endOfDay.setHours(23, 59, 59, 999);
-    
-    const todayTransactions = await prisma.invoice.count({
-      where: {
-        date: { gte: startOfDay, lte: endOfDay }
-      }
-    });
 
-    // Top Debtors
-    const topDebtors = await prisma.client.findMany({
-      where: { balance: { gt: 0 } },
-      orderBy: { balance: 'desc' },
-      take: 5
-    });
-
-    // Recent Transactions
-    const recentTransactions = await prisma.invoice.findMany({
-      orderBy: [
-        { date: 'desc' },
-        { createdAt: 'desc' }
-      ],
-      take: 5
-    });
-
-    // Chart Data (Last 6 weeks revenue vs payments)
     const sixWeeksAgo = new Date();
     sixWeeksAgo.setDate(sixWeeksAgo.getDate() - 42);
-    
-    const recentInvoices = await prisma.invoice.findMany({
-      where: { date: { gte: sixWeeksAgo } }
+
+    const [allClients, balanceMap, todayTransactions, recentTransactions, recentInvoices] = await Promise.all([
+      prisma.client.findMany(),
+      getAllClientBalances(prisma),
+      prisma.invoice.count({
+        where: {
+          date: { gte: startOfDay, lte: endOfDay }
+        }
+      }),
+      prisma.invoice.findMany({
+        orderBy: [
+          { date: 'desc' },
+          { createdAt: 'desc' }
+        ],
+        take: 5
+      }),
+      prisma.invoice.findMany({
+        where: { date: { gte: sixWeeksAgo } }
+      })
+    ]);
+
+    const totalClients = allClients.length;
+
+    let outstandingBalance = 0;
+    let lateClients = 0;
+
+    const clientsWithBalance = allClients.map(c => {
+      const balance = balanceMap.get(c.id) || 0;
+      if (balance > 0) {
+        outstandingBalance += balance;
+      }
+      if (balance > 10000) {
+        lateClients++;
+      }
+      return {
+        ...c,
+        balance
+      };
     });
+
+    const topDebtors = clientsWithBalance
+      .filter(c => c.balance > 0)
+      .sort((a, b) => b.balance - a.balance)
+      .slice(0, 5);
 
     // Aggregate in memory to avoid BigInt serialization issues with $queryRaw
     const groups = {};
