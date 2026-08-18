@@ -487,7 +487,15 @@ function renderEndClientBreakdown(invoices) {
     const grid = document.getElementById('endClientsCardsGrid');
     const badge = document.getElementById('endClientsCountBadge');
 
-    const taggedInvoices = invoices.filter(i => i.endClientName && i.endClientName.trim() !== '' && i.endClientName.trim() !== '-');
+    const normalizedInvoices = invoices.map(inv => {
+        const rawName = (inv.endClientName || '').trim();
+        return {
+            ...inv,
+            effectiveEndClientName: rawName && rawName !== '-' ? rawName : 'شخصي'
+        };
+    });
+
+    const taggedInvoices = normalizedInvoices.filter(i => i.effectiveEndClientName);
 
     if (taggedInvoices.length === 0) {
         container.classList.add('hidden');
@@ -497,11 +505,12 @@ function renderEndClientBreakdown(invoices) {
     const groupsMap = new Map();
 
     for (const inv of taggedInvoices) {
-        const key = inv.endClientId ? `id_${inv.endClientId}` : `name_${normalizeArabic(inv.endClientName)}`;
+        const name = inv.effectiveEndClientName;
+        const key = inv.endClientId ? `id_${inv.endClientId}` : `name_${normalizeArabic(name)}`;
         if (!groupsMap.has(key)) {
             groupsMap.set(key, {
                 id: inv.endClientId || null,
-                name: inv.endClientName,
+                name,
                 invoiceCount: 0,
                 totalPurchases: 0,
                 totalPayments: 0,
