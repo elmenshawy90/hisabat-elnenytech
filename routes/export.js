@@ -293,15 +293,14 @@ router.get('/client/:id/pdf', async (req, res) => {
       }
     });
 
-    // Use an Arabic-capable font when available so Arabic text renders correctly in RTL layout.
+    // Prefer a font bundled with the project so Arabic text renders correctly in both local and serverless environments.
+    const projectFont = path.join(__dirname, '..', 'public', 'fonts', 'Tahoma.ttf');
     const possibleFonts = [
+      projectFont,
       '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',
       '/usr/share/fonts/truetype/dejavu/DejaVuSansCondensed.ttf',
       '/usr/share/fonts/truetype/liberation2/LiberationSans-Regular.ttf',
-      '/usr/share/fonts/truetype/noto/NotoSansArabic-Regular.ttf',
-      'C:\\Windows\\Fonts\\arial.ttf',
-      'C:\\Windows\\Fonts\\tahoma.ttf',
-      'C:\\Windows\\Fonts\\times.ttf'
+      '/usr/share/fonts/truetype/noto/NotoSansArabic-Regular.ttf'
     ];
     const systemFont = possibleFonts.find(p => fs.existsSync(p));
     if (systemFont) {
