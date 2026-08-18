@@ -24,14 +24,15 @@ model User {
 }
 
 model Client {
-  id        Int       @id @default(autoincrement())
-  name      String
-  phone     String
-  address   String    @default("")
-  notes     String    @default("")
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  invoices  Invoice[]
+  id          Int       @id @default(autoincrement())
+  name        String
+  phone       String
+  address     String    @default("")
+  notes       String    @default("")
+  pageNumber  Int?      @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  invoices    Invoice[]
 
   @@index([name])
   @@index([phone])

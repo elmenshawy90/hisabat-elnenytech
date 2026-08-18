@@ -106,7 +106,7 @@ router.get('/:id', async (req, res) => {
 // POST /api/clients - Create new client
 router.post('/', async (req, res) => {
   try {
-    const { name, phone, address, notes } = req.body;
+    const { name, phone, address, notes, pageNumber } = req.body;
     
     if (!name || !name.trim()) {
       return res.status(400).json({ error: 'اسم العميل مطلوب' });
@@ -114,6 +114,7 @@ router.post('/', async (req, res) => {
 
     const trimmedName = name.trim();
     const trimmedPhone = phone && phone.trim() ? phone.trim() : '-';
+    const parsedPageNumber = pageNumber === undefined || pageNumber === null || pageNumber === '' ? 0 : Number(pageNumber);
 
     const normNewName = normalize(trimmedName);
     const existingClients = await prisma.client.findMany({ select: { id: true, name: true, phone: true } });
@@ -128,7 +129,8 @@ router.post('/', async (req, res) => {
         name: trimmedName,
         phone: trimmedPhone,
         address: address || '',
-        notes: notes || ''
+        notes: notes || '',
+        pageNumber: Number.isFinite(parsedPageNumber) && parsedPageNumber >= 0 ? parsedPageNumber : 0
       }
     });
     res.status(201).json({ ...client, _id: client.id, balance: 0 });
@@ -144,13 +146,17 @@ router.put('/:id', async (req, res) => {
     const id = Number(req.params.id);
     if (isNaN(id) || !Number.isInteger(id)) return res.status(400).json({ error: 'معرف غير صالح' });
 
-    const { name, phone, address, notes } = req.body;
+    const { name, phone, address, notes, pageNumber } = req.body;
 
     const dataToUpdate = {};
     if (name !== undefined) dataToUpdate.name = name;
     if (phone !== undefined) dataToUpdate.phone = phone;
     if (address !== undefined) dataToUpdate.address = address;
     if (notes !== undefined) dataToUpdate.notes = notes;
+    if (pageNumber !== undefined) {
+      const parsedPageNumber = pageNumber === null || pageNumber === '' ? 0 : Number(pageNumber);
+      dataToUpdate.pageNumber = Number.isFinite(parsedPageNumber) && parsedPageNumber >= 0 ? parsedPageNumber : 0;
+    }
 
     const client = await prisma.client.update({
       where: { id },

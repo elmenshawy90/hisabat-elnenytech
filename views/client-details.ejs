@@ -534,8 +534,10 @@ function renderEndClientBreakdown(invoices) {
 
     grid.innerHTML = groups.map(item => {
         const netColor = item.net <= 0 ? 'text-green-600' : 'text-tertiary';
+        const redirectUrl = `/clients?search=${encodeURIComponent(item.name)}`;
+
         return `
-            <div class="bg-white rounded-xl border border-outline-variant p-md shadow-sm flex flex-col justify-between gap-sm">
+            <button type="button" onclick="window.location.href='${redirectUrl}'" class="w-full text-right bg-white rounded-xl border border-outline-variant p-md shadow-sm flex flex-col justify-between gap-sm hover:border-primary/60 hover:shadow-md transition-all active:scale-[0.99] cursor-pointer">
                 <div class="flex items-center justify-between border-b border-outline-variant/50 pb-xs">
                     <div class="flex items-center gap-xs font-bold text-on-surface font-body-md">
                         <span class="material-symbols-outlined text-primary text-lg">person_pin</span>
@@ -557,7 +559,7 @@ function renderEndClientBreakdown(invoices) {
                     <span class="text-xs font-bold text-secondary">الاجمالي:</span>
                     <span class="font-bold text-sm ${netColor}">${formatCurrency(item.net)}</span>
                 </div>
-            </div>
+            </button>
         `;
     }).join('');
 
