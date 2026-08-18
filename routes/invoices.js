@@ -208,4 +208,124 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
+// PATCH /api/invoices/:id - Update invoice
+router.patch('/:id', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) return res.status(400).json({ error: 'معرف غير صالح' });
+
+    const invoice = await prisma.invoice.findUnique({ where: { id } });
+    if (!invoice) {
+      return res.status(404).json({ error: 'الفاتورة غير موجودة' });
+    }
+
+    const data = req.body;
+    const updateData = {};
+
+    // Validate and prepare updatable fields
+    if (data.type && ['purchase', 'payment'].includes(data.type)) {
+      updateData.type = data.type;
+    }
+
+    if (data.amount !== undefined) {
+      const amount = parseFloat(data.amount);
+      if (isNaN(amount) || amount < 0) {
+        return res.status(400).json({ error: 'المبلغ لا يمكن أن يكون سالباً' });
+      }
+      updateData.amount = amount;
+    }
+
+    if (data.details !== undefined) {
+      updateData.details = data.details || '-';
+    }
+
+    if (data.address !== undefined) {
+      updateData.address = data.address || '-';
+    }
+
+    if (data.date !== undefined) {
+      updateData.date = new Date(data.date);
+    }
+
+    if (data.status && ['pending', 'paid', 'overdue'].includes(data.status)) {
+      updateData.status = data.status;
+    }
+
+    // Handle clientPhone update if provided
+    if (data.clientPhone !== undefined) {
+      updateData.clientPhone = data.clientPhone || '-';
+      
+      // Also update in client record if it's a new phone
+      if (data.clientPhone && data.clientPhone.trim() !== '' && data.clientPhone.trim() !== '-') {
+        const newPhone = data.clientPhone.trim();
+        const client = await prisma.client.findUnique({ where: { id: invoice.clientId } });
+        
+        if (client) {
+          const existingPhones = client.phone ? client.phone.split(' - ').map(p => p.trim()) : [];
+          if (!existingPhones.includes(newPhone)) {
+            const updatedPhone = client.phone ? client.phone + ' - ' + newPhone : newPhone;
+            await prisma.client.update({
+              where: { id: invoice.clientId },
+              data: { phone: updatedPhone }
+            });
+          }
+        }
+      }
+    }
+
+    if (Object.keys(updateData).length === 0) {
+      return res.status(400).json({ error: 'لا توجد حقول للتحديث' });
+    }
+
+    const updatedInvoice = await prisma.invoice.update({
+      where: { id },
+      data: updateData
+    });
+
+    const currentBalance = await getClientBalance(prisma, invoice.clientId);
+
+    res.json({
+      ...updatedInvoice,
+      _id: updatedInvoice.id,
+      client: updatedInvoice.clientId,
+      currentBalance
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'فشل في تحديث الفاتورة' });
+  }
+});
+
+// PATCH /api/invoices/:id/status - Update invoice status only
+router.patch('/:id/status', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) return res.status(400).json({ error: 'معرف غير صالح' });
+
+    const { status } = req.body;
+    if (!status || !['pending', 'paid', 'overdue'].includes(status)) {
+      return res.status(400).json({ error: 'حالة غير صالحة. استخدم: pending, paid, أو overdue' });
+    }
+
+    const invoice = await prisma.invoice.findUnique({ where: { id } });
+    if (!invoice) {
+      return res.status(404).json({ error: 'الفاتورة غير موجودة' });
+    }
+
+    const updatedInvoice = await prisma.invoice.update({
+      where: { id },
+      data: { status }
+    });
+
+    res.json({
+      ...updatedInvoice,
+      _id: updatedInvoice.id,
+      message: 'تم تحديث حالة الفاتورة بنجاح'
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'فشل في تحديث حالة الفاتورة' });
+  }
+});
+
 module.exports = router;

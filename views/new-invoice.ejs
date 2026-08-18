@@ -196,7 +196,7 @@
         <div class="fixed inset-0 z-[100] hidden items-center justify-center bg-black/50 p-4" id="invoiceModal">
             <div class="bg-white rounded-xl shadow-lg w-full max-w-3xl max-h-[90vh] overflow-y-auto p-md md:p-xl">
                 <div class="flex flex-row justify-between items-center mb-lg border-b border-outline-variant pb-sm">
-                    <h2 class="font-headline-md text-headline-md font-bold text-on-surface">إضافة فاتورة جديدة</h2>
+                    <h2 class="font-headline-md text-headline-md font-bold text-on-surface" id="modalTitle">إضافة فاتورة جديدة</h2>
                     <button class="text-secondary hover:text-on-surface" onclick="closeModal()" type="button">
                         <span class="material-symbols-outlined">close</span>
                     </button>
@@ -204,6 +204,7 @@
                 <p class="text-[13px] text-secondary mb-md -mt-sm">الحقول المشار إليها بنجمة (<span
                         class="text-error font-bold">*</span>) هي حقول إجبارية</p>
                 <form class="space-y-lg" id="invoiceForm" novalidate>
+                    <input type="hidden" id="invoiceId">
                     <input type="hidden" id="clientId">
                     <input type="hidden" id="endClientId">
 
@@ -323,7 +324,7 @@
                             type="submit">
                             <span class="material-symbols-outlined"
                                 style="font-variation-settings: 'FILL' 1;">save</span>
-                            حفظ الفاتورة
+                            <span id="submitButtonText">حفظ الفاتورة</span>
                         </button>
                         <button
                             class="w-full md:w-auto min-w-[160px] bg-white border border-outline-variant text-on-surface h-14 rounded-full font-headline-sm text-headline-sm flex items-center justify-center gap-sm hover:bg-surface-container-low active:scale-95 transition-all"
@@ -643,9 +644,14 @@
             <td class="p-md font-body-md text-secondary">${formatDate(inv.date)}</td>
             <td class="p-md font-body-md text-secondary">${inv.details || '-'}</td>
             <td class="p-md text-center">
-                <button onclick="event.stopPropagation(); deleteInvoice(${inv._id})" class="p-sm rounded-lg hover:bg-error-container/20 text-error transition-all active:scale-90" title="حذف">
-                    <span class="material-symbols-outlined text-[20px]">delete</span>
-                </button>
+                <div class="flex items-center justify-center gap-xs group-hover:gap-sm transition-all">
+                    <button onclick="event.stopPropagation(); editInvoice(${inv._id})" class="p-sm rounded-lg hover:bg-primary/20 text-primary transition-all active:scale-90" title="تعديل">
+                        <span class="material-symbols-outlined text-[20px]">edit</span>
+                    </button>
+                    <button onclick="event.stopPropagation(); deleteInvoice(${inv._id})" class="p-sm rounded-lg hover:bg-error-container/20 text-error transition-all active:scale-90" title="حذف">
+                        <span class="material-symbols-outlined text-[20px]">delete</span>
+                    </button>
+                </div>
             </td>
         </tr>
     `).join('');
@@ -694,6 +700,58 @@
                 }
             }
 
+            // Edit invoice
+            function editInvoice(id) {
+                const inv = allInvoices.find(i => String(i._id) === String(id));
+                if (!inv) {
+                    showToast('لم تجد الفاتورة', 'error');
+                    return;
+                }
+
+                // Set the mode to edit
+                document.getElementById('invoiceId').value = id;
+                document.getElementById('modalTitle').textContent = 'تعديل الفاتورة';
+                document.getElementById('submitButtonText').textContent = 'حفظ التغييرات';
+
+                // Populate form with invoice data
+                document.getElementById('clientName').value = inv.clientName || '';
+                document.getElementById('clientId').value = inv.clientId || '';
+                document.getElementById('endClientName').value = inv.endClientName || '';
+                document.getElementById('endClientId').value = inv.endClientId || '';
+                document.getElementById('mobileNumber').value = inv.clientPhone && inv.clientPhone !== '-' ? inv.clientPhone : '';
+                document.getElementById('invoiceDetails').value = inv.details || '-';
+                document.getElementById('deliveryAddress').value = inv.address || '-';
+                
+                // Format date for input
+                const dateObj = new Date(inv.date);
+                const year = dateObj.getFullYear();
+                const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+                const day = String(dateObj.getDate()).padStart(2, '0');
+                document.getElementById('invoiceDate').value = `${year}-${month}-${day}`;
+                
+                document.getElementById('invoiceAmount').value = inv.amount;
+
+                // Show client summary
+                if (inv.clientId) {
+                    const client = allClientsList.find(c => c.id === inv.clientId);
+                    if (client) {
+                        const balanceEl = document.getElementById('summaryBalance');
+                        balanceEl.textContent = formatCurrency(client.balance || 0);
+                        balanceEl.className = `font-bold dir-ltr inline-block ${(client.balance || 0) > 0 ? 'text-tertiary' : ((client.balance || 0) < 0 ? 'text-error' : 'text-primary')}`;
+                        document.getElementById('summaryLastTransaction').textContent = client.updatedAt ? formatDate(client.updatedAt) : '--';
+                        document.getElementById('summaryProfileLink').href = `/client-details?id=${client.id}`;
+                        document.getElementById('clientSummaryCard').classList.remove('hidden');
+                        document.getElementById('clientSummaryCard').classList.add('flex');
+                    }
+                }
+
+                // Open modal
+                const modal = document.getElementById('invoiceModal');
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+                document.body.style.overflow = 'hidden';
+            }
+
             // Transaction Details Modal
             function openTransactionDetails(id) {
                 const inv = allInvoices.find(i => String(i._id) === String(id));
@@ -730,6 +788,9 @@
 
             // Modal functions
             function openModal() {
+                document.getElementById('invoiceId').value = '';
+                document.getElementById('modalTitle').textContent = 'إضافة فاتورة جديدة';
+                document.getElementById('submitButtonText').textContent = 'حفظ الفاتورة';
                 const modal = document.getElementById('invoiceModal');
                 modal.classList.remove('hidden');
                 modal.classList.add('flex');
@@ -745,12 +806,16 @@
                 modal.classList.remove('flex');
                 document.body.style.overflow = '';
                 document.getElementById('invoiceForm').reset();
+                document.getElementById('invoiceId').value = '';
                 document.getElementById('clientId').value = '';
                 document.getElementById('endClientId').value = '';
                 document.getElementById('clientSummaryCard').classList.add('hidden');
                 document.getElementById('clientSummaryCard').classList.remove('flex');
                 document.getElementById('clientDropdown').classList.add('hidden');
                 document.getElementById('endClientDropdown').classList.add('hidden');
+                // Reset modal to create mode
+                document.getElementById('modalTitle').textContent = 'إضافة فاتورة جديدة';
+                document.getElementById('submitButtonText').textContent = 'حفظ الفاتورة';
             }
 
             // Client Auto-complete Logic
@@ -899,7 +964,7 @@
                 }
             });
 
-            // Handle form submission — POST to API
+            // Handle form submission — POST to API (create) or PATCH (update)
             document.getElementById('invoiceForm').addEventListener('submit', async function (e) {
                 e.preventDefault();
 
@@ -910,6 +975,7 @@
                 const amount = document.getElementById('invoiceAmount').value;
                 const details = document.getElementById('invoiceDetails').value.trim();
                 const address = document.getElementById('deliveryAddress').value.trim();
+                const invoiceId = document.getElementById('invoiceId').value;
 
                 if (validateFormFields('invoiceForm')) {
                     showToast('الرجاء إدخال اسم العميل', 'warning');
@@ -920,35 +986,55 @@
                 const endClientId = document.getElementById('endClientId').value;
 
                 try {
-                    const res = await fetch('/api/invoices', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
+                    // Prepare data object
+                    const payload = {
+                        clientName: name,
+                        endClientName: endName || undefined,
+                        clientPhone: mobile || undefined,
+                        date: date || undefined,
+                        amount: parseFloat(amount) || 0,
+                        details: details || '-',
+                        address: address || '-'
+                    };
+
+                    // If updating, send PATCH; if creating, send POST
+                    let res;
+                    if (invoiceId) {
+                        // Update existing invoice
+                        res = await fetch(`/api/invoices/${invoiceId}`, {
+                            method: 'PATCH',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload)
+                        });
+                    } else {
+                        // Create new invoice
+                        const createPayload = {
+                            ...payload,
                             client: clientId || undefined,
-                            clientName: name,
                             endClientId: endClientId || undefined,
-                            endClientName: endName || undefined,
-                            clientPhone: mobile || undefined,
-                            date: date || undefined,
-                            amount: parseFloat(amount) || 0,
-                            details: details || '-',
-                            address: address || '-',
                             type: 'purchase'
-                        })
-                    });
+                        };
+                        res = await fetch('/api/invoices', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(createPayload)
+                        });
+                    }
 
                     if (res.ok) {
-                        showToast('تم حفظ الفاتورة بنجاح ✓', 'success');
+                        const successMsg = invoiceId ? 'تم تحديث الفاتورة بنجاح ✓' : 'تم حفظ الفاتورة بنجاح ✓';
+                        showToast(successMsg, 'success');
                         closeModal();
                         loadInvoices();
                         loadClients();
                         loadEndClients();
                     } else {
                         const err = await res.json();
-                        showToast(err.error || 'فشل في حفظ الفاتورة', 'error');
+                        showToast(err.error || (invoiceId ? 'فشل في تحديث الفاتورة' : 'فشل في حفظ الفاتورة'), 'error');
                     }
                 } catch (err) {
-                    showToast('فشل في حفظ الفاتورة — تأكد من تشغيل السيرفر', 'error');
+                    const errorMsg = invoiceId ? 'فشل في تحديث الفاتورة — تأكد من تشغيل السيرفر' : 'فشل في حفظ الفاتورة — تأكد من تشغيل السيرفر';
+                    showToast(errorMsg, 'error');
                 }
             });
 
