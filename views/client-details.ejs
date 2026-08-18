@@ -369,15 +369,35 @@ function getClientId() {
     return params.get('id');
 }
 
-function exportClientPdf(e) {
+async function exportClientPdf(e) {
     if (e) e.preventDefault();
     const id = getClientId();
     if (!id) {
         showToast('لم يتم تحديد العميل', 'error');
         return;
     }
-    showToast('جاري تحميل كشف الحساب بصيغة PDF...', 'info');
-    window.location.href = `/api/export/client/${id}/pdf`;
+
+    try {
+        showToast('جاري تحميل كشف الحساب بصيغة PDF...', 'info');
+        const res = await fetch(`/api/export/client/${id}/pdf`);
+        if (!res.ok) {
+            const text = await res.text();
+            throw new Error(text || 'فشل في تصدير PDF');
+        }
+
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `client-statement-${Date.now()}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+    } catch (err) {
+        console.error('PDF export failed:', err);
+        showToast(err.message || 'فشل في تصدير PDF', 'error');
+    }
 }
 
 function exportClientExcel(e) {

@@ -4,6 +4,7 @@ const ExcelJS = require('exceljs');
 const PDFDocument = require('pdfkit');
 const fs = require('fs');
 const path = require('path');
+const ArabicReshaper = require('arabic-reshaper');
 const prisma = require('../lib/prisma');
 const { requireAuth } = require('../middleware/auth');
 const { getAllClientBalances } = require('../lib/balance');
@@ -292,8 +293,12 @@ router.get('/client/:id/pdf', async (req, res) => {
       }
     });
 
-    // Check for Arabic font support
+    // Use an Arabic-capable font when available so Arabic text renders correctly in RTL layout.
     const possibleFonts = [
+      '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',
+      '/usr/share/fonts/truetype/dejavu/DejaVuSansCondensed.ttf',
+      '/usr/share/fonts/truetype/liberation2/LiberationSans-Regular.ttf',
+      '/usr/share/fonts/truetype/noto/NotoSansArabic-Regular.ttf',
       'C:\\Windows\\Fonts\\arial.ttf',
       'C:\\Windows\\Fonts\\tahoma.ttf',
       'C:\\Windows\\Fonts\\times.ttf'
@@ -303,43 +308,89 @@ router.get('/client/:id/pdf', async (req, res) => {
       doc.font(systemFont);
     }
 
+    const shapeArabic = (text) => {
+      if (text === null || text === undefined) return '-';
+      const str = String(text);
+      if (!/[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/.test(str)) {
+        return str;
+      }
+      return ArabicReshaper.convertArabic(str);
+    };
+
+    const drawRtlText = (text, x, y, width, align = 'right') => {
+      const shaped = shapeArabic(text);
+      doc.text(shaped, x, y, {
+        width,
+        align,
+        lineGap: 0,
+        ellipsis: false
+      });
+    };
+
+    const drawInfoPair = (label, value, y, leftX, rightWidth, rightLabelX, valueX) => {
+      doc.fillColor('#0F172A').fontSize(10);
+      drawRtlText(label, rightLabelX, y, rightWidth, 'right');
+      drawRtlText(value, valueX, y, leftX - valueX - 8, 'left');
+    };
+
     // Set Response Headers for Instant Download
-    const safeName = (client.name || 'client').replace(/[\\/:*?"<>|]/g, '_');
+    const rawName = (client.name || 'client').trim();
+    const safeName = rawName
+      .normalize('NFKD')
+      .replace(/[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/g, '_')
+      .replace(/[\\/:*?"<>|\s]/g, '_')
+      .replace(/_+/g, '_')
+      .replace(/^_+|_+$/g, '') || 'client';
     const filename = `client-statement-${safeName}.pdf`;
+    const asciiFilename = `client-statement-${safeName.replace(/[^A-Za-z0-9_.-]/g, '_')}.pdf`;
 
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="client-statement.pdf"; filename*=UTF-8''${encodeURIComponent(filename)}`);
-
-    // Stream PDF directly to client response
-    doc.pipe(res);
+    const pdfChunks = [];
+    doc.on('data', (chunk) => pdfChunks.push(chunk));
+    doc.on('end', () => {
+      const pdfBuffer = Buffer.concat(pdfChunks);
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Length', String(pdfBuffer.length));
+      res.setHeader('Content-Disposition', `attachment; filename="${asciiFilename}"; filename*=UTF-8''${encodeURIComponent(filename)}`);
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+      res.status(200).end(pdfBuffer);
+    });
+    doc.on('error', (pdfErr) => {
+      console.error('PDF-generation stream error:', pdfErr);
+      if (!res.headersSent) {
+        res.status(500).send('فشل في إنشاء ملف PDF');
+      } else {
+        res.destroy(pdfErr);
+      }
+    });
 
     // 1. Header Banner
     doc.rect(30, 30, 535, 48).fill('#006840');
-    doc.fillColor('#FFFFFF').fontSize(16).text(`كشف حساب عميل - ${client.name}`, 40, 40, { align: 'center', width: 515 });
-    doc.fontSize(9).text(`تاريخ التقرير: ${printDate}  |  نظام حسابات لإدارة ديون وتوريدات مواد البناء`, 40, 60, { align: 'center', width: 515 });
+    doc.fillColor('#FFFFFF').fontSize(16);
+    drawRtlText(`كشف حساب عميل - ${client.name}`, 40, 40, 515, 'center');
+    doc.fontSize(9);
+    drawRtlText(`تاريخ التقرير: ${printDate}  |  نظام حسابات لإدارة ديون وتوريدات مواد البناء`, 40, 60, 515, 'center');
 
-    // 2. Client Info Card
+    // 2. Client Info Card (matching the Excel statement structure)
     doc.rect(30, 86, 535, 62).fillAndStroke('#F8FAFC', '#CBD5E1');
-    doc.fillColor('#0F172A').fontSize(10);
-    doc.text(`اسم العميل: ${client.name}`, 40, 95, { align: 'right', width: 240 });
-    doc.text(`رقم الهاتف: ${client.phone || '-'}`, 40, 112, { align: 'right', width: 240 });
-    doc.text(`عدد العمليات: ${displayInvoices.length} معاملة`, 40, 129, { align: 'right', width: 240 });
+    drawInfoPair('اسم العميل:', client.name, 95, 300, 120, 175, 300);
+    drawInfoPair('رقم الهاتف:', client.phone || '-', 112, 300, 120, 175, 300);
+    drawInfoPair('عدد العمليات:', `${displayInvoices.length} معاملة`, 129, 300, 120, 175, 300);
 
-    doc.text(`إجمالي المشتريات: ${formatCurrency(totalPurchases)}`, 300, 95, { align: 'right', width: 250 });
-    doc.text(`إجمالي المدفوعات: ${formatCurrency(totalPayments)}`, 300, 112, { align: 'right', width: 250 });
+    drawInfoPair('إجمالي المشتريات:', formatCurrency(totalPurchases), 95, 510, 160, 340, 470);
+    drawInfoPair('إجمالي المدفوعات:', formatCurrency(totalPayments), 112, 510, 160, 340, 470);
     doc.fillColor(currentBalance > 0 ? '#B91C1C' : '#15803D');
-    doc.text(`الرصيد المستحق: ${formatCurrency(currentBalance)}`, 300, 129, { align: 'right', width: 250 });
+    drawInfoPair('الرصيد المستحق:', formatCurrency(currentBalance), 129, 510, 160, 340, 470);
 
     // 3. Table Header
     let y = 160;
     doc.rect(30, y, 535, 22).fill('#006840');
     doc.fillColor('#FFFFFF').fontSize(9);
-    doc.text('التاريخ', 485, y + 6, { width: 75, align: 'center' });
-    doc.text('النوع', 430, y + 6, { width: 50, align: 'center' });
-    doc.text('المبلغ', 345, y + 6, { width: 80, align: 'center' });
-    doc.text('البيان / التفاصيل', 195, y + 6, { width: 145, align: 'center' });
-    doc.text('العميل النهائي', 110, y + 6, { width: 80, align: 'center' });
-    doc.text('الرصيد بعد العملية', 35, y + 6, { width: 70, align: 'center' });
+    drawRtlText('التاريخ', 485, y + 6, 75, 'center');
+    drawRtlText('النوع', 430, y + 6, 50, 'center');
+    drawRtlText('المبلغ', 345, y + 6, 80, 'center');
+    drawRtlText('البيان / التفاصيل', 195, y + 6, 145, 'center');
+    drawRtlText('العميل النهائي', 110, y + 6, 80, 'center');
+    drawRtlText('الرصيد بعد العملية', 35, y + 6, 70, 'center');
 
     y += 22;
 
@@ -357,12 +408,12 @@ router.get('/client/:id/pdf', async (req, res) => {
           // Redraw Table Header on new page
           doc.rect(30, y, 535, 22).fill('#006840');
           doc.fillColor('#FFFFFF').fontSize(9);
-          doc.text('التاريخ', 485, y + 6, { width: 75, align: 'center' });
-          doc.text('النوع', 430, y + 6, { width: 50, align: 'center' });
-          doc.text('المبلغ', 345, y + 6, { width: 80, align: 'center' });
-          doc.text('البيان / التفاصيل', 195, y + 6, { width: 145, align: 'center' });
-          doc.text('العميل النهائي', 110, y + 6, { width: 80, align: 'center' });
-          doc.text('الرصيد بعد العملية', 35, y + 6, { width: 70, align: 'center' });
+          drawRtlText('التاريخ', 485, y + 6, 75, 'center');
+          drawRtlText('النوع', 430, y + 6, 50, 'center');
+          drawRtlText('المبلغ', 345, y + 6, 80, 'center');
+          drawRtlText('البيان / التفاصيل', 195, y + 6, 145, 'center');
+          drawRtlText('العميل النهائي', 110, y + 6, 80, 'center');
+          drawRtlText('الرصيد بعد العملية', 35, y + 6, 70, 'center');
           y += 22;
         }
 
@@ -375,15 +426,15 @@ router.get('/client/:id/pdf', async (req, res) => {
         doc.fillColor('#0F172A').fontSize(8.5);
 
         const typeLabel = inv.type === 'purchase' ? 'شراء' : 'دفع';
-        doc.text(formatDate(inv.date), 485, y + 5, { width: 75, align: 'center' });
+        drawRtlText(formatDate(inv.date), 485, y + 5, 75, 'center');
         doc.fillColor(inv.type === 'payment' ? '#16A34A' : '#0F172A');
-        doc.text(typeLabel, 430, y + 5, { width: 50, align: 'center' });
-        doc.text(`${formatCurrency(inv.amount)}`, 345, y + 5, { width: 80, align: 'center' });
+        drawRtlText(typeLabel, 430, y + 5, 50, 'center');
+        drawRtlText(`${formatCurrency(inv.amount)}`, 345, y + 5, 80, 'center');
         doc.fillColor('#0F172A');
-        doc.text(inv.details || '-', 195, y + 5, { width: 145, align: 'center' });
-        doc.text(inv.endClientName || '-', 110, y + 5, { width: 80, align: 'center' });
+        drawRtlText(inv.details || '-', 195, y + 5, 145, 'center');
+        drawRtlText(inv.endClientName || '-', 110, y + 5, 80, 'center');
         doc.fillColor(inv.runningBalance <= 0 ? '#16A34A' : '#006840');
-        doc.text(`${formatCurrency(inv.runningBalance)}`, 35, y + 5, { width: 70, align: 'center' });
+        drawRtlText(`${formatCurrency(inv.runningBalance)}`, 35, y + 5, 70, 'center');
 
         y += 20;
       });
@@ -397,8 +448,8 @@ router.get('/client/:id/pdf', async (req, res) => {
     }
     y += 25;
     doc.fillColor('#475569').fontSize(9);
-    doc.text('توقيع المحاسب المسؤول: .......................................', 40, y, { align: 'right', width: 240 });
-    doc.text('توقيع المستلم / العميل: .......................................', 300, y, { align: 'right', width: 250 });
+    drawRtlText('توقيع المحاسب المسؤول: .......................................', 40, y, 240, 'right');
+    drawRtlText('توقيع المستلم / العميل: .......................................', 300, y, 250, 'right');
 
     doc.end();
   } catch (err) {
