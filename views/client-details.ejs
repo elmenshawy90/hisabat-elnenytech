@@ -167,7 +167,7 @@
 
         <!-- Sort Direction Toggle Button -->
         <button id="txSortOrderToggle" class="h-9 w-9 flex-shrink-0 flex items-center justify-center bg-surface-container-low border border-outline-variant hover:border-primary/60 rounded-lg hover:bg-primary/5 text-primary transition-all active:scale-95 shadow-sm" title="تبديل الترتيب تصاعدي / تنازلي" type="button">
-            <span class="material-symbols-outlined text-base transition-transform duration-200" id="txSortOrderIcon">arrow_downward</span>
+            <span class="material-symbols-outlined text-base transition-transform duration-200" id="txSortOrderIcon">arrow_upward</span>
         </button>
     </div>
 </div>
@@ -556,7 +556,7 @@ function renderEndClientBreakdown(invoices) {
 }
 
 let currentTxSortField = 'date'; // 'date' or 'createdAt'
-let currentTxSortOrder = 'desc'; // 'desc' or 'asc'
+let currentTxSortOrder = 'asc'; // oldest first
 
 let currentTxList = [];
 let txCurrentPage = 1;
