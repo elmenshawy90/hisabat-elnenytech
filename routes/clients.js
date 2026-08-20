@@ -73,6 +73,9 @@ router.get('/:id', async (req, res) => {
         where: { id },
         include: {
           invoices: {
+            include: {
+              endClient: true
+            },
             orderBy: [
               { date: 'desc' },
               { createdAt: 'desc' },
@@ -94,7 +97,11 @@ router.get('/:id', async (req, res) => {
       balance,
       lastTransaction: client.updatedAt,
       lastTransactionNote: client.notes || '',
-      invoices: client.invoices.map(inv => ({ ...inv, _id: inv.id })),
+      invoices: client.invoices.map(inv => ({
+        ...inv,
+        _id: inv.id,
+        endClient: inv.endClient
+      })),
       initials: client.name.split(' ').slice(0, 2).map(w => w[0]).join(' ')
     });
   } catch (err) {

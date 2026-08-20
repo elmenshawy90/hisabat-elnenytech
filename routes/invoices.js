@@ -146,10 +146,18 @@ router.post('/', async (req, res) => {
 
     const newNotes = data.details || (data.type === 'purchase' ? 'عملية شراء' : 'دفعة');
 
-    // Use transaction to create invoice and update client notes
-    const [invoice, updatedClient] = await prisma.$transaction([
-      prisma.invoice.create({
+    // Use transaction to increment counter, create invoice with invoiceCode, and update client notes
+    const { invoice, updatedClient } = await prisma.$transaction(async (tx) => {
+      const counter = await tx.counter.upsert({
+        where: { id: 'invoice' },
+        create: { id: 'invoice', value: 1 },
+        update: { value: { increment: 1 } }
+      });
+      const invoiceCode = `Nen${counter.value}`;
+
+      const createdInvoice = await tx.invoice.create({
         data: {
+          invoiceCode,
           clientId,
           clientName,
           clientPhone: clientPhone || '-',
@@ -162,14 +170,17 @@ router.post('/', async (req, res) => {
           status: data.status || 'pending',
           date: data.date ? new Date(data.date) : new Date()
         }
-      }),
-      prisma.client.update({
+      });
+
+      const updated = await tx.client.update({
         where: { id: clientId },
         data: {
           notes: newNotes
         }
-      })
-    ]);
+      });
+
+      return { invoice: createdInvoice, updatedClient: updated };
+    });
 
     // Compute live balance
     const currentBalance = await getClientBalance(prisma, clientId);
@@ -177,6 +188,7 @@ router.post('/', async (req, res) => {
     res.status(201).json({
       ...invoice,
       _id: invoice.id,
+      invoiceCode: invoice.invoiceCode,
       client: invoice.clientId,
       endClientId: invoice.endClientId,
       endClientName: invoice.endClientName,

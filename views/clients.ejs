@@ -224,6 +224,13 @@
 </div>
 <p id="newClientPhoneError" class="hidden text-error text-[11px] mt-1 pr-1 font-bold">يجب إدخال أرقام فقط في رقم الهاتف</p>
 </div>
+<div class="flex flex-col gap-xs">
+<label class="font-label-md text-label-md text-on-surface-variant">العنوان (اختياري)</label>
+<div class="relative">
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline">location_on</span>
+<input class="w-full h-12 pr-10 pl-md rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all text-right" id="newClientAddress" placeholder="الحي، الشارع..." type="text"/>
+</div>
+</div>
 <div class="flex flex-col md:flex-row items-center gap-md pt-md border-t border-outline-variant">
 <button class="w-full md:w-auto bg-primary text-on-primary h-12 px-xl rounded-full font-label-md text-label-md hover:opacity-90 active:scale-95 transition-all" type="submit">حفظ العميل</button>
 <button class="w-full md:w-auto border border-outline-variant text-on-surface h-12 px-xl rounded-full font-label-md text-label-md hover:bg-surface-container-low transition-all" type="button" onclick="closeAddClientModal()">إلغاء</button>
@@ -266,8 +273,15 @@
 </div>
 <p id="editClientPhoneError" class="hidden text-error text-[11px] mt-1 pr-1 font-bold">يجب إدخال أرقام فقط في رقم الهاتف</p>
 </div>
+<div class="flex flex-col gap-xs">
+<label class="font-label-md text-label-md text-on-surface-variant">العنوان (اختياري)</label>
+<div class="relative">
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline">location_on</span>
+<input class="w-full h-12 pr-10 pl-md rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all text-right" id="editClientAddress" placeholder="الحي، الشارع..." type="text"/>
+</div>
+</div>
 <div class="flex flex-col md:flex-row items-center gap-md pt-md border-t border-outline-variant">
-<button class="w-full md:w-auto bg-primary text-on-primary h-12 px-xl rounded-full font-label-md text-label-md hover:opacity-90 active:scale-95 transition-all" type="submit">حفظ التغييرات</button>
+<button class="w-full md:w-auto bg-primary text-on-primary h-12 px-xl rounded-full font-label-md text-label-md hover:opacity-90 active:scale-95 transition-all" type="submit">حفظ التعديلات</button>
 <button class="w-full md:w-auto border border-outline-variant text-on-surface h-12 px-xl rounded-full font-label-md text-label-md hover:bg-surface-container-low transition-all" type="button" onclick="closeEditClientModal()">إلغاء</button>
 </div>
 </form>
@@ -467,7 +481,7 @@ function renderClients(clients, resetPage = false) {
                         <a href="/client-details?id=${client.id}" onclick="event.stopPropagation();" class="p-sm rounded-lg hover:bg-surface-container-highest text-primary transition-all active:scale-90" title="عرض">
                             <span class="material-symbols-outlined">visibility</span>
                         </a>
-                        <button onclick="event.stopPropagation(); openEditClientModal('${client.id}', '${escapeJsString(client.name)}', '${escapeJsString(client.phone || '')}', '${client.pageNumber ?? 0}')" class="p-sm rounded-lg hover:bg-primary/10 text-primary transition-all active:scale-90" title="تعديل">
+                        <button onclick="event.stopPropagation(); openEditClientModal('${client.id}', '${escapeJsString(client.name)}', '${escapeJsString(client.phone || '')}', '${escapeJsString(client.address || '')}', '${client.pageNumber ?? 0}')" class="p-sm rounded-lg hover:bg-primary/10 text-primary transition-all active:scale-90" title="تعديل">
                             <span class="material-symbols-outlined">edit</span>
                         </button>
                         <button onclick="event.stopPropagation(); deleteClient('${client.id}', '${escapeJsString(client.name)}')" class="p-sm rounded-lg hover:bg-error-container/20 text-error transition-all active:scale-90" title="حذف">
@@ -723,19 +737,27 @@ const editClientNameInput = document.getElementById('editClientName');
 const editClientNameError = document.getElementById('editClientNameError');
 const editClientPhoneInput = document.getElementById('editClientPhone');
 const editClientPhoneError = document.getElementById('editClientPhoneError');
+const editClientAddressInput = document.getElementById('editClientAddress');
 const editClientPageNumberInput = document.getElementById('editClientPageNumber');
 const editClientIdInput = document.getElementById('editClientId');
 
-function openEditClientModal(clientId, clientName, clientPhone, clientPageNumber) {
+function openEditClientModal(clientId, clientName, clientPhone, clientAddress, clientPageNumber) {
     const modal = document.getElementById('editClientModal');
     modal.classList.remove('hidden');
     modal.classList.add('flex');
     document.body.style.overflow = 'hidden';
 
+    const client = allClients.find(c => String(c.id || c._id) === String(clientId));
+    const nameVal = clientName !== undefined ? clientName : (client?.name || '');
+    const phoneVal = clientPhone !== undefined ? clientPhone : (client?.phone || '');
+    const addressVal = clientAddress !== undefined ? clientAddress : (client?.address || '');
+    const pageVal = clientPageNumber !== undefined ? clientPageNumber : (client?.pageNumber ?? 0);
+
     editClientIdInput.value = clientId;
-    editClientNameInput.value = clientName || '';
-    editClientPhoneInput.value = clientPhone || '';
-    editClientPageNumberInput.value = clientPageNumber || 0;
+    editClientNameInput.value = nameVal;
+    editClientPhoneInput.value = (phoneVal === '-' ? '' : phoneVal);
+    if (editClientAddressInput) editClientAddressInput.value = (addressVal === '-' ? '' : addressVal);
+    editClientPageNumberInput.value = pageVal;
     editClientNameError.classList.add('hidden');
     editClientNameInput.classList.remove('border-error');
     editClientPhoneError.classList.add('hidden');
@@ -761,6 +783,7 @@ async function submitEditClientForm(e) {
     const clientId = editClientIdInput.value;
     const name = editClientNameInput.value.trim();
     const phone = editClientPhoneInput.value.trim();
+    const address = (editClientAddressInput ? editClientAddressInput.value : '').trim();
     const pageNumber = editClientPageNumberInput.value.trim();
 
     if (!name) {
@@ -770,7 +793,7 @@ async function submitEditClientForm(e) {
     }
 
     const duplicate = allClients.some(client => {
-        if (String(client.id) === String(clientId)) return false;
+        if (String(client.id || client._id) === String(clientId)) return false;
         return normalizeArabic((client.name || '').trim()) === normalizeArabic(name);
     });
 
@@ -798,6 +821,7 @@ async function submitEditClientForm(e) {
             body: JSON.stringify({
                 name,
                 phone: phone || '-',
+                address: address || '',
                 pageNumber: pageNumber === '' ? 0 : Number(pageNumber)
             })
         });
@@ -807,9 +831,25 @@ async function submitEditClientForm(e) {
             throw new Error(err.error || 'فشل في تحديث العميل');
         }
 
+        const updatedClient = await res.json();
+
+        // Update allClients in memory without full page reload
+        const idx = allClients.findIndex(c => String(c.id || c._id) === String(clientId));
+        if (idx !== -1) {
+            allClients[idx] = {
+                ...allClients[idx],
+                ...updatedClient,
+                name: updatedClient.name,
+                phone: updatedClient.phone,
+                address: updatedClient.address,
+                pageNumber: updatedClient.pageNumber
+            };
+        }
+
         showToast('تم تحديث بيانات العميل بنجاح', 'success');
         closeEditClientModal();
-        await loadClients();
+        renderClients(sortClientsList(allClients));
+        updateStats(allClients);
     } catch (err) {
         console.error(err);
         showToast(err.message || 'فشل في تحديث العميل', 'error');
@@ -825,6 +865,7 @@ document.getElementById('addClientForm').addEventListener('submit', async (e) =>
     e.preventDefault();
     const name = newClientNameInput.value.trim();
     const phone = newClientPhoneInput.value.trim();
+    const address = (document.getElementById('newClientAddress') ? document.getElementById('newClientAddress').value : '').trim();
     
     if (validateFormFields('addClientForm')) {
         showToast('الرجاء إكمال جميع الحقول الإجبارية', 'warning');
@@ -843,7 +884,12 @@ document.getElementById('addClientForm').addEventListener('submit', async (e) =>
         const res = await fetch('/api/clients', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name, phone: phone || '-', pageNumber: pageNumber === '' ? 0 : Number(pageNumber) })
+            body: JSON.stringify({
+                name,
+                phone: phone || '-',
+                address: address || '',
+                pageNumber: pageNumber === '' ? 0 : Number(pageNumber)
+            })
         });
         
         if (res.ok) {
@@ -869,6 +915,10 @@ document.getElementById('addClientForm').addEventListener('submit', async (e) =>
 // Close modal on outside click
 document.getElementById('addClientModal').addEventListener('click', function(e) {
     if (e.target === this) closeAddClientModal();
+});
+
+document.getElementById('editClientModal').addEventListener('click', function(e) {
+    if (e.target === this) closeEditClientModal();
 });
 
 // Add row animation keyframes

@@ -264,8 +264,7 @@
                             </div>
                         </div>
                         <div class="flex flex-col gap-xs">
-                            <label class="font-label-md text-label-md text-on-surface-variant mb-xs">المبلغ المستحق
-                                (جنيه)</label>
+                            <label class="font-label-md text-label-md text-on-surface-variant mb-xs">المبلغ المستحق</label>
                             <div class="relative">
                                 <span
                                     class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline">payments</span>
@@ -321,7 +320,10 @@
             id="transactionDetailsModal">
             <div class="bg-surface rounded-xl shadow-lg w-full max-w-lg max-h-[90vh] overflow-y-auto p-md md:p-xl">
                 <div class="flex flex-row justify-between items-center mb-lg border-b border-outline-variant pb-sm">
-                    <h2 class="font-headline-md text-headline-md font-bold text-on-surface">تفاصيل المعاملة</h2>
+                    <div>
+                        <h2 class="font-headline-md text-headline-md font-bold text-on-surface">تفاصيل المعاملة</h2>
+                        <span id="tdInvoiceCode" class="inline-flex items-center gap-1 font-mono font-bold text-xs bg-primary/10 text-primary px-2.5 py-0.5 rounded-full mt-1"></span>
+                    </div>
                     <button class="text-secondary hover:text-on-surface" onclick="closeTransactionDetails()"
                         type="button">
                         <span class="material-symbols-outlined">close</span>
@@ -617,7 +619,12 @@
 
                 tbody.innerHTML = pagedInvoices.map(inv => `
         <tr class="invoice-item cursor-pointer hover:bg-primary/5 transition-colors group" onclick="openTransactionDetails(${inv._id})">
-            <td class="p-md font-body-md text-on-surface client-name">${highlightArabic(inv.clientName, query)}</td>
+            <td class="p-md font-body-md text-on-surface client-name">
+                <div class="flex flex-col">
+                    <span class="font-bold">${highlightArabic(inv.clientName, query)}</span>
+                    ${inv.invoiceCode ? `<span class="text-[11px] font-mono text-secondary font-medium">${inv.invoiceCode}</span>` : ''}
+                </div>
+            </td>
             <td class="p-md font-body-md text-secondary end-client-name">${highlightArabic(inv.endClientName || '', query) || '-'}</td>
             <td class="p-md font-body-md font-bold ${inv.type === 'payment' ? 'text-green-600' : 'text-primary'}">${inv.type === 'payment' ? '-' : ''}${formatCurrency(inv.amount)}</td>
             <td class="p-md font-body-md text-secondary client-mobile" dir="ltr">${highlightArabic(inv.clientPhone || '', query) || '-'}</td>
@@ -736,6 +743,16 @@
             function openTransactionDetails(id) {
                 const inv = allInvoices.find(i => String(i._id) === String(id));
                 if (!inv) return;
+
+                const codeEl = document.getElementById('tdInvoiceCode');
+                if (codeEl) {
+                    if (inv.invoiceCode) {
+                        codeEl.textContent = `رقم الفاتورة: ${inv.invoiceCode}`;
+                        codeEl.classList.remove('hidden');
+                    } else {
+                        codeEl.classList.add('hidden');
+                    }
+                }
 
                 document.getElementById('tdDate').textContent = formatDate(inv.date);
                 document.getElementById('tdClient').textContent = inv.clientName;
