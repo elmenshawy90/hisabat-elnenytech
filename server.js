@@ -81,6 +81,7 @@ app.get('/dashboard', (req, res) => res.render('dashboard'));
 app.get('/clients', (req, res) => res.render('clients'));
 app.get('/new-invoice', (req, res) => res.render('new-invoice'));
 app.get('/client-details', (req, res) => res.render('client-details'));
+app.use('/status', require('./routes/status'));
 
 // Health check for Vercel debugging
 app.get('/health', (req, res) => {

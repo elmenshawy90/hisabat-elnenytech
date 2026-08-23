@@ -25,10 +25,10 @@
             <span class="font-label-md text-label-md flex-grow text-right">إضافة معاملة</span>
         </a>
         <div class="mt-auto border-t border-outline-variant/30 pt-md">
-            <a class="flex flex-row items-center gap-md text-secondary px-md py-sm hover:bg-surface-container-highest transition-all rounded-lg"
-                href="#">
-                <span class="material-symbols-outlined">settings</span>
-                <span class="font-label-md text-label-md flex-grow text-right">الإعدادات</span>
+            <a class="flex flex-row items-center gap-md <%= active === 'status' ? 'bg-primary-container text-on-primary-container' : 'text-secondary' %> px-md py-sm hover:bg-surface-container-highest transition-all rounded-lg"
+                href="/status">
+                <span class="material-symbols-outlined <%= active === 'status' ? 'filled' : '' %>">dns</span>
+                <span class="font-label-md text-label-md flex-grow text-right">حالة النظام</span>
             </a>
         </div>
     </nav>
