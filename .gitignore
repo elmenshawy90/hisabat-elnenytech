@@ -26,3 +26,6 @@ npm-debug.log*
 .windsurf/
 skills-lock.json
 *.db
+.env.example
+env
+.env.example
