@@ -12,64 +12,76 @@ datasource db {
 }
 
 model User {
-  id          Int      @id @default(autoincrement())
-  username    String   @unique
-  password    String
-  displayName String   @default("مستخدم")
-  role        String   @default("user") // 'admin' or 'user'
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id                    Int      @id @default(autoincrement())
+  username              String   @unique
+  password              String
+  displayName           String   @default("مستخدم")
+  role                  String   @default("user") // 'admin' or 'user'
+  failedLoginAttempts   Int      @default(0)
+  lockedUntil           DateTime?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
 }
 
 model Client {
-  id        Int       @id @default(autoincrement())
-  name      String
-  phone     String
-  address   String    @default("")
-  notes     String    @default("")
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  invoices  Invoice[]
+  id          Int       @id @default(autoincrement())
+  name        String
+  phone       String
+  address     String    @default("")
+  notes       String    @default("")
+  pageNumber  Int?      @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  invoices    Invoice[]
 
   @@index([name])
   @@index([phone])
 }
 
 model EndClient {
-  id        Int       @id @default(autoincrement())
-  name      String
-  phone     String    @default("-")
-  address   String    @default("")
-  notes     String    @default("")
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  invoices  Invoice[]
+  id                  Int       @id @default(autoincrement())
+  name                String
+  phone               String    @default("-")
+  address             String    @default("")
+  notes               String    @default("")
+  convertedToClientId Int?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  invoices            Invoice[]
 
   @@index([name])
   @@index([phone])
 }
 
 model Invoice {
-  id            Int        @id @default(autoincrement())
-  clientId      Int
-  client        Client     @relation(fields: [clientId], references: [id])
-  clientName    String
-  clientPhone   String     @default("")
-  endClientId   Int?
-  endClient     EndClient? @relation(fields: [endClientId], references: [id])
-  endClientName String?    @default("")
-  type          String     // 'purchase' or 'payment'
-  amount        Float
-  details       String
-  address       String
-  date          DateTime   @default(now())
-  status        String     @default("pending") // 'pending', 'paid', 'overdue'
-  createdAt     DateTime   @default(now())
-  updatedAt     DateTime   @updatedAt
+  id                Int        @id @default(autoincrement())
+  invoiceCode       String?    @unique
+  isHistoricalCopy  Boolean    @default(false)
+  originalInvoiceId Int?
+  clientId          Int
+  client            Client     @relation(fields: [clientId], references: [id])
+  clientName        String
+  clientPhone       String     @default("")
+  endClientId       Int?
+  endClient         EndClient? @relation(fields: [endClientId], references: [id])
+  endClientName     String?    @default("")
+  type              String     // 'purchase' or 'payment'
+  amount            Float
+  details           String
+  address           String
+  date              DateTime   @default(now())
+  status            String     @default("pending") // 'pending', 'paid', 'overdue'
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
 
   @@index([clientId])
   @@index([endClientId])
   @@index([date])
+}
+
+model Counter {
+  id    String @id
+  value Int    @default(0)
 }
 
 model Session {

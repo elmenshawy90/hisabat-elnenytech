@@ -153,10 +153,40 @@ function hideLoading(container) {
 
 // ─── Format Currency ─────────────────────────────────────────
 function formatCurrency(amount) {
+  const num = Number(amount) || 0;
   return new Intl.NumberFormat('ar-EG', {
     minimumFractionDigits: 0,
     maximumFractionDigits: 2
-  }).format(amount) + ' ج.م';
+  }).format(num) + ' ج.م';
+}
+
+// ─── Format Balance Label ────────────────────────────────────
+function formatBalanceLabel(balance) {
+  if (balance === undefined || balance === null || isNaN(Number(balance))) {
+    return {
+      text: 'جاري التحميل...',
+      colorClass: 'text-secondary'
+    };
+  }
+
+  const num = Number(balance);
+
+  if (num > 0) {
+    return {
+      text: `عليه ${formatCurrency(num)}`,
+      colorClass: 'text-tertiary'
+    };
+  } else if (num < 0) {
+    return {
+      text: `له ${formatCurrency(Math.abs(num))}`,
+      colorClass: 'text-green-600'
+    };
+  } else {
+    return {
+      text: 'متسدد بالكامل',
+      colorClass: 'text-green-600'
+    };
+  }
 }
 
 // ─── Format Date ─────────────────────────────────────────────

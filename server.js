@@ -1,15 +1,39 @@
 require('dotenv').config();
 const express = require('express');
 const path = require('path');
-const session = require('express-session');
+const cookieParser = require('cookie-parser');
+const jwt = require('jsonwebtoken');
 
 console.log('[server] Starting app initialization...');
 
+// Validate required environment variables
+const requiredEnvVars = ['DATABASE_URL', 'SESSION_SECRET'];
+const missingEnvVars = requiredEnvVars.filter(envVar => !process.env[envVar]);
+
+if (missingEnvVars.length > 0) {
+  console.error(`[server] Missing required environment variables: ${missingEnvVars.join(', ')}`);
+  console.error('[server] Please ensure .env file contains all required variables.');
+  process.exit(1);
+}
+
+console.log('[server] Environment validation passed');
+
 const app = express();
 
-// Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
+
+// Request Logging Middleware
+app.use((req, res, next) => {
+  const start = Date.now();
+  res.on('finish', () => {
+    const duration = Date.now() - start;
+    const statusType = res.statusCode >= 500 ? 'ERR' : res.statusCode >= 400 ? 'WARN' : 'OK';
+    console.log(`[${statusType}] ${req.method} ${req.path} ${res.statusCode} (${duration}ms)`);
+  });
+  next();
+});
 
 // Serve Static Files early (so static assets don't hit PrismaSessionStore / DB)
 app.use(express.static(path.join(__dirname, 'public')));
@@ -21,40 +45,23 @@ app.set('views', path.join(__dirname, 'views'));
 // Trust proxy for Render/Vercel (required for secure cookies)
 app.set('trust proxy', 1);
 
-// Session Configuration
-const isServerless = process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME || process.env.LAMBDA_TASK_ROOT;
-
-console.log('[server] Is serverless:', isServerless);
-
-let sessionStore;
-if (isServerless) {
-  sessionStore = new session.MemoryStore();
-} else {
-  console.log('[server] Loading PrismaSessionStore...');
-  const { PrismaSessionStore } = require('@quixo3/prisma-session-store');
-  const prisma = require('./lib/prisma');
-  sessionStore = new PrismaSessionStore(prisma, {
-    checkPeriod: 2 * 60 * 1000,
-    dbRecordIdIsSessionId: true,
-    dbRecordIdFunction: undefined,
-  });
-  console.log('[server] PrismaSessionStore loaded');
-}
-
-app.use(session({
-  secret: process.env.SESSION_SECRET || 'fallback-secret-for-dev',
-  resave: false,
-  saveUninitialized: false,
-  store: sessionStore,
-  cookie: {
-    maxAge: 1000 * 60 * 60 * 24 * 7,
-    httpOnly: true,
-    secure: 'auto',
-    sameSite: 'lax'
+// JWT Cookie Middleware
+app.use((req, res, next) => {
+  const token = req.cookies.token;
+  if (!token) {
+    req.user = null;
+    return next();
   }
-}));
+  try {
+    const decoded = jwt.verify(token, process.env.SESSION_SECRET);
+    req.user = decoded;
+  } catch (err) {
+    req.user = null;
+  }
+  return next();
+});
 
-console.log('[server] Session middleware configured');
+console.log('[server] JWT middleware configured');
 
 // API Routes
 app.use('/api/auth', require('./routes/auth'));
@@ -74,6 +81,7 @@ app.get('/dashboard', (req, res) => res.render('dashboard'));
 app.get('/clients', (req, res) => res.render('clients'));
 app.get('/new-invoice', (req, res) => res.render('new-invoice'));
 app.get('/client-details', (req, res) => res.render('client-details'));
+app.use('/status', require('./routes/status'));
 
 // Health check for Vercel debugging
 app.get('/health', (req, res) => {
@@ -101,14 +109,18 @@ console.log('[server] App initialization complete');
 // Start Server when run directly
 if (require.main === module) {
   const PORT = process.env.PORT || 3000;
-  app.listen(PORT, () => {
-    console.log(`🚀 Server running on http://localhost:${PORT}`);
+  const server = app.listen(PORT, () => {
+    console.log(`\n🚀 Server running on http://localhost:${PORT}`);
+    console.log(`Environment: ${process.env.NODE_ENV || 'development'}\n`);
   });
 
   // Graceful shutdown
   process.on('SIGINT', () => {
     console.log('\n👋 Shutting down gracefully...');
-    process.exit();
+    server.close(() => {
+      console.log('Server closed.');
+      process.exit(0);
+    });
   });
 }
 

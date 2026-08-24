@@ -19,184 +19,164 @@
     <link href="css/styles.css" rel="stylesheet" />
 </head>
 
-<body class="text-on-surface bg-background min-h-screen flex max-w-[100vw] overflow-x-hidden">
-    <!-- SideNavBar -->
-    <%- include('partials/aside', { active: 'invoices' }) %>
-        <!-- Main Canvas -->
-        <main class="flex-1 min-w-0 md:mr-64 min-h-screen flex flex-col pb-24 md:pb-0">
-            <!-- Content Area -->
-            <div class="flex-1 p-container-margin md:p-xl max-w-5xl mx-auto w-full">
+<body class="bg-background text-on-surface overflow-hidden max-w-[100vw]">
+    <!-- Shell Container -->
+    <div class="flex h-screen w-full">
+        <!-- SideNavBar -->
+        <%- include('partials/aside', { active: 'invoices' }) %>
+        <!-- Main Content Area -->
+        <main class="flex-1 min-w-0 flex flex-col md:mr-64 h-full relative">
+            <!-- Page Canvas -->
+            <div class="flex-1 overflow-y-auto p-container-margin pb-24 md:pb-xl md:p-xl custom-scrollbar">
                 <!-- TopNavBar (Mobile & Tablet) -->
                 <%- include('partials/header', { title: 'الفواتير' }) %>
-                    <!-- Page Header -->
-                    <div
-                        class="flex flex-col md:flex-row justify-between items-start md:items-center mb-xl gap-md mt-md">
-                        <div class="text-right">
-                            <h2
-                                class="font-display-lg-mobile md:font-display-lg text-display-lg-mobile md:text-display-lg text-on-surface mb-xs">
-                                سجل الفواتير</h2>
-                            <p class="text-secondary font-body-md text-body-md">إدارة وتتبع جميع الفواتير والمعاملات
-                                المالية</p>
-                        </div>
-                        <div class="flex gap-sm">
-                            <a href="/api/export/invoices/excel"
-                                class="bg-surface-container-low text-on-surface rounded-full px-md py-sm md:px-lg md:py-md font-label-lg text-label-lg md:font-headline-sm md:text-headline-sm hover:bg-surface-container transition-colors flex flex-row items-center justify-center gap-sm shadow-sm border border-outline-variant">
-                                <span class="material-symbols-outlined text-xl md:text-2xl">download</span>
-                                تصدير
-                            </a>
-                            <button
-                                class="bg-primary text-on-primary rounded-full px-md py-sm md:px-lg md:py-md font-label-lg text-label-lg md:font-headline-sm md:text-headline-sm hover:opacity-90 transition-opacity flex flex-row items-center justify-center gap-sm shadow-sm"
-                                onclick="openModal()">
-                                <span class="material-symbols-outlined text-xl md:text-2xl">add</span>
-                                إضافة فاتورة
-                            </button>
-                        </div>
-                    </div>
-                    <!-- Search and Filter -->
-                    <div
-                        class="bg-white rounded-xl border border-slate-200 shadow-sm p-md mb-lg flex flex-col md:flex-row gap-sm items-center justify-between">
-                        <div class="relative flex-1 w-full text-right">
-                            <span
-                                class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline">search</span>
-                            <input
-                                class="w-full h-12 pr-10 pl-md rounded-xl bg-surface-container-low border border-outline-variant form-input-focus transition-all text-right"
-                                id="searchInput" onkeyup="filterInvoices()"
-                                placeholder="ابحث باسم العميل أو رقم الجوال..." type="text" />
-                        </div>
-                        <div class="flex items-center gap-xs w-full md:w-auto">
-                            <!-- Custom Invoice Sort Dropdown -->
-                            <div class="relative flex-1 md:flex-initial" id="invSortDropdownContainer">
-                                <button id="invSortDropdownBtn" type="button" class="w-full md:w-auto h-12 px-md bg-surface-container-low border border-outline-variant hover:border-primary/60 focus:border-primary rounded-xl flex items-center justify-between gap-sm text-on-surface font-body-md text-sm transition-all shadow-sm active:scale-98">
-                                    <div class="flex items-center gap-xs">
-                                        <span class="material-symbols-outlined text-primary text-lg">sort</span>
-                                        <span class="text-xs text-secondary whitespace-nowrap">الترتيب:</span>
-                                        <span id="invSortSelectedLabel" class="font-bold text-on-surface text-xs whitespace-nowrap">تاريخ الفاتورة</span>
-                                    </div>
-                                    <span class="material-symbols-outlined text-outline text-lg transition-transform duration-200" id="invSortDropdownArrow">expand_more</span>
-                                </button>
-                                
-                                <!-- Custom Dropdown Menu -->
-                                <div id="invSortDropdownMenu" class="hidden absolute top-[calc(100%+6px)] right-0 left-0 md:left-auto md:w-48 bg-surface border border-outline-variant/80 rounded-xl shadow-xl z-50 py-1.5 overflow-hidden transition-all duration-150 transform opacity-0 scale-95 origin-top">
-                                    <button type="button" onclick="selectInvSortOption('date', 'تاريخ الفاتورة')" class="inv-sort-option w-full px-md py-2.5 flex items-center justify-between text-xs hover:bg-primary/10 transition-colors text-right font-medium text-on-surface" data-value="date">
-                                        <span class="flex items-center gap-xs">
-                                            <span class="material-symbols-outlined text-base text-secondary">calendar_today</span>
-                                            تاريخ الفاتورة
-                                        </span>
-                                        <span class="material-symbols-outlined text-primary text-base font-bold inv-sort-check" id="inv-check-date">check</span>
-                                    </button>
-                                    <button type="button" onclick="selectInvSortOption('clientName', 'اسم العميل')" class="inv-sort-option w-full px-md py-2.5 flex items-center justify-between text-xs hover:bg-primary/10 transition-colors text-right font-medium text-on-surface" data-value="clientName">
-                                        <span class="flex items-center gap-xs">
-                                            <span class="material-symbols-outlined text-base text-secondary">person</span>
-                                            اسم العميل
-                                        </span>
-                                        <span class="material-symbols-outlined text-primary text-base font-bold inv-sort-check hidden" id="inv-check-clientName">check</span>
-                                    </button>
-                                    <button type="button" onclick="selectInvSortOption('amount', 'المبلغ')" class="inv-sort-option w-full px-md py-2.5 flex items-center justify-between text-xs hover:bg-primary/10 transition-colors text-right font-medium text-on-surface" data-value="amount">
-                                        <span class="flex items-center gap-xs">
-                                            <span class="material-symbols-outlined text-base text-secondary">attach_money</span>
-                                            المبلغ
-                                        </span>
-                                        <span class="material-symbols-outlined text-primary text-base font-bold inv-sort-check hidden" id="inv-check-amount">check</span>
-                                    </button>
-                                    <button type="button" onclick="selectInvSortOption('createdAt', 'تاريخ الإضافة')" class="inv-sort-option w-full px-md py-2.5 flex items-center justify-between text-xs hover:bg-primary/10 transition-colors text-right font-medium text-on-surface" data-value="createdAt">
-                                        <span class="flex items-center gap-xs">
-                                            <span class="material-symbols-outlined text-base text-secondary">schedule</span>
-                                            تاريخ الإضافة
-                                        </span>
-                                        <span class="material-symbols-outlined text-primary text-base font-bold inv-sort-check hidden" id="inv-check-createdAt">check</span>
-                                    </button>
-                                </div>
-                            </div>
 
-                            <!-- Sort Direction Toggle Button -->
-                            <button id="invSortOrderToggle" class="h-12 w-12 flex-shrink-0 flex items-center justify-center bg-surface-container-low border border-outline-variant hover:border-primary/60 rounded-xl hover:bg-primary/5 text-primary transition-all active:scale-95 shadow-sm" title="تبديل الترتيب تصاعدي / تنازلي" type="button">
-                                <span class="material-symbols-outlined text-xl transition-transform duration-200" id="invSortOrderIcon">arrow_downward</span>
-                            </button>
-                        </div>
+                <!-- Page Header -->
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-xl gap-md">
+                    <div class="text-right">
+                        <h2 class="font-headline-md text-headline-md text-on-surface">سجل الفواتير</h2>
+                        <p class="text-secondary font-body-md text-body-md">إدارة وتتبع جميع الفواتير والمعاملات المالية</p>
                     </div>
-                    <!-- Invoice List (Table) -->
-                    <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                        <div class="overflow-x-auto w-full max-w-[100vw]">
-                            <table class="w-full text-right border-collapse whitespace-nowrap" dir="rtl">
-                                <thead class="bg-surface-container-low border-b border-outline-variant">
-                                    <tr>
-                                        <th class="px-lg py-md font-label-md text-label-md text-secondary">العميل</th>
-                                        <th class="px-lg py-md font-label-md text-label-md text-secondary">العميل النهائي</th>
-                                        <th class="px-lg py-md font-label-md text-label-md text-secondary">المبلغ
-                                            المستحق</th>
-                                        <th class="px-lg py-md font-label-md text-label-md text-secondary" dir="ltr">رقم
-                                            الهاتف</th>
-                                        <th class="px-lg py-md font-label-md text-label-md text-secondary">تاريخ
-                                            الفاتورة</th>
-                                        <th class="p-md font-label-md text-on-surface-variant font-bold">التفاصيل</th>
-                                        <th class="p-md font-label-md text-on-surface-variant font-bold text-center">
-                                            الإجراءات
-                                        </th>
-                                    </tr>
-                                </thead>
-                                <tbody class="divide-y divide-outline-variant" id="invoiceList">
-                                    <tr>
-                                        <td colspan="7" class="p-xl text-center text-secondary">جاري التحميل...</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                        <!-- Pagination Footer -->
-                        <div class="px-md py-sm border-t border-slate-200 bg-surface-container-lowest flex flex-col sm:flex-row items-center justify-between gap-sm text-xs text-secondary" id="invoicesPaginationContainer">
-                            <div class="flex items-center gap-md w-full sm:w-auto justify-between sm:justify-start">
+                    <div class="flex gap-sm">
+                        <a href="/api/export/invoices/excel" class="bg-surface-container-low text-on-surface rounded-full px-md py-sm md:px-lg md:py-md font-label-lg text-label-lg md:font-headline-sm md:text-headline-sm hover:bg-surface-container transition-colors flex flex-row items-center justify-center gap-sm shadow-sm border border-outline-variant">
+                            <span class="material-symbols-outlined text-xl md:text-2xl">download</span>
+                            تصدير
+                        </a>
+                        <button class="bg-primary text-on-primary rounded-full px-md py-sm md:px-lg md:py-md font-label-lg text-label-lg md:font-headline-sm md:text-headline-sm hover:opacity-90 transition-opacity flex flex-row items-center justify-center gap-sm shadow-sm" onclick="openModal()">
+                            <span class="material-symbols-outlined text-xl md:text-2xl">add</span>
+                            إضافة فاتورة
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Search and Filter -->
+                <div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-md mb-md shadow-sm flex flex-col md:flex-row gap-sm items-center justify-between">
+                    <div class="relative flex-1 w-full text-right">
+                        <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline">search</span>
+                        <input class="w-full h-12 pr-10 pl-md rounded-xl bg-background border border-outline-variant form-input-focus transition-all text-right" id="searchInput" onkeyup="filterInvoices()" placeholder="ابحث باسم العميل أو رقم الجوال..." type="text" />
+                    </div>
+                    <div class="flex items-center gap-xs w-full md:w-auto">
+                        <div class="relative flex-1 md:flex-initial" id="invSortDropdownContainer">
+                            <button id="invSortDropdownBtn" type="button" class="w-full md:w-auto h-12 px-md bg-background border border-outline-variant hover:border-primary/60 focus:border-primary rounded-xl flex items-center justify-between gap-sm text-on-surface font-body-md text-sm transition-all shadow-sm active:scale-98">
                                 <div class="flex items-center gap-xs">
-                                    <span>عرض:</span>
-                                    <!-- Custom Page Size Dropdown -->
-                                    <div class="relative" id="invoicesPageSizeContainer">
-                                        <button id="invoicesPageSizeBtn" type="button" class="h-8 px-2.5 bg-surface-container-low border border-outline-variant hover:border-primary/60 focus:border-primary rounded-lg flex items-center justify-between gap-1 text-on-surface text-xs font-bold transition-all shadow-xs active:scale-98">
-                                            <span id="invoicesPageSizeLabel">10</span>
-                                            <span class="material-symbols-outlined text-outline text-base transition-transform duration-200" id="invoicesPageSizeArrow">expand_less</span>
-                                        </button>
-                                        
-                                        <!-- Dropdown Menu (opens upward) -->
-                                        <div id="invoicesPageSizeMenu" class="hidden absolute bottom-[calc(100%+4px)] right-0 w-28 bg-surface border border-outline-variant/80 rounded-xl shadow-xl z-50 py-1 overflow-hidden transition-all duration-150 transform opacity-0 scale-95 origin-bottom">
-                                            <button type="button" onclick="selectInvoicesPageSize(10)" class="w-full px-sm py-1.5 flex items-center justify-between text-xs hover:bg-primary/10 transition-colors text-right font-medium text-on-surface">
-                                                <span>10 سجلات</span>
-                                                <span class="material-symbols-outlined text-primary text-base font-bold inv-size-check" id="inv-size-check-10">check</span>
-                                            </button>
-                                            <button type="button" onclick="selectInvoicesPageSize(25)" class="w-full px-sm py-1.5 flex items-center justify-between text-xs hover:bg-primary/10 transition-colors text-right font-medium text-on-surface">
-                                                <span>25 سجل</span>
-                                                <span class="material-symbols-outlined text-primary text-base font-bold inv-size-check hidden" id="inv-size-check-25">check</span>
-                                            </button>
-                                            <button type="button" onclick="selectInvoicesPageSize(50)" class="w-full px-sm py-1.5 flex items-center justify-between text-xs hover:bg-primary/10 transition-colors text-right font-medium text-on-surface">
-                                                <span>50 سجل</span>
-                                                <span class="material-symbols-outlined text-primary text-base font-bold inv-size-check hidden" id="inv-size-check-50">check</span>
-                                            </button>
-                                            <button type="button" onclick="selectInvoicesPageSize(100)" class="w-full px-sm py-1.5 flex items-center justify-between text-xs hover:bg-primary/10 transition-colors text-right font-medium text-on-surface">
-                                                <span>100 سجل</span>
-                                                <span class="material-symbols-outlined text-primary text-base font-bold inv-size-check hidden" id="inv-size-check-100">check</span>
-                                            </button>
-                                        </div>
-                                    </div>
-                                    <span>فاتورة لكل صفحة</span>
+                                    <span class="material-symbols-outlined text-primary text-lg">sort</span>
+                                    <span class="text-xs text-secondary whitespace-nowrap">الترتيب:</span>
+                                    <span id="invSortSelectedLabel" class="font-bold text-on-surface text-xs whitespace-nowrap">تاريخ الفاتورة</span>
                                 </div>
-                                <div class="text-secondary font-medium" id="invoicesPaginationInfo">
-                                    عرض 0 - 0 من أصل 0 فاتورة
-                                </div>
-                            </div>
-                            <div id="invoicesPaginationControls">
-                                <!-- Rendered dynamically -->
+                                <span class="material-symbols-outlined text-outline text-lg transition-transform duration-200" id="invSortDropdownArrow">expand_more</span>
+                            </button>
+
+                            <div id="invSortDropdownMenu" class="hidden absolute top-[calc(100%+6px)] right-0 left-0 md:left-auto md:w-48 bg-surface border border-outline-variant/80 rounded-xl shadow-xl z-50 py-1.5 overflow-hidden transition-all duration-150 transform opacity-0 scale-95 origin-top">
+                                <button type="button" onclick="selectInvSortOption('date', 'تاريخ الفاتورة')" class="inv-sort-option w-full px-md py-2.5 flex items-center justify-between text-xs hover:bg-primary/10 transition-colors text-right font-medium text-on-surface" data-value="date">
+                                    <span class="flex items-center gap-xs">
+                                        <span class="material-symbols-outlined text-base text-secondary">calendar_today</span>
+                                        تاريخ الفاتورة
+                                    </span>
+                                    <span class="material-symbols-outlined text-primary text-base font-bold inv-sort-check" id="inv-check-date">check</span>
+                                </button>
+                                <button type="button" onclick="selectInvSortOption('clientName', 'اسم العميل')" class="inv-sort-option w-full px-md py-2.5 flex items-center justify-between text-xs hover:bg-primary/10 transition-colors text-right font-medium text-on-surface" data-value="clientName">
+                                    <span class="flex items-center gap-xs">
+                                        <span class="material-symbols-outlined text-base text-secondary">person</span>
+                                        اسم العميل
+                                    </span>
+                                    <span class="material-symbols-outlined text-primary text-base font-bold inv-sort-check hidden" id="inv-check-clientName">check</span>
+                                </button>
+                                <button type="button" onclick="selectInvSortOption('amount', 'المبلغ')" class="inv-sort-option w-full px-md py-2.5 flex items-center justify-between text-xs hover:bg-primary/10 transition-colors text-right font-medium text-on-surface" data-value="amount">
+                                    <span class="flex items-center gap-xs">
+                                        <span class="material-symbols-outlined text-base text-secondary">attach_money</span>
+                                        المبلغ
+                                    </span>
+                                    <span class="material-symbols-outlined text-primary text-base font-bold inv-sort-check hidden" id="inv-check-amount">check</span>
+                                </button>
+                                <button type="button" onclick="selectInvSortOption('createdAt', 'تاريخ الإضافة')" class="inv-sort-option w-full px-md py-2.5 flex items-center justify-between text-xs hover:bg-primary/10 transition-colors text-right font-medium text-on-surface" data-value="createdAt">
+                                    <span class="flex items-center gap-xs">
+                                        <span class="material-symbols-outlined text-base text-secondary">schedule</span>
+                                        تاريخ الإضافة
+                                    </span>
+                                    <span class="material-symbols-outlined text-primary text-base font-bold inv-sort-check hidden" id="inv-check-createdAt">check</span>
+                                </button>
                             </div>
                         </div>
-                        <div class="hidden p-xl text-center text-secondary font-body-md" id="noResults">
-                            لا توجد فواتير مطابقة للبحث
-                        </div>
+
+                        <button id="invSortOrderToggle" class="h-12 w-12 flex-shrink-0 flex items-center justify-center bg-background border border-outline-variant hover:border-primary/60 rounded-xl hover:bg-primary/5 text-primary transition-all active:scale-95 shadow-sm" title="تبديل الترتيب تصاعدي / تنازلي" type="button">
+                            <span class="material-symbols-outlined text-xl transition-transform duration-200" id="invSortOrderIcon">arrow_downward</span>
+                        </button>
                     </div>
+                </div>
+
+                <!-- Invoice List (Table) -->
+                <div class="bg-surface-container-lowest border border-outline-variant rounded-xl shadow-sm overflow-hidden">
+                    <div class="overflow-x-auto w-full max-w-[100vw]">
+                        <table class="w-full text-right border-collapse whitespace-nowrap" dir="rtl">
+                            <thead class="bg-surface-container-low border-b border-outline-variant">
+                                <tr>
+                                    <th class="px-lg py-md font-label-md text-label-md text-secondary">العميل</th>
+                                    <th class="px-lg py-md font-label-md text-label-md text-secondary">العميل النهائي</th>
+                                    <th class="px-lg py-md font-label-md text-label-md text-secondary">المبلغ المستحق</th>
+                                    <th class="px-lg py-md font-label-md text-label-md text-secondary" dir="ltr">رقم الهاتف</th>
+                                    <th class="px-lg py-md font-label-md text-label-md text-secondary">تاريخ الفاتورة</th>
+                                    <th class="p-md font-label-md text-on-surface-variant font-bold">التفاصيل</th>
+                                    <th class="p-md font-label-md text-on-surface-variant font-bold text-center">الإجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-outline-variant" id="invoiceList">
+                                <tr>
+                                    <td colspan="7" class="p-xl text-center text-secondary">جاري التحميل...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="px-md py-sm border-t border-slate-200 bg-surface-container-lowest flex flex-col sm:flex-row items-center justify-between gap-sm text-xs text-secondary" id="invoicesPaginationContainer">
+                        <div class="flex items-center gap-md w-full sm:w-auto justify-between sm:justify-start">
+                            <div class="flex items-center gap-xs">
+                                <span>عرض:</span>
+                                <div class="relative" id="invoicesPageSizeContainer">
+                                    <button id="invoicesPageSizeBtn" type="button" class="h-8 px-2.5 bg-surface-container-low border border-outline-variant hover:border-primary/60 focus:border-primary rounded-lg flex items-center justify-between gap-1 text-on-surface text-xs font-bold transition-all shadow-xs active:scale-98">
+                                        <span id="invoicesPageSizeLabel">10</span>
+                                        <span class="material-symbols-outlined text-outline text-base transition-transform duration-200" id="invoicesPageSizeArrow">expand_less</span>
+                                    </button>
+
+                                    <div id="invoicesPageSizeMenu" class="hidden absolute bottom-[calc(100%+4px)] right-0 w-28 bg-surface border border-outline-variant/80 rounded-xl shadow-xl z-50 py-1 overflow-hidden transition-all duration-150 transform opacity-0 scale-95 origin-bottom">
+                                        <button type="button" onclick="selectInvoicesPageSize(10)" class="w-full px-sm py-1.5 flex items-center justify-between text-xs hover:bg-primary/10 transition-colors text-right font-medium text-on-surface">
+                                            <span>10 سجلات</span>
+                                            <span class="material-symbols-outlined text-primary text-base font-bold inv-size-check" id="inv-size-check-10">check</span>
+                                        </button>
+                                        <button type="button" onclick="selectInvoicesPageSize(25)" class="w-full px-sm py-1.5 flex items-center justify-between text-xs hover:bg-primary/10 transition-colors text-right font-medium text-on-surface">
+                                            <span>25 سجل</span>
+                                            <span class="material-symbols-outlined text-primary text-base font-bold inv-size-check hidden" id="inv-size-check-25">check</span>
+                                        </button>
+                                        <button type="button" onclick="selectInvoicesPageSize(50)" class="w-full px-sm py-1.5 flex items-center justify-between text-xs hover:bg-primary/10 transition-colors text-right font-medium text-on-surface">
+                                            <span>50 سجل</span>
+                                            <span class="material-symbols-outlined text-primary text-base font-bold inv-size-check hidden" id="inv-size-check-50">check</span>
+                                        </button>
+                                        <button type="button" onclick="selectInvoicesPageSize(100)" class="w-full px-sm py-1.5 flex items-center justify-between text-xs hover:bg-primary/10 transition-colors text-right font-medium text-on-surface">
+                                            <span>100 سجل</span>
+                                            <span class="material-symbols-outlined text-primary text-base font-bold inv-size-check hidden" id="inv-size-check-100">check</span>
+                                        </button>
+                                    </div>
+                                </div>
+                                <span>فاتورة لكل صفحة</span>
+                            </div>
+                            <div class="text-secondary font-medium" id="invoicesPaginationInfo">عرض 0 - 0 من أصل 0 فاتورة</div>
+                        </div>
+                        <div id="invoicesPaginationControls"></div>
+                    </div>
+
+                    <div class="hidden p-xl text-center text-secondary font-body-md" id="noResults">لا توجد فواتير مطابقة للبحث</div>
+                </div>
             </div>
-            <!-- Mobile Bottom NavBar -->
+
             <%- include('partials/bottom-nav', { active: 'invoices' }) %>
         </main>
+    </div>
+
 
         <!-- Modal -->
         <div class="fixed inset-0 z-[100] hidden items-center justify-center bg-black/50 p-4" id="invoiceModal">
             <div class="bg-white rounded-xl shadow-lg w-full max-w-3xl max-h-[90vh] overflow-y-auto p-md md:p-xl">
                 <div class="flex flex-row justify-between items-center mb-lg border-b border-outline-variant pb-sm">
-                    <h2 class="font-headline-md text-headline-md font-bold text-on-surface">إضافة فاتورة جديدة</h2>
+                    <h2 class="font-headline-md text-headline-md font-bold text-on-surface" id="modalTitle">إضافة فاتورة جديدة</h2>
                     <button class="text-secondary hover:text-on-surface" onclick="closeModal()" type="button">
                         <span class="material-symbols-outlined">close</span>
                     </button>
@@ -204,6 +184,7 @@
                 <p class="text-[13px] text-secondary mb-md -mt-sm">الحقول المشار إليها بنجمة (<span
                         class="text-error font-bold">*</span>) هي حقول إجبارية</p>
                 <form class="space-y-lg" id="invoiceForm" novalidate>
+                    <input type="hidden" id="invoiceId">
                     <input type="hidden" id="clientId">
                     <input type="hidden" id="endClientId">
 
@@ -283,8 +264,7 @@
                             </div>
                         </div>
                         <div class="flex flex-col gap-xs">
-                            <label class="font-label-md text-label-md text-on-surface-variant mb-xs">المبلغ المستحق
-                                (جنيه)</label>
+                            <label class="font-label-md text-label-md text-on-surface-variant mb-xs">المبلغ المستحق</label>
                             <div class="relative">
                                 <span
                                     class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline">payments</span>
@@ -323,7 +303,7 @@
                             type="submit">
                             <span class="material-symbols-outlined"
                                 style="font-variation-settings: 'FILL' 1;">save</span>
-                            حفظ الفاتورة
+                            <span id="submitButtonText">حفظ الفاتورة</span>
                         </button>
                         <button
                             class="w-full md:w-auto min-w-[160px] bg-white border border-outline-variant text-on-surface h-14 rounded-full font-headline-sm text-headline-sm flex items-center justify-center gap-sm hover:bg-surface-container-low active:scale-95 transition-all"
@@ -340,7 +320,10 @@
             id="transactionDetailsModal">
             <div class="bg-surface rounded-xl shadow-lg w-full max-w-lg max-h-[90vh] overflow-y-auto p-md md:p-xl">
                 <div class="flex flex-row justify-between items-center mb-lg border-b border-outline-variant pb-sm">
-                    <h2 class="font-headline-md text-headline-md font-bold text-on-surface">تفاصيل المعاملة</h2>
+                    <div>
+                        <h2 class="font-headline-md text-headline-md font-bold text-on-surface">تفاصيل المعاملة</h2>
+                        <span id="tdInvoiceCode" class="inline-flex items-center gap-1 font-mono font-bold text-xs bg-primary/10 text-primary px-2.5 py-0.5 rounded-full mt-1"></span>
+                    </div>
                     <button class="text-secondary hover:text-on-surface" onclick="closeTransactionDetails()"
                         type="button">
                         <span class="material-symbols-outlined">close</span>
@@ -636,16 +619,26 @@
 
                 tbody.innerHTML = pagedInvoices.map(inv => `
         <tr class="invoice-item cursor-pointer hover:bg-primary/5 transition-colors group" onclick="openTransactionDetails(${inv._id})">
-            <td class="p-md font-body-md text-on-surface client-name">${highlightArabic(inv.clientName, query)}</td>
+            <td class="p-md font-body-md text-on-surface client-name">
+                <div class="flex flex-col">
+                    <span class="font-bold">${highlightArabic(inv.clientName, query)}</span>
+                    ${inv.invoiceCode ? `<span class="text-[11px] font-mono text-secondary font-medium">${inv.invoiceCode}</span>` : ''}
+                </div>
+            </td>
             <td class="p-md font-body-md text-secondary end-client-name">${highlightArabic(inv.endClientName || '', query) || '-'}</td>
             <td class="p-md font-body-md font-bold ${inv.type === 'payment' ? 'text-green-600' : 'text-primary'}">${inv.type === 'payment' ? '-' : ''}${formatCurrency(inv.amount)}</td>
             <td class="p-md font-body-md text-secondary client-mobile" dir="ltr">${highlightArabic(inv.clientPhone || '', query) || '-'}</td>
             <td class="p-md font-body-md text-secondary">${formatDate(inv.date)}</td>
             <td class="p-md font-body-md text-secondary">${inv.details || '-'}</td>
             <td class="p-md text-center">
-                <button onclick="event.stopPropagation(); deleteInvoice(${inv._id})" class="p-sm rounded-lg hover:bg-error-container/20 text-error transition-all active:scale-90" title="حذف">
-                    <span class="material-symbols-outlined text-[20px]">delete</span>
-                </button>
+                <div class="flex items-center justify-center gap-xs group-hover:gap-sm transition-all">
+                    <button onclick="event.stopPropagation(); editInvoice(${inv._id})" class="p-sm rounded-lg hover:bg-primary/20 text-primary transition-all active:scale-90" title="تعديل">
+                        <span class="material-symbols-outlined text-[20px]">edit</span>
+                    </button>
+                    <button onclick="event.stopPropagation(); deleteInvoice(${inv._id})" class="p-sm rounded-lg hover:bg-error-container/20 text-error transition-all active:scale-90" title="حذف">
+                        <span class="material-symbols-outlined text-[20px]">delete</span>
+                    </button>
+                </div>
             </td>
         </tr>
     `).join('');
@@ -694,10 +687,72 @@
                 }
             }
 
+            // Edit invoice
+            function editInvoice(id) {
+                const inv = allInvoices.find(i => String(i._id) === String(id));
+                if (!inv) {
+                    showToast('لم تجد الفاتورة', 'error');
+                    return;
+                }
+
+                // Set the mode to edit
+                document.getElementById('invoiceId').value = id;
+                document.getElementById('modalTitle').textContent = 'تعديل الفاتورة';
+                document.getElementById('submitButtonText').textContent = 'حفظ التغييرات';
+
+                // Populate form with invoice data
+                document.getElementById('clientName').value = inv.clientName || '';
+                document.getElementById('clientId').value = inv.clientId || '';
+                document.getElementById('endClientName').value = inv.endClientName || '';
+                document.getElementById('endClientId').value = inv.endClientId || '';
+                document.getElementById('mobileNumber').value = inv.clientPhone && inv.clientPhone !== '-' ? inv.clientPhone : '';
+                document.getElementById('invoiceDetails').value = inv.details || '-';
+                document.getElementById('deliveryAddress').value = inv.address || '-';
+                
+                // Format date for input
+                const dateObj = new Date(inv.date);
+                const year = dateObj.getFullYear();
+                const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+                const day = String(dateObj.getDate()).padStart(2, '0');
+                document.getElementById('invoiceDate').value = `${year}-${month}-${day}`;
+                
+                document.getElementById('invoiceAmount').value = inv.amount;
+
+                // Show client summary
+                if (inv.clientId) {
+                    const client = allClientsList.find(c => c.id === inv.clientId);
+                    if (client) {
+                        const balanceEl = document.getElementById('summaryBalance');
+                        balanceEl.textContent = formatCurrency(client.balance || 0);
+                        balanceEl.className = `font-bold dir-ltr inline-block ${(client.balance || 0) > 0 ? 'text-tertiary' : ((client.balance || 0) < 0 ? 'text-error' : 'text-primary')}`;
+                        document.getElementById('summaryLastTransaction').textContent = client.updatedAt ? formatDate(client.updatedAt) : '--';
+                        document.getElementById('summaryProfileLink').href = `/client-details?id=${client.id}`;
+                        document.getElementById('clientSummaryCard').classList.remove('hidden');
+                        document.getElementById('clientSummaryCard').classList.add('flex');
+                    }
+                }
+
+                // Open modal
+                const modal = document.getElementById('invoiceModal');
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+                document.body.style.overflow = 'hidden';
+            }
+
             // Transaction Details Modal
             function openTransactionDetails(id) {
                 const inv = allInvoices.find(i => String(i._id) === String(id));
                 if (!inv) return;
+
+                const codeEl = document.getElementById('tdInvoiceCode');
+                if (codeEl) {
+                    if (inv.invoiceCode) {
+                        codeEl.textContent = `رقم الفاتورة: ${inv.invoiceCode}`;
+                        codeEl.classList.remove('hidden');
+                    } else {
+                        codeEl.classList.add('hidden');
+                    }
+                }
 
                 document.getElementById('tdDate').textContent = formatDate(inv.date);
                 document.getElementById('tdClient').textContent = inv.clientName;
@@ -730,6 +785,9 @@
 
             // Modal functions
             function openModal() {
+                document.getElementById('invoiceId').value = '';
+                document.getElementById('modalTitle').textContent = 'إضافة فاتورة جديدة';
+                document.getElementById('submitButtonText').textContent = 'حفظ الفاتورة';
                 const modal = document.getElementById('invoiceModal');
                 modal.classList.remove('hidden');
                 modal.classList.add('flex');
@@ -745,12 +803,16 @@
                 modal.classList.remove('flex');
                 document.body.style.overflow = '';
                 document.getElementById('invoiceForm').reset();
+                document.getElementById('invoiceId').value = '';
                 document.getElementById('clientId').value = '';
                 document.getElementById('endClientId').value = '';
                 document.getElementById('clientSummaryCard').classList.add('hidden');
                 document.getElementById('clientSummaryCard').classList.remove('flex');
                 document.getElementById('clientDropdown').classList.add('hidden');
                 document.getElementById('endClientDropdown').classList.add('hidden');
+                // Reset modal to create mode
+                document.getElementById('modalTitle').textContent = 'إضافة فاتورة جديدة';
+                document.getElementById('submitButtonText').textContent = 'حفظ الفاتورة';
             }
 
             // Client Auto-complete Logic
@@ -899,7 +961,7 @@
                 }
             });
 
-            // Handle form submission — POST to API
+            // Handle form submission — POST to API (create) or PATCH (update)
             document.getElementById('invoiceForm').addEventListener('submit', async function (e) {
                 e.preventDefault();
 
@@ -910,6 +972,7 @@
                 const amount = document.getElementById('invoiceAmount').value;
                 const details = document.getElementById('invoiceDetails').value.trim();
                 const address = document.getElementById('deliveryAddress').value.trim();
+                const invoiceId = document.getElementById('invoiceId').value;
 
                 if (validateFormFields('invoiceForm')) {
                     showToast('الرجاء إدخال اسم العميل', 'warning');
@@ -920,35 +983,55 @@
                 const endClientId = document.getElementById('endClientId').value;
 
                 try {
-                    const res = await fetch('/api/invoices', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
+                    // Prepare data object
+                    const payload = {
+                        clientName: name,
+                        endClientName: endName || undefined,
+                        clientPhone: mobile || undefined,
+                        date: date || undefined,
+                        amount: parseFloat(amount) || 0,
+                        details: details || '-',
+                        address: address || '-'
+                    };
+
+                    // If updating, send PATCH; if creating, send POST
+                    let res;
+                    if (invoiceId) {
+                        // Update existing invoice
+                        res = await fetch(`/api/invoices/${invoiceId}`, {
+                            method: 'PATCH',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload)
+                        });
+                    } else {
+                        // Create new invoice
+                        const createPayload = {
+                            ...payload,
                             client: clientId || undefined,
-                            clientName: name,
                             endClientId: endClientId || undefined,
-                            endClientName: endName || undefined,
-                            clientPhone: mobile || undefined,
-                            date: date || undefined,
-                            amount: parseFloat(amount) || 0,
-                            details: details || '-',
-                            address: address || '-',
                             type: 'purchase'
-                        })
-                    });
+                        };
+                        res = await fetch('/api/invoices', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(createPayload)
+                        });
+                    }
 
                     if (res.ok) {
-                        showToast('تم حفظ الفاتورة بنجاح ✓', 'success');
+                        const successMsg = invoiceId ? 'تم تحديث الفاتورة بنجاح ✓' : 'تم حفظ الفاتورة بنجاح ✓';
+                        showToast(successMsg, 'success');
                         closeModal();
                         loadInvoices();
                         loadClients();
                         loadEndClients();
                     } else {
                         const err = await res.json();
-                        showToast(err.error || 'فشل في حفظ الفاتورة', 'error');
+                        showToast(err.error || (invoiceId ? 'فشل في تحديث الفاتورة' : 'فشل في حفظ الفاتورة'), 'error');
                     }
                 } catch (err) {
-                    showToast('فشل في حفظ الفاتورة — تأكد من تشغيل السيرفر', 'error');
+                    const errorMsg = invoiceId ? 'فشل في تحديث الفاتورة — تأكد من تشغيل السيرفر' : 'فشل في حفظ الفاتورة — تأكد من تشغيل السيرفر';
+                    showToast(errorMsg, 'error');
                 }
             });
 

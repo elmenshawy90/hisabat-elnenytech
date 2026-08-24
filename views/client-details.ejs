@@ -31,11 +31,17 @@
 </div>
 <!-- Customer Profile Header (hidden until loaded) -->
 <div class="hidden" id="clientContent">
-<!-- Breadcrumb -->
-<div class="flex items-center gap-sm flex-row mb-lg">
+<!-- Breadcrumb & Edit Button -->
+<div class="flex items-center justify-between gap-sm mb-lg flex-wrap">
+<div class="flex items-center gap-sm flex-row">
 <a href="/clients" class="text-secondary hover:text-primary transition-colors font-body-md text-body-md">العملاء</a>
 <span class="material-symbols-outlined text-outline text-sm">chevron_left</span>
 <span class="font-bold text-on-surface font-body-md text-body-md" id="breadcrumbName">تفاصيل العميل</span>
+</div>
+<button onclick="openEditClientDetailsModal()" class="px-md py-sm border border-outline-variant bg-surface hover:bg-surface-container-high text-on-surface rounded-full font-label-md text-label-md hover:text-primary transition-all flex items-center justify-center gap-xs shadow-xs active:scale-95 cursor-pointer" title="تعديل بيانات العميل">
+<span class="material-symbols-outlined text-primary text-xl">edit</span>
+<span>تعديل بيانات العميل</span>
+</button>
 </div>
 <!-- Profile Header -->
 <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-md mb-lg">
@@ -43,10 +49,16 @@
 <div class="w-16 h-16 rounded-full bg-primary-fixed flex items-center justify-center text-primary font-bold text-headline-md" id="clientInitials">--</div>
 <div class="text-right">
 <h2 class="font-headline-md text-headline-md text-on-surface" id="clientName">--</h2>
-<p class="font-body-md text-body-md text-secondary flex items-center gap-xs justify-end">
+<div class="flex items-center gap-md justify-end text-secondary font-body-md text-body-md flex-wrap mt-0.5">
+<p class="flex items-center gap-xs">
 <span id="clientPhone">--</span>
 <span class="material-symbols-outlined text-sm">call</span>
 </p>
+<p id="clientAddressContainer" class="hidden flex items-center gap-xs">
+<span id="clientAddress">--</span>
+<span class="material-symbols-outlined text-sm">location_on</span>
+</p>
+</div>
 </div>
 </div>
 <div class="flex flex-wrap gap-xs sm:gap-sm w-full md:w-auto mt-sm md:mt-0">
@@ -77,7 +89,7 @@
 <div class="flex justify-between items-start mb-lg">
 <div class="text-right">
 <span class="font-label-md text-label-md text-secondary uppercase tracking-wider">الرصيد المستحق الحالي</span>
-<div class="font-display-lg text-display-lg text-primary mt-xs" id="clientBalance">-- ج.م</div>
+<div class="font-display-lg text-display-lg text-secondary mt-xs" id="clientBalance">جاري التحميل...</div>
 </div>
 <span class="bg-error-container text-on-error-container px-md py-xs rounded-full font-label-sm text-label-sm" id="clientStatus">--</span>
 </div>
@@ -167,9 +179,20 @@
 
         <!-- Sort Direction Toggle Button -->
         <button id="txSortOrderToggle" class="h-9 w-9 flex-shrink-0 flex items-center justify-center bg-surface-container-low border border-outline-variant hover:border-primary/60 rounded-lg hover:bg-primary/5 text-primary transition-all active:scale-95 shadow-sm" title="تبديل الترتيب تصاعدي / تنازلي" type="button">
-            <span class="material-symbols-outlined text-base transition-transform duration-200" id="txSortOrderIcon">arrow_downward</span>
+            <span class="material-symbols-outlined text-base transition-transform duration-200" id="txSortOrderIcon">arrow_upward</span>
         </button>
     </div>
+</div>
+<!-- Active End Client Filter Banner -->
+<div id="activeEndClientFilterBanner" class="hidden items-center justify-between bg-primary/10 border-b border-primary/20 px-md py-2 transition-all">
+    <div class="flex items-center gap-xs text-xs md:text-sm text-primary font-bold">
+        <span class="material-symbols-outlined text-base">filter_alt</span>
+        <span>بتعرض معاملات: <span id="filteredEndClientName" class="underline font-extrabold text-on-surface"></span> فقط</span>
+    </div>
+    <button type="button" onclick="clearEndClientFilter()" class="flex items-center gap-1 text-xs text-primary hover:text-error bg-white/90 hover:bg-white px-2.5 py-1 rounded-full border border-primary/30 transition-all cursor-pointer font-bold shadow-xs">
+        <span class="material-symbols-outlined text-sm">close</span>
+        <span>إلغاء الفلتر</span>
+    </button>
 </div>
 <div class="overflow-x-auto w-full max-w-[100vw]">
 <table class="w-full text-right border-collapse whitespace-nowrap">
@@ -266,7 +289,7 @@
                 </div>
             </div>
             <div class="flex flex-col gap-xs">
-                <label class="font-label-md text-label-md text-on-surface-variant mb-xs">المبلغ المستحق (جنيه) <span class="text-error">*</span></label>
+                <label id="invoiceAmountLabel" class="font-label-md text-label-md text-on-surface-variant mb-xs">المبلغ المستحق <span class="text-error">*</span></label>
                 <div class="relative">
                     <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline">payments</span>
                     <input class="w-full h-12 pr-10 pl-md rounded-xl bg-surface-container-low border border-outline-variant form-input-focus transition-all text-right font-bold text-primary" id="invoiceAmount" placeholder="0.00" type="number" step="0.01" required />
@@ -297,8 +320,11 @@
 <!-- Transaction Details Modal -->
 <div class="fixed inset-0 z-[100] hidden items-center justify-center bg-black/50 p-4" id="transactionDetailsModal">
     <div class="bg-surface rounded-xl shadow-lg w-full max-w-lg max-h-[90vh] overflow-y-auto p-md md:p-xl">
-        <div class="flex flex-row justify-between items-center mb-lg border-b border-outline-variant pb-sm">
-            <h2 class="font-headline-md text-headline-md font-bold text-on-surface">تفاصيل المعاملة</h2>
+        <div class="flex flex-row justify-between items-center mb-md border-b border-outline-variant pb-sm">
+            <div>
+                <h2 class="font-headline-md text-headline-md font-bold text-on-surface">تفاصيل المعاملة</h2>
+                <span id="tdInvoiceCode" class="inline-flex items-center gap-1 font-mono font-bold text-xs bg-primary/10 text-primary px-2.5 py-0.5 rounded-full mt-1"></span>
+            </div>
             <button class="text-secondary hover:text-on-surface" onclick="closeTransactionDetails()" type="button">
                 <span class="material-symbols-outlined">close</span>
             </button>
@@ -334,6 +360,87 @@
         </div>
     </div>
 </div>
+
+<!-- Edit Client Modal -->
+<div class="fixed inset-0 z-[100] hidden items-center justify-center bg-black/50 p-4" id="editClientModal">
+    <div class="bg-white rounded-xl shadow-lg w-full max-w-md p-md md:p-xl">
+        <div class="flex flex-row justify-between items-center mb-lg border-b border-outline-variant pb-sm">
+            <h2 class="font-headline-md text-headline-md font-bold text-on-surface">تعديل بيانات العميل</h2>
+            <button class="text-secondary hover:text-on-surface" onclick="closeEditClientModal()" type="button">
+                <span class="material-symbols-outlined">close</span>
+            </button>
+        </div>
+        <form id="editClientForm" class="space-y-lg" novalidate>
+            <div class="flex flex-col gap-xs">
+                <label class="font-label-md text-label-md text-on-surface-variant">اسم العميل <span class="text-error">*</span></label>
+                <div class="relative">
+                    <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline">person</span>
+                    <input class="w-full h-12 pr-10 pl-md rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all text-right" id="editClientName" placeholder="مثال: أحمد محمد" type="text" required autocomplete="off"/>
+                </div>
+            </div>
+            <div class="flex flex-col gap-xs">
+                <label class="font-label-md text-label-md text-on-surface-variant">رقم الهاتف</label>
+                <div class="relative">
+                    <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline">call</span>
+                    <input class="w-full h-12 pr-10 pl-md rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all text-right" id="editClientPhone" placeholder="01XXXXXXXXX" type="tel"/>
+                </div>
+                <p id="editClientPhoneError" class="hidden text-error text-[11px] mt-1 pr-1 font-bold">يجب إدخال أرقام فقط في رقم الهاتف</p>
+            </div>
+            <div class="flex flex-col gap-xs">
+                <label class="font-label-md text-label-md text-on-surface-variant">العنوان (اختياري)</label>
+                <div class="relative">
+                    <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline">location_on</span>
+                    <input class="w-full h-12 pr-10 pl-md rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all text-right" id="editClientAddress" placeholder="الحي، الشارع..." type="text"/>
+                </div>
+            </div>
+            <div class="flex flex-col md:flex-row items-center gap-md pt-md border-t border-outline-variant">
+                <button class="w-full md:w-auto bg-primary text-on-primary h-12 px-xl rounded-full font-label-md text-label-md hover:opacity-90 active:scale-95 transition-all" type="submit">حفظ التعديلات</button>
+                <button class="w-full md:w-auto border border-outline-variant text-on-surface h-12 px-xl rounded-full font-label-md text-label-md hover:bg-surface-container-low transition-all" type="button" onclick="closeEditClientModal()">إلغاء</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Convert To Client Modal -->
+<div class="fixed inset-0 z-[120] hidden items-center justify-center bg-black/50 p-4" id="convertToClientModal">
+    <div class="bg-surface rounded-2xl shadow-2xl w-full max-w-lg p-lg space-y-md border border-outline-variant/60">
+        <div class="flex items-center justify-between border-b border-outline-variant/60 pb-sm">
+            <div class="flex items-center gap-sm text-primary">
+                <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                    <span class="material-symbols-outlined text-2xl">person_add</span>
+                </div>
+                <h3 class="font-headline-sm font-bold text-on-surface">تحويل لعميل مستقل</h3>
+            </div>
+            <button type="button" onclick="closeConvertToClientModal()" class="text-secondary hover:text-on-surface">
+                <span class="material-symbols-outlined">close</span>
+            </button>
+        </div>
+        
+        <p class="font-body-md text-on-surface font-bold text-base">
+            هل تريد جعل <span id="convertModalClientName" class="text-primary underline"></span> عميلاً مستقلاً؟
+        </p>
+        
+        <div class="bg-surface-container-low rounded-xl p-md text-sm text-secondary space-y-sm leading-relaxed border border-outline-variant/60">
+            <p>
+                سيتم إنشاء حساب مستقل جديد باسم <strong id="convertModalClientNameBold" class="text-on-surface font-bold"></strong>، مع نسخة مرجعية من سجله السابق (<span id="convertModalTxCount" class="font-bold text-on-surface">0</span> فاتورة بقيمة <span id="convertModalAmount" class="font-bold text-on-surface">0 ج.م</span>) لسهولة الاطلاع على تاريخه.
+            </p>
+            <p>
+                الفواتير الأصلية ستبقى محفوظة كما هي في سجل <strong id="convertModalContractorName" class="text-on-surface font-bold"></strong> كتاريخ سابق، <span class="font-bold text-primary">ولن تُحتسب النسخة المرجعية ضمن رصيده الجديد (رصيده الأولي سيكون 0 ج.م).</span>
+            </p>
+            <p class="text-on-surface-variant font-medium pt-1">
+                أي عملية شراء أو دفع جديدة لهذا العميل من الآن ستُسجَّل مباشرة على حسابه المستقل الجديد.
+            </p>
+        </div>
+
+        <div class="flex items-center justify-end gap-sm pt-md border-t border-outline-variant/60">
+            <button type="button" onclick="closeConvertToClientModal()" class="px-lg py-sm rounded-full border border-outline-variant text-on-surface font-label-md hover:bg-surface-container transition-colors">إلغاء</button>
+            <button type="button" id="confirmConvertBtn" onclick="confirmConvertToClient()" class="px-lg py-sm rounded-full bg-primary text-on-primary font-label-md hover:opacity-90 transition-opacity flex items-center gap-1 shadow-sm">
+                <span class="material-symbols-outlined text-sm">check</span>
+                <span>تأكيد التحويل</span>
+            </button>
+        </div>
+    </div>
+</div>
 <script src="/js/shared-ui.js"></script>
 <script>
 // Add spinner animation
@@ -344,6 +451,7 @@ document.head.appendChild(style);
 let allClientsList = []; // For invoice form dropdown
 let allEndClientsList = []; // For end client autocomplete
 let clientInvoices = [];
+let currentClientData = null;
 
 async function loadEndClients() {
     try {
@@ -369,15 +477,35 @@ function getClientId() {
     return params.get('id');
 }
 
-function exportClientPdf(e) {
+async function exportClientPdf(e) {
     if (e) e.preventDefault();
     const id = getClientId();
     if (!id) {
         showToast('لم يتم تحديد العميل', 'error');
         return;
     }
-    showToast('جاري تحميل كشف الحساب بصيغة PDF...', 'info');
-    window.location.href = `/api/export/client/${id}/pdf`;
+
+    try {
+        showToast('جاري تحميل كشف الحساب بصيغة PDF...', 'info');
+        const res = await fetch(`/api/export/client/${id}/pdf`);
+        if (!res.ok) {
+            const text = await res.text();
+            throw new Error(text || 'فشل في تصدير PDF');
+        }
+
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `client-statement-${Date.now()}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+    } catch (err) {
+        console.error('PDF export failed:', err);
+        showToast(err.message || 'فشل في تصدير PDF', 'error');
+    }
 }
 
 function exportClientExcel(e) {
@@ -423,6 +551,7 @@ async function loadClientDetails() {
         }
 
         const client = await res.json();
+        currentClientData = client;
 
         // Hide loading, show content
         document.getElementById('loadingState').classList.add('hidden');
@@ -433,8 +562,19 @@ async function loadClientDetails() {
         document.getElementById('clientInitials').textContent = initials;
         document.getElementById('clientName').textContent = client.name;
         document.getElementById('breadcrumbName').textContent = client.name;
-        document.getElementById('clientPhone').textContent = client.phone;
-        document.getElementById('clientBalance').textContent = formatCurrency(client.balance);
+        document.getElementById('clientPhone').textContent = (client.phone && client.phone !== '-') ? client.phone : 'لا يوجد هاتف';
+        
+        const addressEl = document.getElementById('clientAddress');
+        const addressContainer = document.getElementById('clientAddressContainer');
+        if (addressEl && addressContainer) {
+            if (client.address && client.address.trim() && client.address !== '-') {
+                addressEl.textContent = client.address;
+                addressContainer.classList.remove('hidden');
+            } else {
+                addressContainer.classList.add('hidden');
+            }
+        }
+        
         document.title = `${client.name} - سجل الديون`;
 
         // Set Export links
@@ -442,6 +582,14 @@ async function loadClientDetails() {
         const pdfBtn = document.getElementById('exportPdfBtn');
         if (excelBtn) excelBtn.href = `/api/export/client/${clientId}/excel`;
         if (pdfBtn) pdfBtn.href = `/api/export/client/${clientId}/pdf`;
+
+        // Outstanding Balance
+        const balanceEl = document.getElementById('clientBalance');
+        if (balanceEl) {
+            const balanceResult = formatBalanceLabel(client.balance);
+            balanceEl.textContent = balanceResult.text;
+            balanceEl.className = `font-display-lg text-display-lg mt-xs ${balanceResult.colorClass}`;
+        }
 
         // Status badge
         const statusEl = document.getElementById('clientStatus');
@@ -465,16 +613,14 @@ async function loadClientDetails() {
         document.getElementById('clientTotalTx').textContent = invoices.length + ' معاملة';
         document.getElementById('statTxCount').textContent = invoices.length;
 
-        const totalPurchases = invoices.filter(i => i.type === 'purchase').reduce((s, i) => s + i.amount, 0);
-        const totalPayments = invoices.filter(i => i.type === 'payment').reduce((s, i) => s + i.amount, 0);
+        const totalPurchases = invoices.filter(i => i.type === 'purchase' && !i.isHistoricalCopy).reduce((s, i) => s + i.amount, 0);
+        const totalPayments = invoices.filter(i => i.type === 'payment' && !i.isHistoricalCopy).reduce((s, i) => s + i.amount, 0);
         document.getElementById('statPurchases').textContent = formatCurrency(totalPurchases);
         document.getElementById('statPayments').textContent = formatCurrency(totalPayments);
 
-        // Render transaction rows
-        renderTransactions(invoices);
-
-        // Render breakdown by End Client
+        // Render breakdown by End Client and apply transaction filtering
         renderEndClientBreakdown(invoices);
+        applyEndClientFilter();
 
     } catch (err) {
         console.error('Failed to load client:', err);
@@ -482,12 +628,23 @@ async function loadClientDetails() {
     }
 }
 
+let selectedEndClientFilter = null;
+
 function renderEndClientBreakdown(invoices) {
     const container = document.getElementById('endClientsBreakdownContainer');
     const grid = document.getElementById('endClientsCardsGrid');
     const badge = document.getElementById('endClientsCountBadge');
 
-    const taggedInvoices = invoices.filter(i => i.endClientName && i.endClientName.trim() !== '' && i.endClientName.trim() !== '-');
+    const activeInvoices = (invoices || []).filter(i => !i.isHistoricalCopy);
+    const normalizedInvoices = activeInvoices.map(inv => {
+        const rawName = (inv.endClientName || (inv.endClient?.name || '')).trim();
+        return {
+            ...inv,
+            effectiveEndClientName: rawName && rawName !== '-' ? rawName : 'شخصي'
+        };
+    });
+
+    const taggedInvoices = normalizedInvoices.filter(i => i.effectiveEndClientName);
 
     if (taggedInvoices.length === 0) {
         container.classList.add('hidden');
@@ -497,11 +654,13 @@ function renderEndClientBreakdown(invoices) {
     const groupsMap = new Map();
 
     for (const inv of taggedInvoices) {
-        const key = inv.endClientId ? `id_${inv.endClientId}` : `name_${normalizeArabic(inv.endClientName)}`;
+        const name = inv.effectiveEndClientName;
+        const key = inv.endClientId ? `id_${inv.endClientId}` : `name_${normalizeArabic(name)}`;
         if (!groupsMap.has(key)) {
             groupsMap.set(key, {
                 id: inv.endClientId || null,
-                name: inv.endClientName,
+                name,
+                convertedToClientId: inv.endClient?.convertedToClientId || null,
                 invoiceCount: 0,
                 totalPurchases: 0,
                 totalPayments: 0,
@@ -509,30 +668,51 @@ function renderEndClientBreakdown(invoices) {
             });
         }
         const g = groupsMap.get(key);
+        if (!g.convertedToClientId && inv.endClient?.convertedToClientId) {
+            g.convertedToClientId = inv.endClient.convertedToClientId;
+        }
+        if (!g.id && inv.endClientId) {
+            g.id = inv.endClientId;
+        }
         g.invoiceCount++;
         if (inv.type === 'purchase') {
-            g.totalPurchases += inv.amount;
+            g.totalPurchases += (Number(inv.amount) || 0);
         } else if (inv.type === 'payment') {
-            g.totalPayments += inv.amount;
+            g.totalPayments += (Number(inv.amount) || 0);
         }
         g.net = g.totalPurchases - g.totalPayments;
     }
 
     const groups = Array.from(groupsMap.values());
     groups.sort((a, b) => b.net - a.net);
+    currentEndClientGroups = groups;
 
     badge.textContent = `${groups.length} ${groups.length === 1 ? 'عميل' : 'عملاء'}`;
 
-    grid.innerHTML = groups.map(item => {
+    grid.innerHTML = groups.map((item, index) => {
         const netColor = item.net <= 0 ? 'text-green-600' : 'text-tertiary';
+        const isConverted = Boolean(item.convertedToClientId);
+        const isSelected = selectedEndClientFilter && (
+            (selectedEndClientFilter.id && item.id && String(selectedEndClientFilter.id) === String(item.id)) ||
+            (normalizeArabic(selectedEndClientFilter.name) === normalizeArabic(item.name))
+        );
+
+        const cardBorderClass = isSelected
+            ? 'border-2 border-primary ring-2 ring-primary/20 bg-primary/[0.04] shadow-md'
+            : 'border border-outline-variant bg-white hover:border-primary/60 hover:shadow-md';
+
         return `
-            <div class="bg-white rounded-xl border border-outline-variant p-md shadow-sm flex flex-col justify-between gap-sm">
+            <div onclick="toggleEndClientFilterByIndex(${index})"
+                 class="w-full text-right rounded-xl p-md shadow-sm flex flex-col justify-between gap-sm transition-all active:scale-[0.99] cursor-pointer select-none ${cardBorderClass}">
                 <div class="flex items-center justify-between border-b border-outline-variant/50 pb-xs">
                     <div class="flex items-center gap-xs font-bold text-on-surface font-body-md">
                         <span class="material-symbols-outlined text-primary text-lg">person_pin</span>
-                        <span class="truncate max-w-[150px]" title="${item.name}">${item.name}</span>
+                        <span class="truncate max-w-[140px]" title="${item.name}">${item.name}</span>
                     </div>
-                    <span class="bg-surface-container text-secondary text-xs px-2 py-0.5 rounded-full font-bold">${item.invoiceCount} معاملة</span>
+                    <div class="flex items-center gap-1">
+                        ${isSelected ? `<span class="bg-primary text-white text-[11px] px-2 py-0.5 rounded-full font-bold">محدد</span>` : ''}
+                        <span class="bg-surface-container text-secondary text-xs px-2 py-0.5 rounded-full font-bold">${item.invoiceCount} معاملة</span>
+                    </div>
                 </div>
                 <div class="space-y-xs text-xs">
                     <div class="flex justify-between text-secondary">
@@ -545,8 +725,21 @@ function renderEndClientBreakdown(invoices) {
                     </div>
                 </div>
                 <div class="flex justify-between items-center border-t border-outline-variant/50 pt-xs">
-                    <span class="text-xs font-bold text-secondary">صافي المستحق:</span>
+                    <span class="text-xs font-bold text-secondary">الاجمالي:</span>
                     <span class="font-bold text-sm ${netColor}">${formatCurrency(item.net)}</span>
+                </div>
+                <div class="pt-xs flex justify-end">
+                    ${isConverted ? `
+                        <a href="/client-details?id=${item.convertedToClientId}" onclick="event.stopPropagation();" class="w-full text-center flex items-center justify-center gap-1 text-xs text-primary bg-primary/10 hover:bg-primary hover:text-white py-1.5 px-2 rounded-lg font-bold transition-all">
+                            <span class="material-symbols-outlined text-sm">open_in_new</span>
+                            <span>عرض كعميل مستقل</span>
+                        </a>
+                    ` : `
+                        <button type="button" onclick="event.stopPropagation(); openConvertToClientModalByIndex(${index})" class="w-full flex items-center justify-center gap-1 text-xs text-secondary hover:text-primary bg-surface-container hover:bg-primary/10 py-1.5 px-2 rounded-lg font-bold transition-all cursor-pointer">
+                            <span class="material-symbols-outlined text-sm">person_add</span>
+                            <span>تحويل لعميل مستقل</span>
+                        </button>
+                    `}
                 </div>
             </div>
         `;
@@ -555,8 +748,78 @@ function renderEndClientBreakdown(invoices) {
     container.classList.remove('hidden');
 }
 
+let currentEndClientGroups = [];
+
+function toggleEndClientFilterByIndex(index) {
+    const item = currentEndClientGroups[index];
+    if (!item) return;
+    toggleEndClientFilter(item.id, item.name);
+}
+
+function openConvertToClientModalByIndex(index) {
+    const item = currentEndClientGroups[index];
+    if (!item) return;
+    openConvertToClientModal(item.id, item.name, item.invoiceCount, item.net);
+}
+
+function toggleEndClientFilter(id, name) {
+    if (selectedEndClientFilter && (
+        (id && selectedEndClientFilter.id && String(selectedEndClientFilter.id) === String(id)) ||
+        (normalizeArabic(selectedEndClientFilter.name) === normalizeArabic(name))
+    )) {
+        selectedEndClientFilter = null;
+    } else {
+        selectedEndClientFilter = { id: id || null, name };
+    }
+    applyEndClientFilter();
+}
+
+function clearEndClientFilter() {
+    selectedEndClientFilter = null;
+    applyEndClientFilter();
+}
+
+function applyEndClientFilter() {
+    const banner = document.getElementById('activeEndClientFilterBanner');
+    const nameEl = document.getElementById('filteredEndClientName');
+
+    if (selectedEndClientFilter) {
+        if (banner) {
+            banner.classList.remove('hidden');
+            banner.classList.add('flex');
+        }
+        if (nameEl) {
+            nameEl.textContent = selectedEndClientFilter.name;
+        }
+    } else {
+        if (banner) {
+            banner.classList.add('hidden');
+            banner.classList.remove('flex');
+        }
+    }
+
+    renderEndClientBreakdown(clientInvoices);
+
+    let filteredInvoices = clientInvoices;
+    if (selectedEndClientFilter) {
+        const filterId = selectedEndClientFilter.id ? String(selectedEndClientFilter.id) : null;
+        const normFilterName = normalizeArabic(selectedEndClientFilter.name);
+
+        filteredInvoices = clientInvoices.filter(inv => {
+            if (filterId && inv.endClientId) {
+                return String(inv.endClientId) === filterId;
+            }
+            const normInvName = normalizeArabic(inv.endClientName || (inv.endClient?.name || ''));
+            return normInvName === normFilterName;
+        });
+    }
+
+    txCurrentPage = 1;
+    renderTransactions(filteredInvoices);
+}
+
 let currentTxSortField = 'date'; // 'date' or 'createdAt'
-let currentTxSortOrder = 'desc'; // 'desc' or 'asc'
+let currentTxSortOrder = 'asc'; // oldest first
 
 let currentTxList = [];
 let txCurrentPage = 1;
@@ -657,6 +920,10 @@ function renderTransactions(invoices, resetPage = false) {
     let running = 0;
     const balanceMap = new Map();
     for (const inv of chronological) {
+        if (inv.isHistoricalCopy) {
+            inv.runningBalance = null;
+            continue; // Historical copies do not participate in running balance
+        }
         if (inv.type === 'purchase') {
             running += (Number(inv.amount) || 0);
         } else if (inv.type === 'payment') {
@@ -699,23 +966,51 @@ function renderTransactions(invoices, resetPage = false) {
 
     tbody.innerHTML = pagedInvoices.map(inv => {
         const isPurchase = inv.type === 'purchase';
-        const typeBadge = isPurchase
-            ? '<span class="px-sm py-1 rounded-full bg-primary-fixed text-on-primary-fixed font-label-sm text-label-sm">شراء</span>'
-            : '<span class="px-sm py-1 rounded-full bg-secondary-container text-on-secondary-container font-label-sm text-label-sm">دفع</span>';
-        const amountClass = isPurchase ? 'font-bold' : 'text-primary font-bold';
-        const amountPrefix = isPurchase ? '+' : '-';
+        const isHistory = Boolean(inv.isHistoricalCopy);
 
-        const runBal = inv.runningBalance !== undefined ? inv.runningBalance : (balanceMap.get(String(inv._id || inv.id)) || 0);
-        let balanceBadge = '';
-        if (runBal <= 0) {
-            balanceBadge = `<span class="text-green-600 font-bold dir-ltr inline-block">${formatCurrency(runBal)}</span>`;
+        let typeBadge = '';
+        if (isHistory) {
+            typeBadge = `
+                <div class="flex items-center gap-1.5 flex-wrap">
+                    <span class="px-sm py-0.5 rounded-full ${isPurchase ? 'bg-primary-fixed text-on-primary-fixed' : 'bg-secondary-container text-on-secondary-container'} font-label-sm text-[11px]">${isPurchase ? 'شراء' : 'دفع'}</span>
+                    <span class="px-2 py-0.5 rounded-full bg-slate-200 text-slate-700 font-label-sm text-[11px] font-bold border border-slate-300">سجل سابق</span>
+                </div>
+            `;
         } else {
-            balanceBadge = `<span class="text-primary font-bold dir-ltr inline-block">${formatCurrency(runBal)}</span>`;
+            typeBadge = isPurchase
+                ? '<span class="px-sm py-1 rounded-full bg-primary-fixed text-on-primary-fixed font-label-sm text-label-sm">شراء</span>'
+                : '<span class="px-sm py-1 rounded-full bg-secondary-container text-on-secondary-container font-label-sm text-label-sm">دفع</span>';
         }
 
+        const amountClass = isHistory
+            ? 'font-bold text-slate-600'
+            : (isPurchase ? 'font-bold' : 'text-primary font-bold');
+        const amountPrefix = isPurchase ? '+' : '-';
+
+        let balanceBadge = '';
+        if (isHistory) {
+            balanceBadge = '<span class="text-secondary font-medium">-</span>';
+        } else {
+            const runBal = inv.runningBalance !== undefined && inv.runningBalance !== null ? inv.runningBalance : (balanceMap.get(String(inv._id || inv.id)) ?? 0);
+            if (runBal <= 0) {
+                balanceBadge = `<span class="text-green-600 font-bold dir-ltr inline-block">${formatCurrency(runBal)}</span>`;
+            } else {
+                balanceBadge = `<span class="text-primary font-bold dir-ltr inline-block">${formatCurrency(runBal)}</span>`;
+            }
+        }
+
+        const rowBgClass = isHistory
+            ? 'bg-slate-50/70 hover:bg-slate-100/70 text-slate-700'
+            : 'hover:bg-primary/5';
+
         return `
-            <tr class="cursor-pointer hover:bg-primary/5 transition-colors group" onclick="openTransactionDetails(${inv._id})">
-                <td class="px-md py-md font-body-md text-body-md">${formatDate(inv.date)}</td>
+            <tr class="cursor-pointer transition-colors group ${rowBgClass}" onclick="openTransactionDetails(${inv._id})">
+                <td class="px-md py-md font-body-md text-body-md">
+                    <div class="flex flex-col">
+                        <span>${formatDate(inv.date)}</span>
+                        ${inv.invoiceCode ? `<span class="text-[11px] font-mono text-secondary font-medium">${inv.invoiceCode}</span>` : ''}
+                    </div>
+                </td>
                 <td class="px-md py-md">${typeBadge}</td>
                 <td class="px-md py-md font-body-md text-body-md">${inv.details || '-'}</td>
                 <td class="px-md py-md font-body-md text-body-md text-secondary">${inv.endClientName || '-'}</td>
@@ -815,6 +1110,16 @@ function openTransactionDetails(id) {
     const inv = clientInvoices.find(i => String(i._id || i.id) === String(id));
     if (!inv) return;
     
+    const codeEl = document.getElementById('tdInvoiceCode');
+    if (codeEl) {
+        if (inv.invoiceCode) {
+            codeEl.textContent = `رقم الفاتورة: ${inv.invoiceCode}`;
+            codeEl.classList.remove('hidden');
+        } else {
+            codeEl.classList.add('hidden');
+        }
+    }
+
     document.getElementById('tdDate').textContent = formatDate(inv.date);
     document.getElementById('tdEndClient').textContent = inv.endClientName || '-';
     document.getElementById('tdType').textContent = inv.type === 'payment' ? 'دفعة' : 'عملية شراء';
@@ -851,17 +1156,20 @@ function openInvoiceModal(type = 'purchase') {
     
     // Update labels
     const title = document.getElementById('modalTitle');
+    const amountLabel = document.getElementById('invoiceAmountLabel');
     const addressLabel = document.getElementById('addressLabel');
     const detailsLabel = document.getElementById('detailsLabel');
     const submitBtn = document.getElementById('submitBtn');
     
     if (type === 'payment') {
         title.textContent = 'تسديد دفعة';
+        if (amountLabel) amountLabel.innerHTML = 'المبلغ المدفوع <span class="text-error">*</span>';
         addressLabel.textContent = 'المستلم / ملاحظات';
         detailsLabel.textContent = 'تفاصيل السداد';
         submitBtn.textContent = 'حفظ السداد';
     } else {
         title.textContent = 'إضافة فاتورة جديدة';
+        if (amountLabel) amountLabel.innerHTML = 'المبلغ المستحق <span class="text-error">*</span>';
         addressLabel.textContent = 'عنوان التوصيل';
         detailsLabel.textContent = 'التفاصيل / المشتريات';
         submitBtn.textContent = 'حفظ الفاتورة';
@@ -1013,6 +1321,209 @@ document.getElementById('invoiceForm').addEventListener('submit', async function
     } catch (err) {
         showToast('حدث خطأ في الاتصال بالخادم', 'error');
     }
+});
+
+// Client Edit Modal Functions
+function openEditClientDetailsModal() {
+    if (!currentClientData) return;
+    const modal = document.getElementById('editClientModal');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    document.body.style.overflow = 'hidden';
+
+    document.getElementById('editClientName').value = currentClientData.name || '';
+    document.getElementById('editClientPhone').value = (currentClientData.phone && currentClientData.phone !== '-') ? currentClientData.phone : '';
+    document.getElementById('editClientAddress').value = (currentClientData.address && currentClientData.address !== '-') ? currentClientData.address : '';
+    
+    document.getElementById('editClientPhoneError').classList.add('hidden');
+    document.getElementById('editClientPhone').classList.remove('border-error');
+    setTimeout(() => document.getElementById('editClientName').focus(), 50);
+}
+
+function closeEditClientModal() {
+    const modal = document.getElementById('editClientModal');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+    document.body.style.overflow = '';
+}
+
+document.getElementById('editClientModal').addEventListener('click', function(e) {
+    if (e.target === this) closeEditClientModal();
+});
+
+document.getElementById('editClientForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const clientId = getClientId();
+    if (!clientId) return;
+
+    const name = document.getElementById('editClientName').value.trim();
+    const phone = document.getElementById('editClientPhone').value.trim();
+    const address = document.getElementById('editClientAddress').value.trim();
+    const phoneError = document.getElementById('editClientPhoneError');
+    const phoneInput = document.getElementById('editClientPhone');
+
+    if (!name) {
+        showToast('الرجاء إدخال اسم العميل', 'warning');
+        document.getElementById('editClientName').focus();
+        return;
+    }
+
+    if (phone && !/^\d+$/.test(phone.replace(/\s+/g, '').replace(/\+/g, ''))) {
+        phoneError.classList.remove('hidden');
+        phoneInput.classList.add('border-error');
+        showToast('يجب إدخال أرقام فقط في رقم الهاتف', 'error');
+        phoneInput.focus();
+        return;
+    }
+
+    try {
+        const res = await fetch(`/api/clients/${clientId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                name,
+                phone: phone || '-',
+                address: address || ''
+            })
+        });
+
+        if (!res.ok) {
+            const err = await res.json();
+            throw new Error(err.error || 'فشل في تحديث بيانات العميل');
+        }
+
+        const updatedClient = await res.json();
+        currentClientData = { ...currentClientData, ...updatedClient };
+
+        // Update DOM immediately without reloading
+        const initials = updatedClient.name.split(' ').slice(0, 2).map(w => w[0]).join(' ');
+        document.getElementById('clientInitials').textContent = initials;
+        document.getElementById('clientName').textContent = updatedClient.name;
+        document.getElementById('breadcrumbName').textContent = updatedClient.name;
+        document.getElementById('clientPhone').textContent = (updatedClient.phone && updatedClient.phone !== '-') ? updatedClient.phone : 'لا يوجد هاتف';
+        
+        const addressEl = document.getElementById('clientAddress');
+        const addressContainer = document.getElementById('clientAddressContainer');
+        if (addressEl && addressContainer) {
+            if (updatedClient.address && updatedClient.address.trim() && updatedClient.address !== '-') {
+                addressEl.textContent = updatedClient.address;
+                addressContainer.classList.remove('hidden');
+            } else {
+                addressContainer.classList.add('hidden');
+            }
+        }
+        document.title = `${updatedClient.name} - سجل الديون`;
+
+        closeEditClientModal();
+        showToast('تم تحديث بيانات العميل بنجاح ✓', 'success');
+    } catch (err) {
+        console.error(err);
+        showToast(err.message || 'فشل في تحديث بيانات العميل', 'error');
+    }
+});
+
+// Convert To Client Modal Logic
+let pendingConvertData = null;
+
+function openConvertToClientModal(id, name, txCount, netAmount) {
+    pendingConvertData = {
+        id: id || null,
+        name: name,
+        txCount: txCount || 0,
+        netAmount: netAmount || 0
+    };
+
+    const clientNameEl = document.getElementById('convertModalClientName');
+    if (clientNameEl) clientNameEl.textContent = name || '';
+
+    const clientNameBoldEl = document.getElementById('convertModalClientNameBold');
+    if (clientNameBoldEl) clientNameBoldEl.textContent = name || '';
+
+    const txCountEl = document.getElementById('convertModalTxCount');
+    if (txCountEl) txCountEl.textContent = txCount || 0;
+
+    const amountEl = document.getElementById('convertModalAmount');
+    if (amountEl) amountEl.textContent = formatCurrency(Math.abs(netAmount || 0));
+
+    const contractorNameEl = document.getElementById('convertModalContractorName');
+    if (contractorNameEl) contractorNameEl.textContent = currentClientData?.name || 'المقاول';
+
+    const modal = document.getElementById('convertToClientModal');
+    if (modal) {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        document.body.style.overflow = 'hidden';
+    }
+}
+
+function closeConvertToClientModal() {
+    const modal = document.getElementById('convertToClientModal');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+    document.body.style.overflow = '';
+    pendingConvertData = null;
+}
+
+async function confirmConvertToClient() {
+    if (!pendingConvertData) return;
+
+    const confirmBtn = document.getElementById('confirmConvertBtn');
+    confirmBtn.disabled = true;
+    confirmBtn.innerHTML = '<span class="material-symbols-outlined text-sm animate-spin">progress_activity</span> <span>جاري التحويل...</span>';
+
+    try {
+        const endClientId = pendingConvertData.id || 0;
+
+        const res = await fetch(`/api/end-clients/${endClientId}/convert-to-client`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                name: pendingConvertData.name,
+                contractorName: currentClientData?.name || ''
+            })
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+            throw new Error(data.error || 'فشل في تحويل العميل');
+        }
+
+        const newClientId = data.id || data._id;
+
+        // Update local clientInvoices so the card reflects the conversion immediately
+        const normName = normalizeArabic(pendingConvertData.name);
+        clientInvoices.forEach(inv => {
+            if ((endClientId && String(inv.endClientId) === String(endClientId)) ||
+                normalizeArabic(inv.endClientName || '') === normName) {
+                inv.endClientId = endClientId || inv.endClientId;
+                inv.endClient = {
+                    ...(inv.endClient || {}),
+                    id: endClientId || inv.endClientId,
+                    convertedToClientId: newClientId
+                };
+            }
+        });
+
+        closeConvertToClientModal();
+        renderEndClientBreakdown(clientInvoices);
+
+        if (data.alreadyConverted) {
+            showToast(`العميل محوّل بالفعل كعميل مستقل باسم "${data.name}".`, 'info');
+        } else {
+            showToast(`تم إنشاء حساب مستقل لـ "${data.name}". يمكنك الآن تسجيل فواتيره عليه مباشرة.`, 'success');
+        }
+    } catch (err) {
+        console.error(err);
+        showToast(err.message || 'فشل في تحويل العميل', 'error');
+    } finally {
+        confirmBtn.disabled = false;
+        confirmBtn.innerHTML = '<span class="material-symbols-outlined text-sm">check</span> <span>تأكيد التحويل</span>';
+    }
+}
+
+document.getElementById('convertToClientModal')?.addEventListener('click', function(e) {
+    if (e.target === this) closeConvertToClientModal();
 });
 
 // Initialize
