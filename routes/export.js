@@ -8,9 +8,15 @@ const ArabicReshaper = require('arabic-reshaper');
 const prisma = require('../lib/prisma');
 const { requireAuth } = require('../middleware/auth');
 const { getAllClientBalances } = require('../lib/balance');
-const puppeteer = require('puppeteer-core');
-const chromium = require('@sparticuz/chromium');
 const ejs = require('ejs');
+
+// Helper to lazily load puppeteer and chromium so app startup on Vercel is 100% stable
+async function getPuppeteerAndChromium() {
+  const puppeteer = require('puppeteer-core');
+  const chromium = require('@sparticuz/chromium');
+  return { puppeteer, chromium };
+}
+
 
 
 // Apply auth middleware
@@ -82,6 +88,8 @@ router.get('/clients/excel', async (req, res) => {
 router.get('/clients/pdf', async (req, res) => {
   let browser = null;
   try {
+    const { puppeteer, chromium } = await getPuppeteerAndChromium();
+
     const [rawClients, balanceMap] = await Promise.all([
       prisma.client.findMany({ orderBy: { name: 'asc' } }),
       getAllClientBalances(prisma)
@@ -140,6 +148,8 @@ router.get('/clients/pdf', async (req, res) => {
 router.get('/clients/image', async (req, res) => {
   let browser = null;
   try {
+    const { puppeteer, chromium } = await getPuppeteerAndChromium();
+
     const [rawClients, balanceMap] = await Promise.all([
       prisma.client.findMany({ orderBy: { name: 'asc' } }),
       getAllClientBalances(prisma)
@@ -240,6 +250,8 @@ router.get('/invoices/excel', async (req, res) => {
 router.get('/invoices/pdf', async (req, res) => {
   let browser = null;
   try {
+    const { puppeteer, chromium } = await getPuppeteerAndChromium();
+
     const invoices = await prisma.invoice.findMany({
       orderBy: { date: 'desc' },
       include: { client: true }
@@ -297,6 +309,8 @@ router.get('/invoices/pdf', async (req, res) => {
 router.get('/invoices/image', async (req, res) => {
   let browser = null;
   try {
+    const { puppeteer, chromium } = await getPuppeteerAndChromium();
+
     const invoices = await prisma.invoice.findMany({
       orderBy: { date: 'desc' },
       include: { client: true }
@@ -689,6 +703,8 @@ router.get('/client/:id/pdf', async (req, res) => {
 router.get('/client/:id/image', async (req, res) => {
   let browser = null;
   try {
+    const { puppeteer, chromium } = await getPuppeteerAndChromium();
+
     const clientId = parseInt(req.params.id);
     if (isNaN(clientId)) {
       return res.status(400).send('معرف العميل غير صالح');
