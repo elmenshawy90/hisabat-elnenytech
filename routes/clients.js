@@ -40,15 +40,43 @@ router.get('/', async (req, res) => {
       getAllClientBalances(prisma)
     ]);
 
+    const clientIds = clients.map(c => c.id);
+    let invoicesForClients = [];
+    if (clientIds.length > 0) {
+      invoicesForClients = await prisma.invoice.findMany({
+        where: {
+          clientId: { in: clientIds }
+        },
+        select: { clientId: true, endClientName: true },
+        orderBy: { updatedAt: 'desc' }
+      });
+    }
+
+    const contractorEndClientsMap = new Map();
+    for (const inv of invoicesForClients) {
+      if (!inv.endClientName || !inv.endClientName.trim() || inv.endClientName.trim() === '-') continue;
+      if (!contractorEndClientsMap.has(inv.clientId)) {
+        contractorEndClientsMap.set(inv.clientId, new Set());
+      }
+      contractorEndClientsMap.get(inv.clientId).add(inv.endClientName.trim());
+    }
+
     res.json({
-      data: clients.map(c => ({
-        ...c,
-        _id: c.id,
-        balance: balanceMap.get(c.id) || 0,
-        lastTransaction: c.updatedAt,
-        lastTransactionNote: c.notes || '',
-        initials: c.name.split(' ').slice(0, 2).map(w => w[0]).join(' ')
-      })),
+      data: clients.map(c => {
+        const endClientsSet = contractorEndClientsMap.get(c.id) || new Set();
+        const validEndClientNames = Array.from(endClientsSet);
+        const nameStr = c.name || '';
+        return {
+          ...c,
+          _id: c.id,
+          balance: balanceMap.get(c.id) || 0,
+          lastTransaction: c.updatedAt,
+          lastTransactionNote: c.notes || '',
+          matchedEndClients: validEndClientNames,
+          matchedEndClientsCount: validEndClientNames.length,
+          initials: nameStr.split(' ').slice(0, 2).map(w => w[0] || '').join(' ')
+        };
+      }),
       pagination: {
         page,
         limit,
@@ -56,6 +84,8 @@ router.get('/', async (req, res) => {
         pages: Math.ceil(total / limit)
       }
     });
+
+
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'فشل في جلب بيانات العملاء' });

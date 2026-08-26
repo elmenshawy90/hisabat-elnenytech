@@ -118,12 +118,15 @@ router.post('/login', async (req, res) => {
       { expiresIn: '7d' }
     );
 
+    const isSecure = Boolean(req.secure || req.headers['x-forwarded-proto'] === 'https');
     res.cookie('token', token, {
       httpOnly: true,
-      secure: 'auto',
+      secure: isSecure,
       sameSite: 'lax',
       maxAge: 1000 * 60 * 60 * 24 * 7
     });
+
+
 
     res.json({
       message: 'تم تسجيل الدخول بنجاح',

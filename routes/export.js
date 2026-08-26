@@ -8,6 +8,10 @@ const ArabicReshaper = require('arabic-reshaper');
 const prisma = require('../lib/prisma');
 const { requireAuth } = require('../middleware/auth');
 const { getAllClientBalances } = require('../lib/balance');
+const puppeteer = require('puppeteer-core');
+const chromium = require('@sparticuz/chromium');
+const ejs = require('ejs');
+
 
 // Apply auth middleware
 router.use(requireAuth);
@@ -74,6 +78,119 @@ router.get('/clients/excel', async (req, res) => {
   }
 });
 
+// GET /api/export/clients/pdf - Export all clients as PDF
+router.get('/clients/pdf', async (req, res) => {
+  let browser = null;
+  try {
+    const [rawClients, balanceMap] = await Promise.all([
+      prisma.client.findMany({ orderBy: { name: 'asc' } }),
+      getAllClientBalances(prisma)
+    ]);
+
+    const clients = rawClients.map(c => ({
+      ...c,
+      balance: balanceMap.get(c.id) || 0
+    }));
+
+    const totalDebt = clients.reduce((sum, c) => sum + (c.balance > 0 ? c.balance : 0), 0);
+    const clearClientsCount = clients.filter(c => c.balance <= 0).length;
+    const printDate = formatDate(new Date());
+
+    const templatePath = path.join(__dirname, '..', 'views', 'print', 'clients-list.ejs');
+    const html = await ejs.renderFile(templatePath, {
+      clients,
+      totalDebt,
+      clearClientsCount,
+      printDate,
+      formatCurrency,
+      formatDate
+    });
+
+    let executablePath;
+    try { executablePath = await chromium.executablePath(); } catch (e) {}
+
+    browser = await puppeteer.launch({
+      args: chromium.args,
+      defaultViewport: chromium.defaultViewport,
+      executablePath: executablePath || await chromium.executablePath(),
+      headless: chromium.headless
+    });
+
+    const page = await browser.newPage();
+    await page.setContent(html, { waitUntil: 'networkidle0' });
+
+    const pdfBuffer = await page.pdf({
+      format: 'A4',
+      printBackground: true,
+      margin: { top: '15mm', right: '15mm', bottom: '15mm', left: '15mm' }
+    });
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'attachment; filename="clients-list.pdf"');
+    res.send(pdfBuffer);
+  } catch (err) {
+    console.error('Clients PDF export error:', err);
+    res.status(500).send('فشل في تصدير قائمة العملاء كـ PDF');
+  } finally {
+    if (browser) await browser.close();
+  }
+});
+
+// GET /api/export/clients/image - Export all clients as PNG
+router.get('/clients/image', async (req, res) => {
+  let browser = null;
+  try {
+    const [rawClients, balanceMap] = await Promise.all([
+      prisma.client.findMany({ orderBy: { name: 'asc' } }),
+      getAllClientBalances(prisma)
+    ]);
+
+    const clients = rawClients.map(c => ({
+      ...c,
+      balance: balanceMap.get(c.id) || 0
+    }));
+
+    const totalDebt = clients.reduce((sum, c) => sum + (c.balance > 0 ? c.balance : 0), 0);
+    const clearClientsCount = clients.filter(c => c.balance <= 0).length;
+    const printDate = formatDate(new Date());
+
+    const templatePath = path.join(__dirname, '..', 'views', 'print', 'clients-list.ejs');
+    const html = await ejs.renderFile(templatePath, {
+      clients,
+      totalDebt,
+      clearClientsCount,
+      printDate,
+      formatCurrency,
+      formatDate
+    });
+
+    let executablePath;
+    try { executablePath = await chromium.executablePath(); } catch (e) {}
+
+    browser = await puppeteer.launch({
+      args: chromium.args,
+      defaultViewport: { width: 950, height: 1200, deviceScaleFactor: 2 },
+      executablePath: executablePath || await chromium.executablePath(),
+      headless: chromium.headless
+    });
+
+    const page = await browser.newPage();
+    await page.setContent(html, { waitUntil: 'networkidle0' });
+
+    const screenshotBuffer = await page.screenshot({ fullPage: true, type: 'png' });
+
+    res.setHeader('Content-Type', 'image/png');
+    res.setHeader('Content-Disposition', 'attachment; filename="clients-list.png"');
+    res.send(screenshotBuffer);
+  } catch (err) {
+    console.error('Clients PNG export error:', err);
+    res.status(500).send('فشل في تصدير قائمة العملاء كصورة');
+  } finally {
+    if (browser) await browser.close();
+  }
+});
+
+
 // GET /api/export/invoices/excel - Export invoices
 router.get('/invoices/excel', async (req, res) => {
   try {
@@ -118,6 +235,117 @@ router.get('/invoices/excel', async (req, res) => {
     res.status(500).json({ error: 'فشل في تصدير البيانات' });
   }
 });
+
+// GET /api/export/invoices/pdf - Export invoices as PDF
+router.get('/invoices/pdf', async (req, res) => {
+  let browser = null;
+  try {
+    const invoices = await prisma.invoice.findMany({
+      orderBy: { date: 'desc' },
+      include: { client: true }
+    });
+
+    let totalPurchases = 0;
+    let totalPayments = 0;
+    for (const inv of invoices) {
+      if (inv.type === 'purchase') totalPurchases += inv.amount;
+      else if (inv.type === 'payment') totalPayments += inv.amount;
+    }
+
+    const printDate = formatDate(new Date());
+    const templatePath = path.join(__dirname, '..', 'views', 'print', 'invoices-list.ejs');
+    const html = await ejs.renderFile(templatePath, {
+      invoices,
+      totalPurchases,
+      totalPayments,
+      printDate,
+      formatCurrency,
+      formatDate
+    });
+
+    let executablePath;
+    try { executablePath = await chromium.executablePath(); } catch (e) {}
+
+    browser = await puppeteer.launch({
+      args: chromium.args,
+      defaultViewport: chromium.defaultViewport,
+      executablePath: executablePath || await chromium.executablePath(),
+      headless: chromium.headless
+    });
+
+    const page = await browser.newPage();
+    await page.setContent(html, { waitUntil: 'networkidle0' });
+
+    const pdfBuffer = await page.pdf({
+      format: 'A4',
+      printBackground: true,
+      margin: { top: '15mm', right: '15mm', bottom: '15mm', left: '15mm' }
+    });
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'attachment; filename="invoices-list.pdf"');
+    res.send(pdfBuffer);
+  } catch (err) {
+    console.error('Invoices PDF export error:', err);
+    res.status(500).send('فشل في تصدير سجل الفواتير كـ PDF');
+  } finally {
+    if (browser) await browser.close();
+  }
+});
+
+// GET /api/export/invoices/image - Export invoices as PNG
+router.get('/invoices/image', async (req, res) => {
+  let browser = null;
+  try {
+    const invoices = await prisma.invoice.findMany({
+      orderBy: { date: 'desc' },
+      include: { client: true }
+    });
+
+    let totalPurchases = 0;
+    let totalPayments = 0;
+    for (const inv of invoices) {
+      if (inv.type === 'purchase') totalPurchases += inv.amount;
+      else if (inv.type === 'payment') totalPayments += inv.amount;
+    }
+
+    const printDate = formatDate(new Date());
+    const templatePath = path.join(__dirname, '..', 'views', 'print', 'invoices-list.ejs');
+    const html = await ejs.renderFile(templatePath, {
+      invoices,
+      totalPurchases,
+      totalPayments,
+      printDate,
+      formatCurrency,
+      formatDate
+    });
+
+    let executablePath;
+    try { executablePath = await chromium.executablePath(); } catch (e) {}
+
+    browser = await puppeteer.launch({
+      args: chromium.args,
+      defaultViewport: { width: 950, height: 1200, deviceScaleFactor: 2 },
+      executablePath: executablePath || await chromium.executablePath(),
+      headless: chromium.headless
+    });
+
+    const page = await browser.newPage();
+    await page.setContent(html, { waitUntil: 'networkidle0' });
+
+    const screenshotBuffer = await page.screenshot({ fullPage: true, type: 'png' });
+
+    res.setHeader('Content-Type', 'image/png');
+    res.setHeader('Content-Disposition', 'attachment; filename="invoices-list.png"');
+    res.send(screenshotBuffer);
+  } catch (err) {
+    console.error('Invoices PNG export error:', err);
+    res.status(500).send('فشل في تصدير سجل الفواتير كصورة');
+  } finally {
+    if (browser) await browser.close();
+  }
+});
+
 
 // GET /api/export/client/:id/excel - Export single client statement to Excel
 router.get('/client/:id/excel', async (req, res) => {
@@ -457,4 +685,118 @@ router.get('/client/:id/pdf', async (req, res) => {
   }
 });
 
+// GET /api/export/client/:id/image - Export single client statement as PNG Image using Puppeteer
+router.get('/client/:id/image', async (req, res) => {
+  let browser = null;
+  try {
+    const clientId = parseInt(req.params.id);
+    if (isNaN(clientId)) {
+      return res.status(400).send('معرف العميل غير صالح');
+    }
+
+    const client = await prisma.client.findUnique({
+      where: { id: clientId },
+      include: { invoices: true }
+    });
+
+    if (!client) {
+      return res.status(404).send('العميل غير موجود');
+    }
+
+    // 1. Calculate true chronological running balance
+    const chronological = [...client.invoices].sort((a, b) => {
+      const dateA = new Date(a.date || 0).getTime();
+      const dateB = new Date(b.date || 0).getTime();
+      if (dateA !== dateB) return dateA - dateB;
+      const createdA = new Date(a.createdAt || 0).getTime() || (Number(a.id) || 0);
+      const createdB = new Date(b.createdAt || 0).getTime() || (Number(b.id) || 0);
+      if (createdA !== createdB) return createdA - createdB;
+      return (Number(a.id) || 0) - (Number(b.id) || 0);
+    });
+
+    let running = 0;
+    let totalPurchases = 0;
+    let totalPayments = 0;
+    for (const inv of chronological) {
+      if (inv.type === 'purchase') {
+        running += inv.amount;
+        totalPurchases += inv.amount;
+      } else if (inv.type === 'payment') {
+        running -= inv.amount;
+        totalPayments += inv.amount;
+      }
+      inv.runningBalance = running;
+    }
+
+    const currentBalance = running;
+    const displayInvoices = [...chronological].reverse();
+    const printDate = formatDate(new Date());
+    const firstTxDate = displayInvoices.length > 0 ? formatDate(displayInvoices[displayInvoices.length - 1].date) : '-';
+    const lastTxDate = displayInvoices.length > 0 ? formatDate(displayInvoices[0].date) : '-';
+
+    // Render HTML template via EJS
+    const templatePath = path.join(__dirname, '..', 'views', 'print', 'client-statement.ejs');
+    const html = await ejs.renderFile(templatePath, {
+      client,
+      invoices: displayInvoices,
+      totalPurchases,
+      totalPayments,
+      currentBalance,
+      firstTxDate,
+      lastTxDate,
+      printDate,
+      formatCurrency,
+      formatDate
+    });
+
+    let executablePath;
+    try {
+      executablePath = await chromium.executablePath();
+    } catch (e) {
+      console.warn('Chromium executable path warning:', e);
+    }
+
+    browser = await puppeteer.launch({
+      args: chromium.args,
+      defaultViewport: { width: 900, height: 1200, deviceScaleFactor: 2 },
+      executablePath: executablePath || await chromium.executablePath(),
+      headless: chromium.headless
+    });
+
+    const page = await browser.newPage();
+    await page.setContent(html, { waitUntil: 'networkidle0' });
+
+    // Hide web action toolbar (.no-print) so image only contains statement content
+    await page.addStyleTag({ content: '.no-print { display: none !important; } body { padding: 24px !important; }' });
+
+    const screenshotBuffer = await page.screenshot({
+      fullPage: true,
+      type: 'png'
+    });
+
+    const rawName = (client.name || 'client').trim();
+    const safeName = rawName
+      .normalize('NFKD')
+      .replace(/[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/g, '_')
+      .replace(/[\\/:*?"<>|\s]/g, '_')
+      .replace(/_+/g, '_')
+      .replace(/^_+|_+$/g, '') || 'client';
+    const filename = `client-statement-${safeName}.png`;
+    const asciiFilename = `client-statement-${safeName.replace(/[^A-Za-z0-9_.-]/g, '_')}.png`;
+
+    res.setHeader('Content-Type', 'image/png');
+    res.setHeader('Content-Disposition', `attachment; filename="${asciiFilename}"; filename*=UTF-8''${encodeURIComponent(filename)}`);
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+    res.status(200).send(screenshotBuffer);
+  } catch (err) {
+    console.error('Client Image export error:', err);
+    res.status(500).send('فشل في تصدير كشف الحساب كصورة: ' + (err.message || ''));
+  } finally {
+    if (browser) {
+      await browser.close();
+    }
+  }
+});
+
 module.exports = router;
+

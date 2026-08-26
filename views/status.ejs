@@ -101,11 +101,16 @@
                     <!-- Deployment Details Grid -->
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-md pt-sm">
                         <div class="bg-surface-container-low p-sm rounded-xl border border-outline-variant/30 space-y-1">
-                            <span class="text-xs text-secondary font-medium">تاريخ ووقت النشر</span>
+                            <span class="text-xs text-secondary font-medium">تاريخ ووقت آخر نشر</span>
                             <p class="font-bold text-on-surface text-sm" id="deploymentDate">
-                                <%= new Date(deployment.createdAt).toLocaleString('ar-EG', { dateStyle: 'full', timeStyle: 'short' }) %>
+                                <% if (deployment.deployedAt) { %>
+                                    <%= new Date(deployment.deployedAt).toLocaleString('ar-EG', { dateStyle: 'full', timeStyle: 'short' }) %>
+                                <% } else { %>
+                                    <span class="text-secondary font-normal text-xs">غير متاح - يظهر فقط بعد النشر على Vercel</span>
+                                <% } %>
                             </p>
                         </div>
+
 
                         <div class="bg-surface-container-low p-sm rounded-xl border border-outline-variant/30 space-y-1">
                             <span class="text-xs text-secondary font-medium">رابط الـ Deployment</span>

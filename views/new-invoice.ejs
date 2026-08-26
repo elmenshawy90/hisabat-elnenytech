@@ -37,16 +37,38 @@
                         <h2 class="font-headline-md text-headline-md text-on-surface">سجل الفواتير</h2>
                         <p class="text-secondary font-body-md text-body-md">إدارة وتتبع جميع الفواتير والمعاملات المالية</p>
                     </div>
-                    <div class="flex gap-sm">
-                        <a href="/api/export/invoices/excel" class="bg-surface-container-low text-on-surface rounded-full px-md py-sm md:px-lg md:py-md font-label-lg text-label-lg md:font-headline-sm md:text-headline-sm hover:bg-surface-container transition-colors flex flex-row items-center justify-center gap-sm shadow-sm border border-outline-variant">
-                            <span class="material-symbols-outlined text-xl md:text-2xl">download</span>
-                            تصدير
-                        </a>
-                        <button class="bg-primary text-on-primary rounded-full px-md py-sm md:px-lg md:py-md font-label-lg text-label-lg md:font-headline-sm md:text-headline-sm hover:opacity-90 transition-opacity flex flex-row items-center justify-center gap-sm shadow-sm" onclick="openModal()">
-                            <span class="material-symbols-outlined text-xl md:text-2xl">add</span>
-                            إضافة فاتورة
+                    <div class="flex flex-wrap items-center gap-xs sm:gap-sm">
+                        <!-- Standalone Export Dropdown -->
+                        <div class="relative" id="invoicesExportDropdownContainer">
+                            <button id="invoicesExportDropdownBtn" onclick="toggleInvoicesExportDropdown(event)" type="button" class="px-md py-sm border border-outline-variant bg-surface hover:bg-surface-container-high text-on-surface rounded-full font-bold text-sm transition-all flex items-center justify-center gap-xs shadow-xs cursor-pointer" title="تصدير سجل الفواتير">
+                                <span class="material-symbols-outlined text-primary text-xl">download</span>
+                                <span>تصدير</span>
+                                <span class="material-symbols-outlined text-outline text-base transition-transform duration-200" id="invoicesExportDropdownArrow">expand_more</span>
+                            </button>
+                            <div id="invoicesExportDropdownMenu" class="hidden absolute top-[calc(100%+8px)] right-0 w-44 bg-surface border border-outline-variant/80 rounded-xl shadow-xl z-50 py-1.5 overflow-hidden transition-all duration-150 transform opacity-0 scale-95 origin-top">
+                                <a href="/api/export/invoices/excel" onclick="closeInvoicesExportDropdown()" class="w-full px-sm py-2 flex items-center gap-2 text-xs hover:bg-primary/10 transition-colors text-right font-medium text-on-surface">
+                                    <span class="material-symbols-outlined text-green-600 text-base">description</span>
+                                    <span>Excel</span>
+                                </a>
+                                <a href="/api/export/invoices/pdf" onclick="closeInvoicesExportDropdown()" class="w-full px-sm py-2 flex items-center gap-2 text-xs hover:bg-primary/10 transition-colors text-right font-medium text-on-surface">
+                                    <span class="material-symbols-outlined text-error text-base">picture_as_pdf</span>
+                                    <span>PDF</span>
+                                </a>
+                                <a href="/api/export/invoices/image" onclick="closeInvoicesExportDropdown()" class="w-full px-sm py-2 flex items-center gap-2 text-xs hover:bg-primary/10 transition-colors text-right font-medium text-on-surface">
+                                    <span class="material-symbols-outlined text-blue-600 text-base">image</span>
+                                    <span>صورة (Image)</span>
+                                </a>
+                            </div>
+                        </div>
+
+                        <!-- Standalone Action Button -->
+                        <button class="px-md py-sm bg-primary hover:bg-primary-container text-white rounded-full flex items-center justify-center gap-xs font-bold text-sm shadow-sm transition-all active:scale-95 cursor-pointer" onclick="openModal()">
+                            <span class="material-symbols-outlined text-xl">add</span>
+                            <span>إضافة فاتورة</span>
                         </button>
                     </div>
+
+
                 </div>
 
                 <!-- Search and Filter -->
@@ -270,7 +292,8 @@
                                     class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline">payments</span>
                                 <input
                                     class="w-full h-12 pr-10 pl-md rounded-xl bg-surface-container-low border border-outline-variant form-input-focus transition-all text-right font-bold text-primary"
-                                    id="invoiceAmount" placeholder="0.00" type="number" step="0.01" />
+                                    id="invoiceAmount" placeholder="0.00" type="number" step="any" />
+
                             </div>
                         </div>
                         <div class="md:col-span-2 flex flex-col gap-xs">
@@ -1040,12 +1063,49 @@
                 if (e.target === this) closeModal();
             });
 
+            function toggleInvoicesExportDropdown(e) {
+                if (e) e.stopPropagation();
+                const menu = document.getElementById('invoicesExportDropdownMenu');
+                const arrow = document.getElementById('invoicesExportDropdownArrow');
+                if (!menu) return;
+                const isHidden = menu.classList.contains('hidden');
+                if (isHidden) {
+                    menu.classList.remove('hidden');
+                    requestAnimationFrame(() => {
+                        menu.classList.remove('opacity-0', 'scale-95');
+                        menu.classList.add('opacity-100', 'scale-100');
+                    });
+                    if (arrow) arrow.classList.add('rotate-180');
+                } else {
+                    closeInvoicesExportDropdown();
+                }
+            }
+
+            function closeInvoicesExportDropdown() {
+                const menu = document.getElementById('invoicesExportDropdownMenu');
+                const arrow = document.getElementById('invoicesExportDropdownArrow');
+                if (menu && !menu.classList.contains('hidden')) {
+                    menu.classList.add('opacity-0', 'scale-95');
+                    menu.classList.remove('opacity-100', 'scale-100');
+                    if (arrow) arrow.classList.remove('rotate-180');
+                    setTimeout(() => menu.classList.add('hidden'), 150);
+                }
+            }
+
+            document.addEventListener('click', (e) => {
+                const container = document.getElementById('invoicesExportDropdownContainer');
+                if (container && !container.contains(e.target)) {
+                    closeInvoicesExportDropdown();
+                }
+            });
+
             // Load data on start
             document.addEventListener('DOMContentLoaded', () => {
                 loadInvoices();
                 loadClients();
                 loadEndClients();
             });
+
         </script>
 </body>
 

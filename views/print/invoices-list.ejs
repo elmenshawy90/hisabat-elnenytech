@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+    <meta charset="utf-8">
+    <title>سجل الفواتير</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Segoe UI', Tahoma, 'Arial', 'Cairo', 'Tajawal', sans-serif; background: #ffffff; color: #141b2b; direction: rtl; text-align: right; padding: 24px; font-size: 13px; line-height: 1.5; }
+        .container { max-width: 900px; margin: 0 auto; }
+        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #006840; padding-bottom: 16px; margin-bottom: 20px; }
+        .brand-title { font-size: 22px; font-weight: 800; color: #006840; }
+        .brand-subtitle { font-size: 12px; color: #585f6c; margin-top: 2px; }
+        .doc-meta { text-align: left; font-size: 12px; color: #585f6c; }
+        .doc-title-badge { background: #006840; color: #ffffff; font-size: 14px; font-weight: 700; padding: 4px 14px; border-radius: 20px; display: inline-block; margin-bottom: 6px; }
+        .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 20px; }
+        .stat-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 14px; text-align: center; }
+        .stat-label { font-size: 11px; color: #64748b; margin-bottom: 4px; }
+        .stat-val { font-size: 15px; font-weight: 800; color: #006840; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 12px; }
+        th { background: #006840; color: #ffffff; padding: 10px 12px; font-weight: 700; text-align: right; border: 1px solid #006840; }
+        td { padding: 10px 12px; border-bottom: 1px solid #e2e8f0; border-x: 1px solid #f1f5f9; color: #334155; }
+        tr:nth-child(even) { background-color: #f8fafc; }
+        .badge-purchase { background: #fee2e2; color: #991b1b; padding: 2px 8px; border-radius: 12px; font-weight: 700; font-size: 11px; }
+        .badge-payment { background: #dcfce7; color: #166534; padding: 2px 8px; border-radius: 12px; font-weight: 700; font-size: 11px; }
+        .footer { margin-top: 30px; text-align: center; font-size: 11px; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 12px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div>
+                <div class="brand-title">نظام حسابات</div>
+                <div class="brand-subtitle">تقرير سجل المعاملات والفواتير المالية</div>
+            </div>
+            <div class="doc-meta">
+                <div class="doc-title-badge">سجل الفواتير</div>
+                <div>تاريخ التقرير: <%= printDate %></div>
+            </div>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-label">إجمالي العمليات</div>
+                <div class="stat-val"><%= invoices.length %> عملية</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">إجمالي قيم المشتريات</div>
+                <div class="stat-val" style="color: #991b1b;"><%= formatCurrency(totalPurchases) %></div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">إجمالي المدفوعات السديدة</div>
+                <div class="stat-val" style="color: #166534;"><%= formatCurrency(totalPayments) %></div>
+            </div>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 15%;">التاريخ</th>
+                    <th style="width: 25%;">اسم العميل</th>
+                    <th style="width: 15%;">النوع</th>
+                    <th style="width: 20%;">المبلغ</th>
+                    <th style="width: 25%;">التفاصيل / البيان</th>
+                </tr>
+            </thead>
+            <tbody>
+                <% invoices.forEach(inv => { %>
+                    <tr>
+                        <td><%= formatDate(inv.date) %></td>
+                        <td style="font-weight: 700; color: #0f172a;"><%= inv.clientName %></td>
+                        <td>
+                            <span class="<%= inv.type === 'purchase' ? 'badge-purchase' : 'badge-payment' %>">
+                                <%= inv.type === 'purchase' ? 'شراء' : 'دفعة' %>
+                            </span>
+                        </td>
+                        <td style="font-weight: 700; color: #0f172a;"><%= formatCurrency(inv.amount) %></td>
+                        <td><%= inv.details || '-' %></td>
+                    </tr>
+                <% }); %>
+            </tbody>
+        </table>
+
+        <div class="footer">
+            تم استخراج التقرير آلياً من نظام حسابات بتاريخ <%= printDate %>
+        </div>
+    </div>
+</body>
+</html>

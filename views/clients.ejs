@@ -28,16 +28,38 @@
 <h2 class="font-headline-md text-headline-md text-on-surface">العملاء</h2>
 <p class="font-body-md text-body-md text-secondary">إدارة ومتابعة ديون العملاء المسجلين</p>
 </div>
-<div class="flex gap-sm">
-    <a href="/api/export/clients/excel" class="bg-surface-container-low text-on-surface px-md py-sm md:px-lg md:py-md rounded-full flex items-center justify-center gap-sm font-label-lg text-label-lg md:font-headline-sm md:text-headline-sm shadow-sm hover:shadow transition-all active:scale-95 border border-outline-variant">
-        <span class="material-symbols-outlined text-xl md:text-2xl">download</span>
-        تصدير
-    </a>
-    <button onclick="openAddClientModal()" class="bg-primary text-on-primary px-md py-sm md:px-lg md:py-md rounded-full flex items-center justify-center gap-sm font-label-lg text-label-lg md:font-headline-sm md:text-headline-sm shadow-md hover:shadow-lg transition-all active:scale-95">
-        <span class="material-symbols-outlined text-xl md:text-2xl">person_add</span>
-        + عميل جديد
+<div class="flex flex-wrap items-center gap-xs sm:gap-sm">
+    <!-- Standalone Export Dropdown -->
+    <div class="relative" id="clientsExportDropdownContainer">
+        <button id="clientsExportDropdownBtn" onclick="toggleClientsExportDropdown(event)" type="button" class="px-md py-sm border border-outline-variant bg-surface hover:bg-surface-container-high text-on-surface rounded-full font-bold text-sm transition-all flex items-center justify-center gap-xs shadow-xs cursor-pointer" title="تصدير بيانات العملاء">
+            <span class="material-symbols-outlined text-primary text-xl">download</span>
+            <span>تصدير</span>
+            <span class="material-symbols-outlined text-outline text-base transition-transform duration-200" id="clientsExportDropdownArrow">expand_more</span>
+        </button>
+        <div id="clientsExportDropdownMenu" class="hidden absolute top-[calc(100%+8px)] right-0 w-44 bg-surface border border-outline-variant/80 rounded-xl shadow-xl z-50 py-1.5 overflow-hidden transition-all duration-150 transform opacity-0 scale-95 origin-top">
+            <a href="/api/export/clients/excel" onclick="closeClientsExportDropdown()" class="w-full px-sm py-2 flex items-center gap-2 text-xs hover:bg-primary/10 transition-colors text-right font-medium text-on-surface">
+                <span class="material-symbols-outlined text-green-600 text-base">description</span>
+                <span>Excel</span>
+            </a>
+            <a href="/api/export/clients/pdf" onclick="closeClientsExportDropdown()" class="w-full px-sm py-2 flex items-center gap-2 text-xs hover:bg-primary/10 transition-colors text-right font-medium text-on-surface">
+                <span class="material-symbols-outlined text-error text-base">picture_as_pdf</span>
+                <span>PDF</span>
+            </a>
+            <a href="/api/export/clients/image" onclick="closeClientsExportDropdown()" class="w-full px-sm py-2 flex items-center gap-2 text-xs hover:bg-primary/10 transition-colors text-right font-medium text-on-surface">
+                <span class="material-symbols-outlined text-blue-600 text-base">image</span>
+                <span>صورة (Image)</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Standalone Action Button -->
+    <button onclick="openAddClientModal()" class="px-md py-sm bg-primary hover:bg-primary-container text-white rounded-full flex items-center justify-center gap-xs font-bold text-sm shadow-sm transition-all active:scale-95 cursor-pointer">
+        <span class="material-symbols-outlined text-xl">person_add</span>
+        <span>عميل جديد</span>
     </button>
 </div>
+
+
 </div>
 <!-- Stats Row -->
 <div class="grid grid-cols-1 md:grid-cols-3 gap-md mb-xl">
@@ -119,15 +141,17 @@
 <thead>
 <tr class="bg-surface-container-low border-b border-outline-variant">
 <th class="px-lg py-md font-label-md text-label-md text-secondary">اسم العميل</th>
+<th class="px-lg py-md font-label-md text-label-md text-secondary">رقم الهاتف</th>
+<th class="px-lg py-md font-label-md text-label-md text-secondary">العملاء تحته</th>
 <th class="px-lg py-md font-label-md text-label-md text-secondary">رقم الصفحة</th>
 <th class="px-lg py-md font-label-md text-label-md text-secondary">الرصيد الحالي</th>
-<th class="px-lg py-md font-label-md text-label-md text-secondary">رقم الهاتف</th>
 <th class="px-lg py-md font-label-md text-label-md text-secondary">آخر معاملة</th>
 <th class="px-lg py-md font-label-md text-label-md text-secondary text-center">الإجراءات</th>
 </tr>
 </thead>
 <tbody class="divide-y divide-outline-variant" id="clientsTableBody">
-<tr><td colspan="6" class="p-xl text-center text-secondary">جاري التحميل...</td></tr>
+<tr><td colspan="7" class="p-xl text-center text-secondary">جاري التحميل...</td></tr>
+
 </tbody>
 </table>
 </div>
@@ -423,7 +447,7 @@ function renderClients(clients, resetPage = false) {
     const totalRecords = clients.length;
 
     if (totalRecords === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" class="p-xl text-center text-secondary">لا يوجد عملاء مسجلين</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" class="p-xl text-center text-secondary">لا يوجد عملاء مسجلين</td></tr>';
         renderPaginationControls({
             containerId: 'clientsPaginationControls',
             infoId: 'clientsPaginationInfo',
@@ -445,31 +469,35 @@ function renderClients(clients, resetPage = false) {
     const pagedClients = clients.slice(startIndex, endIndex);
 
     tbody.innerHTML = pagedClients.map((client, index) => {
-        const initial = client.name.charAt(0);
-        const balanceColor = client.balance > 0 ? 'text-tertiary' : 'text-primary-container';
-        const hasMatchedEndClients = client.matchedEndClientsCount && client.matchedEndClientsCount > 0;
+        const clientName = client.name || '';
+        const initial = clientName.charAt(0) || '-';
+        const clientBalance = Number(client.balance) || 0;
+        const balanceColor = clientBalance > 0 ? 'text-tertiary' : 'text-primary-container';
+        const matchedList = Array.isArray(client.matchedEndClients) ? client.matchedEndClients : [];
+        const matchedCount = client.matchedEndClientsCount || matchedList.length;
+        const hasMatchedEndClients = matchedCount > 0;
         return `
             <tr onclick="window.location.href='/client-details?id=${client.id}'" class="cursor-pointer hover:bg-primary/10 transition-all duration-200 group" style="opacity:0;transform:translateY(10px);animation:fadeInRow 0.4s ease ${index * 0.05}s forwards;">
                 <td class="px-lg py-md">
                     <div class="flex items-center gap-md">
                         <div class="w-10 h-10 rounded-full bg-secondary-container flex items-center justify-center text-on-secondary-container font-bold group-hover:scale-105 transition-transform">${initial}</div>
                         <div class="flex flex-col">
-                            <span class="font-body-md text-body-md text-on-surface font-bold group-hover:text-primary transition-colors">${highlightArabic(client.name, query)}</span>
-                            ${hasMatchedEndClients ? `
-                                <span class="text-xs text-secondary mt-0.5">
-                                    طلب من خلاله: <strong class="text-on-surface-variant font-semibold">${client.matchedEndClients.slice(0, 3).map(n => highlightArabic(n, query)).join('، ')}</strong>${client.matchedEndClientsCount > 3 ? ` (+${client.matchedEndClientsCount - 3} آخرين)` : ''}
-                                </span>
-                            ` : ''}
+                            <span class="font-body-md text-body-md text-on-surface font-bold group-hover:text-primary transition-colors">${highlightArabic(clientName, query)}</span>
                         </div>
                     </div>
+                </td>
+                <td class="px-lg py-md font-body-md text-body-md text-secondary" dir="ltr">${highlightArabic(client.phone || '', query)}</td>
+                <td class="px-lg py-md font-body-md text-body-md text-secondary">
+                    ${hasMatchedEndClients ? `
+                        <span class="font-bold text-on-surface-variant">${matchedList.slice(0, 3).map(n => highlightArabic(n || '', query)).join('، ')}</span>${matchedCount > 3 ? `<span class="text-xs text-secondary font-bold"> (+${matchedCount - 3} آخرين)</span>` : ''}
+                    ` : '-'}
                 </td>
                 <td class="px-lg py-md">
                     <span class="font-body-md text-body-md ${client.pageNumber ? 'text-on-surface font-bold' : 'text-secondary'}">${client.pageNumber ? client.pageNumber : '-'}</span>
                 </td>
                 <td class="px-lg py-md">
-                    <span class="font-headline-sm text-headline-sm ${balanceColor}">${formatCurrency(client.balance)}</span>
+                    <span class="font-headline-sm text-headline-sm ${balanceColor}">${formatCurrency(clientBalance)}</span>
                 </td>
-                <td class="px-lg py-md font-body-md text-body-md text-secondary" dir="ltr">${highlightArabic(client.phone, query)}</td>
                 <td class="px-lg py-md">
                     <div class="flex flex-col">
                         <span class="font-body-md text-body-md text-on-surface">${formatDate(client.lastTransaction)}</span>
@@ -481,10 +509,10 @@ function renderClients(clients, resetPage = false) {
                         <a href="/client-details?id=${client.id}" onclick="event.stopPropagation();" class="p-sm rounded-lg hover:bg-surface-container-highest text-primary transition-all active:scale-90" title="عرض">
                             <span class="material-symbols-outlined">visibility</span>
                         </a>
-                        <button onclick="event.stopPropagation(); openEditClientModal('${client.id}', '${escapeJsString(client.name)}', '${escapeJsString(client.phone || '')}', '${escapeJsString(client.address || '')}', '${client.pageNumber ?? 0}')" class="p-sm rounded-lg hover:bg-primary/10 text-primary transition-all active:scale-90" title="تعديل">
+                        <button onclick="event.stopPropagation(); openEditClientModal('${client.id}', '${escapeJsString(clientName)}', '${escapeJsString(client.phone || '')}', '${escapeJsString(client.address || '')}', '${client.pageNumber ?? 0}')" class="p-sm rounded-lg hover:bg-primary/10 text-primary transition-all active:scale-90" title="تعديل">
                             <span class="material-symbols-outlined">edit</span>
                         </button>
-                        <button onclick="event.stopPropagation(); deleteClient('${client.id}', '${escapeJsString(client.name)}')" class="p-sm rounded-lg hover:bg-error-container/20 text-error transition-all active:scale-90" title="حذف">
+                        <button onclick="event.stopPropagation(); deleteClient('${client.id}', '${escapeJsString(clientName)}')" class="p-sm rounded-lg hover:bg-error-container/20 text-error transition-all active:scale-90" title="حذف">
                             <span class="material-symbols-outlined">delete</span>
                         </button>
                     </div>
@@ -492,6 +520,8 @@ function renderClients(clients, resetPage = false) {
             </tr>
         `;
     }).join('');
+
+
 
     renderPaginationControls({
         containerId: 'clientsPaginationControls',
@@ -608,8 +638,13 @@ document.getElementById('searchInput').addEventListener('input', (e) => {
 
             // Render End Clients results section
             if (endClientMatches.length > 0) {
-                endClientsGrid.innerHTML = endClientMatches.map(item => `
-                    <div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-md shadow-sm flex flex-col gap-sm">
+                endClientsGrid.innerHTML = endClientMatches.map(item => {
+                    const primaryContractorId = item.contractors[0] ? item.contractors[0].id : '';
+                    const encodedName = encodeURIComponent(item.endClientName);
+                    const cardUrl = primaryContractorId ? `/client-details?id=${primaryContractorId}&filterEndClient=${encodedName}` : '#';
+                    return `
+                    <div onclick="if ('${cardUrl}' !== '#') window.location.href='${cardUrl}'"
+                         class="bg-surface-container-lowest border border-outline-variant rounded-xl p-md shadow-sm flex flex-col gap-sm cursor-pointer hover:border-primary/60 hover:shadow-md transition-all">
                         <div class="flex items-center gap-sm border-b border-outline-variant/40 pb-xs">
                             <div class="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold">
                                 <span class="material-symbols-outlined text-lg">person_pin</span>
@@ -620,7 +655,7 @@ document.getElementById('searchInput').addEventListener('input', (e) => {
                             <span class="font-medium text-on-surface-variant block mb-1">عن طريق:</span>
                             <div class="flex flex-wrap gap-xs">
                                 ${item.contractors.map(c => `
-                                    <a href="/client-details?id=${c.id}" class="inline-flex items-center gap-1 bg-surface-container-low hover:bg-primary/10 text-primary px-sm py-1 rounded-lg border border-outline-variant/60 transition-colors">
+                                    <a href="/client-details?id=${c.id}&filterEndClient=${encodedName}" onclick="event.stopPropagation();" class="inline-flex items-center gap-1 bg-surface-container-low hover:bg-primary/10 text-primary px-sm py-1 rounded-lg border border-outline-variant/60 transition-colors">
                                         <span class="font-bold">${c.name}</span>
                                         <span class="text-secondary text-[11px]">(${c.invoiceCount} فاتورة)</span>
                                     </a>
@@ -628,17 +663,19 @@ document.getElementById('searchInput').addEventListener('input', (e) => {
                             </div>
                         </div>
                     </div>
-                `).join('');
+                `}).join('');
                 endClientsSection.classList.remove('hidden');
             } else {
                 endClientsSection.classList.add('hidden');
             }
 
+
             // Empty state check
             if (contractors.length === 0 && endClientMatches.length === 0) {
                 const tbody = document.getElementById('clientsTableBody');
-                tbody.innerHTML = '<tr><td colspan="6" class="p-xl text-center text-secondary">لا توجد نتائج مطابقة للبحث</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="7" class="p-xl text-center text-secondary">لا توجد نتائج مطابقة للبحث</td></tr>';
             }
+
         } catch (err) {
             console.error('Search error:', err);
         }
@@ -921,12 +958,44 @@ document.getElementById('editClientModal').addEventListener('click', function(e)
     if (e.target === this) closeEditClientModal();
 });
 
-// Add row animation keyframes
-const style = document.createElement('style');
-style.textContent = `@keyframes fadeInRow { to { opacity: 1; transform: translateY(0); } }`;
-document.head.appendChild(style);
+function toggleClientsExportDropdown(e) {
+    if (e) e.stopPropagation();
+    const menu = document.getElementById('clientsExportDropdownMenu');
+    const arrow = document.getElementById('clientsExportDropdownArrow');
+    if (!menu) return;
+    const isHidden = menu.classList.contains('hidden');
+    if (isHidden) {
+        menu.classList.remove('hidden');
+        requestAnimationFrame(() => {
+            menu.classList.remove('opacity-0', 'scale-95');
+            menu.classList.add('opacity-100', 'scale-100');
+        });
+        if (arrow) arrow.classList.add('rotate-180');
+    } else {
+        closeClientsExportDropdown();
+    }
+}
+
+function closeClientsExportDropdown() {
+    const menu = document.getElementById('clientsExportDropdownMenu');
+    const arrow = document.getElementById('clientsExportDropdownArrow');
+    if (menu && !menu.classList.contains('hidden')) {
+        menu.classList.add('opacity-0', 'scale-95');
+        menu.classList.remove('opacity-100', 'scale-100');
+        if (arrow) arrow.classList.remove('rotate-180');
+        setTimeout(() => menu.classList.add('hidden'), 150);
+    }
+}
+
+document.addEventListener('click', (e) => {
+    const container = document.getElementById('clientsExportDropdownContainer');
+    if (container && !container.contains(e.target)) {
+        closeClientsExportDropdown();
+    }
+});
 
 // Initialize
 document.addEventListener('DOMContentLoaded', loadClients);
+
 </script>
 </body></html>

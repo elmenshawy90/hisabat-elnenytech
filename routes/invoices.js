@@ -139,7 +139,8 @@ router.post('/', async (req, res) => {
       endClientName = endClient.name;
     }
 
-    const amount = isNaN(parseFloat(data.amount)) ? 0 : parseFloat(data.amount);
+    const rawAmount = isNaN(parseFloat(data.amount)) ? 0 : parseFloat(data.amount);
+    const amount = Math.round((rawAmount + Number.EPSILON) * 100) / 100;
     if (amount < 0) {
       return res.status(400).json({ error: 'المبلغ لا يمكن أن يكون سالباً' });
     }
@@ -240,11 +241,11 @@ router.patch('/:id', async (req, res) => {
     }
 
     if (data.amount !== undefined) {
-      const amount = parseFloat(data.amount);
-      if (isNaN(amount) || amount < 0) {
+      const rawAmount = parseFloat(data.amount);
+      if (isNaN(rawAmount) || rawAmount < 0) {
         return res.status(400).json({ error: 'المبلغ لا يمكن أن يكون سالباً' });
       }
-      updateData.amount = amount;
+      updateData.amount = Math.round((rawAmount + Number.EPSILON) * 100) / 100;
     }
 
     if (data.details !== undefined) {

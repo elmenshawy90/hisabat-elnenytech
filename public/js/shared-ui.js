@@ -420,3 +420,17 @@ function renderPaginationControls({
   });
 }
 
+// ─── Disable Arrow Key Increment/Decrement & Mouse Wheel on Number Inputs ─────
+document.addEventListener('keydown', function (e) {
+  if ((e.key === 'ArrowUp' || e.key === 'ArrowDown') && e.target && e.target.tagName === 'INPUT' && e.target.type === 'number') {
+    e.preventDefault();
+  }
+});
+
+document.addEventListener('wheel', function (e) {
+  if (document.activeElement && document.activeElement.tagName === 'INPUT' && document.activeElement.type === 'number') {
+    e.preventDefault();
+  }
+}, { passive: false });
+
+
