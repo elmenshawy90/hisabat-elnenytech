@@ -316,14 +316,15 @@
                 <div id="endClientDropdown" class="hidden absolute top-[72px] left-0 right-0 mt-1 bg-surface border border-outline-variant rounded-xl shadow-lg z-[110] max-h-[220px] overflow-y-auto custom-scrollbar">
                 </div>
             </div>
-            <div class="flex flex-col gap-xs">
+            <!-- Single Amount Field (Shown for payment, or as calculated total for purchase) -->
+            <div class="flex flex-col gap-xs" id="invoiceAmountContainer">
                 <label id="invoiceAmountLabel" class="font-label-md text-label-md text-on-surface-variant mb-xs">المبلغ المستحق <span class="text-error">*</span></label>
                 <div class="relative">
                     <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline">payments</span>
                     <input class="w-full h-12 pr-10 pl-md rounded-xl bg-surface-container-low border border-outline-variant form-input-focus transition-all text-right font-bold text-primary" id="invoiceAmount" placeholder="0.00" type="number" step="any" required />
-
                 </div>
             </div>
+
             <div class="flex flex-col gap-xs">
                 <label id="addressLabel" class="font-label-md text-label-md text-on-surface-variant mb-xs">عنوان التوصيل</label>
                 <div class="relative">
@@ -338,9 +339,33 @@
                     <textarea class="w-full h-24 pr-10 pl-md py-sm rounded-xl bg-surface-container-low border border-outline-variant form-input-focus transition-all text-right resize-none" id="invoiceDetails" placeholder="اكتب التفاصيل..."></textarea>
                 </div>
             </div>
+
+            <!-- Dynamic Line Items Container (Shown ONLY for purchase invoices, placed at end before buttons) -->
+            <div id="purchaseItemsContainer" class="hidden space-y-sm border border-outline-variant/80 rounded-xl p-md bg-surface-container-lowest">
+                <div class="flex items-center justify-between border-b border-outline-variant/40 pb-xs">
+                    <div>
+                        <h4 class="font-bold text-sm text-on-surface">بنود الفاتورة والمشتريات</h4>
+                        <p class="text-[11px] text-secondary">اختر الأصناف والكميات، ويتم الخصم التلقائي من المخزون عند الحفظ.</p>
+                    </div>
+                    <button type="button" onclick="addInvoiceLineRow()" class="px-sm py-1 bg-primary/10 hover:bg-primary text-primary hover:text-white rounded-lg text-xs font-bold transition-all flex items-center gap-1 cursor-pointer">
+                        <span class="material-symbols-outlined text-sm">add</span>
+                        <span>إضافة بند</span>
+                    </button>
+                </div>
+
+                <div id="invoiceLineRowsContainer" class="space-y-xs pt-xs">
+                    <!-- Dynamic Line Rows Rendered via JS -->
+                </div>
+
+                <!-- Items Total Footer -->
+                <div class="flex items-center justify-between border-t border-outline-variant/60 pt-sm font-bold text-sm">
+                    <span class="text-on-surface-variant">الإجمالي الكلي للبنود:</span>
+                    <span id="itemsGrandTotalText" class="text-primary text-base font-bold dir-ltr">0.00 ج.م</span>
+                </div>
+            </div>
             <div class="flex flex-row gap-sm pt-md border-t border-outline-variant mt-lg">
                 <button class="flex-1 bg-surface-container-low text-on-surface rounded-full py-md font-label-md text-label-md hover:bg-surface-container transition-colors" onclick="closeInvoiceModal()" type="button">إلغاء</button>
-                <button id="submitBtn" class="flex-1 bg-primary text-on-primary rounded-full py-md font-label-md text-label-md hover:opacity-90 transition-opacity" type="submit">حفظ الفاتورة</button>
+                <button id="submitBtn" class="flex-1 bg-primary text-on-primary rounded-full py-md font-label-md text-label-md hover:opacity-90 transition-opacity font-bold" type="submit">حفظ الفاتورة</button>
             </div>
         </form>
     </div>
@@ -375,6 +400,27 @@
                 <span class="text-secondary font-label-md">المبلغ المستحق</span>
                 <span class="font-body-md font-bold" id="tdAmount"></span>
             </div>
+            
+            <!-- Itemized Breakdown Table (Shown if invoice has items) -->
+            <div id="tdItemsBreakdownContainer" class="hidden border-b border-outline-variant pb-xs space-y-xs">
+                <span class="text-secondary font-label-md font-bold">بنود الفاتورة التفصيلية</span>
+                <div class="overflow-x-auto rounded-lg border border-outline-variant/60">
+                    <table class="w-full text-right text-xs border-collapse">
+                        <thead class="bg-surface-container-low text-secondary font-bold border-b border-outline-variant/60">
+                            <tr>
+                                <th class="p-2">الصنف</th>
+                                <th class="p-2">الكمية والوحدة</th>
+                                <th class="p-2">السعر</th>
+                                <th class="p-2">الإجمالي</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tdItemsBreakdownBody" class="divide-y divide-outline-variant/40">
+                            <!-- Items populated via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
             <div class="flex flex-col gap-xs border-b border-outline-variant pb-xs">
                 <span class="text-secondary font-label-md">عنوان التوصيل</span>
                 <span class="font-body-md text-on-surface" id="tdAddress"></span>
@@ -1267,6 +1313,54 @@ document.querySelectorAll('button').forEach(button => {
     button.addEventListener('mouseleave', function() { this.classList.remove('scale-95'); });
 });
 
+let cachedActiveItems = [];
+let isFetchingItems = false;
+
+async function fetchActiveItemsCatalog() {
+    if (cachedActiveItems.length === 0) {
+        isFetchingItems = true;
+        populateItemDropdowns();
+    }
+    try {
+        const res = await fetch('/api/items');
+        const data = await res.json();
+        if (res.ok) {
+            const itemsList = Array.isArray(data) ? data : (Array.isArray(data.data) ? data.data : []);
+            cachedActiveItems = itemsList.filter(item => item.isActive !== false);
+        } else {
+            console.error('فشل في جلب الأصناف:', data.error);
+        }
+    } catch (err) {
+        console.error('فشل في جلب كتالوج الأصناف:', err);
+    } finally {
+        isFetchingItems = false;
+        populateItemDropdowns();
+    }
+}
+
+function populateItemDropdowns() {
+    const itemSelects = document.querySelectorAll('.line-item-select');
+    itemSelects.forEach(select => {
+        const currentVal = select.value;
+        if (isFetchingItems && cachedActiveItems.length === 0) {
+            select.innerHTML = '<option value="">⏳ جاري تحميل الأصناف...</option>';
+            select.disabled = true;
+        } else if (!isFetchingItems && cachedActiveItems.length === 0) {
+            select.innerHTML = '<option value="">⚠️ لا توجد أصناف متاحة في الكتالوج</option>';
+            select.disabled = true;
+        } else {
+            const options = ['<option value="">-- اختر الصنف --</option>'];
+            cachedActiveItems.forEach(item => {
+                const idStr = String(item.id || item._id);
+                const isSelected = idStr === String(currentVal) ? 'selected' : '';
+                options.push(`<option value="${idStr}" ${isSelected}>${item.name}</option>`);
+            });
+            select.innerHTML = options.join('');
+            select.disabled = false;
+        }
+    });
+}
+
 // Modal Functions
 function openTransactionDetails(id) {
     const inv = clientInvoices.find(i => String(i._id || i.id) === String(id));
@@ -1292,6 +1386,23 @@ function openTransactionDetails(id) {
     
     document.getElementById('tdAddress').textContent = inv.address || '-';
     document.getElementById('tdNotes').textContent = inv.details || '-';
+
+    // Render items breakdown if available
+    const itemsContainer = document.getElementById('tdItemsBreakdownContainer');
+    const itemsBody = document.getElementById('tdItemsBreakdownBody');
+    if (inv.items && inv.items.length > 0) {
+        itemsBody.innerHTML = inv.items.map(it => `
+            <tr>
+                <td class="p-2 font-bold text-on-surface">${it.item ? it.item.name : 'صنف'}</td>
+                <td class="p-2 text-secondary font-mono">${it.quantity} ${it.itemUnit ? it.itemUnit.name : ''}</td>
+                <td class="p-2 text-secondary dir-ltr text-right">${formatCurrency(it.unitPrice)}</td>
+                <td class="p-2 font-bold text-primary dir-ltr text-right">${formatCurrency(it.lineTotal)}</td>
+            </tr>
+        `).join('');
+        itemsContainer.classList.remove('hidden');
+    } else {
+        itemsContainer.classList.add('hidden');
+    }
     
     const modal = document.getElementById('transactionDetailsModal');
     modal.classList.remove('hidden');
@@ -1318,29 +1429,40 @@ function openInvoiceModal(type = 'purchase') {
     
     // Update labels
     const title = document.getElementById('modalTitle');
-    const amountLabel = document.getElementById('invoiceAmountLabel');
+    const amountContainer = document.getElementById('invoiceAmountContainer');
+    const amountInput = document.getElementById('invoiceAmount');
+    const purchaseItemsContainer = document.getElementById('purchaseItemsContainer');
     const addressLabel = document.getElementById('addressLabel');
     const detailsLabel = document.getElementById('detailsLabel');
     const submitBtn = document.getElementById('submitBtn');
-    
-    if (type === 'payment') {
-        title.textContent = 'تسديد دفعة';
-        if (amountLabel) amountLabel.innerHTML = 'المبلغ المدفوع <span class="text-error">*</span>';
-        addressLabel.textContent = 'المستلم / ملاحظات';
-        detailsLabel.textContent = 'تفاصيل السداد';
-        submitBtn.textContent = 'حفظ السداد';
-    } else {
-        title.textContent = 'إضافة فاتورة جديدة';
-        if (amountLabel) amountLabel.innerHTML = 'المبلغ المستحق <span class="text-error">*</span>';
-        addressLabel.textContent = 'عنوان التوصيل';
-        detailsLabel.textContent = 'التفاصيل / المشتريات';
-        submitBtn.textContent = 'حفظ الفاتورة';
-    }
     
     document.getElementById('invoiceForm').reset();
     document.getElementById('endClientId').value = '';
     document.getElementById('endClientName').value = '';
     document.getElementById('endClientDropdown').classList.add('hidden');
+
+    if (type === 'payment') {
+        title.textContent = 'تسديد دفعة';
+        amountContainer.classList.remove('hidden');
+        amountInput.readOnly = false;
+        amountInput.required = true;
+        purchaseItemsContainer.classList.add('hidden');
+        addressLabel.textContent = 'المستلم / ملاحظات';
+        detailsLabel.textContent = 'تفاصيل السداد';
+        submitBtn.textContent = 'حفظ السداد';
+    } else {
+        title.textContent = 'إضافة فاتورة جديدة';
+        amountContainer.classList.add('hidden');
+        amountInput.readOnly = true;
+        amountInput.required = false;
+        purchaseItemsContainer.classList.remove('hidden');
+        addressLabel.textContent = 'عنوان التوصيل';
+        detailsLabel.textContent = 'التفاصيل / المشتريات';
+        submitBtn.textContent = 'حفظ الفاتورة';
+
+        renderInvoiceLineRows();
+        fetchActiveItemsCatalog();
+    }
 
     modal.classList.remove('hidden');
     modal.classList.add('flex');
@@ -1348,13 +1470,188 @@ function openInvoiceModal(type = 'purchase') {
     
     loadEndClients();
 
-    // Initialize Flatpickr calendar (same style as new-invoice page)
+    // Initialize Flatpickr calendar
     flatpickr("#invoiceDate", {
         locale: "ar",
         defaultDate: "today",
         dateFormat: "Y-m-d",
         disableMobile: true
     });
+}
+
+function renderInvoiceLineRows() {
+    const container = document.getElementById('invoiceLineRowsContainer');
+    container.innerHTML = '';
+    addInvoiceLineRow();
+}
+
+function addInvoiceLineRow() {
+    const container = document.getElementById('invoiceLineRowsContainer');
+    const rowId = `line_row_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
+    
+    const row = document.createElement('div');
+    row.className = 'invoice-line-row space-y-xs bg-surface p-xs rounded-xl border border-outline-variant/60';
+    row.id = rowId;
+
+    row.innerHTML = `
+        <div class="flex items-center gap-xs flex-wrap sm:flex-nowrap">
+            <!-- Item Select -->
+            <div class="flex-1 min-w-[140px]">
+                <label class="block text-[11px] font-bold text-secondary mb-1">الصنف <span class="text-error">*</span></label>
+                <select class="line-item-select w-full h-9 px-xs rounded-md bg-surface-container-low border border-outline-variant text-xs font-bold text-right outline-none cursor-pointer" onchange="onLineItemChanged('${rowId}')">
+                    <option value="">-- اختر الصنف --</option>
+                </select>
+            </div>
+
+            <!-- Unit Select -->
+            <div class="w-32">
+                <label class="block text-[11px] font-bold text-secondary mb-1">الوحدة <span class="text-error">*</span></label>
+                <select class="line-unit-select w-full h-9 px-xs rounded-md bg-surface-container-low border border-outline-variant text-xs font-bold text-right outline-none cursor-pointer" disabled onchange="onLineInputsCalculated('${rowId}')">
+                    <option value="">-- اختر الوحدة --</option>
+                </select>
+            </div>
+
+            <!-- Quantity Input -->
+            <div class="w-24">
+                <label class="block text-[11px] font-bold text-secondary mb-1">الكمية <span class="text-error">*</span></label>
+                <input type="number" step="any" min="0.001" class="line-qty-input w-full h-9 px-xs rounded-md bg-surface-container-low border border-outline-variant text-xs font-bold text-center dir-ltr focus:border-primary outline-none" placeholder="0" oninput="onLineInputsCalculated('${rowId}')" />
+            </div>
+
+            <!-- Unit Price Input -->
+            <div class="w-28">
+                <label class="block text-[11px] font-bold text-secondary mb-1">السعر (ج.م) <span class="text-error">*</span></label>
+                <input type="number" step="any" min="0" class="line-price-input w-full h-9 px-xs rounded-md bg-surface-container-low border border-outline-variant text-xs font-bold text-center dir-ltr focus:border-primary outline-none" placeholder="0.00" oninput="onLineInputsCalculated('${rowId}')" />
+            </div>
+
+            <!-- Line Total Display -->
+            <div class="w-28 text-left">
+                <label class="block text-[11px] font-bold text-secondary mb-1">الإجمالي</label>
+                <span class="line-total-text text-xs font-bold text-primary dir-ltr block pt-1">0.00 ج.م</span>
+            </div>
+
+            <!-- Delete Row Button -->
+            <div class="w-8 shrink-0 pt-4">
+                <button type="button" onclick="removeInvoiceLineRow('${rowId}')" class="w-8 h-8 flex items-center justify-center text-error hover:bg-error/10 rounded-md transition-colors cursor-pointer" title="حذف البند">
+                    <span class="material-symbols-outlined text-base">delete</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Live Stock Warning Banner -->
+        <div class="line-stock-info hidden text-[11px] font-medium px-sm py-1 rounded-md border"></div>
+    `;
+
+    container.appendChild(row);
+    populateItemDropdowns();
+    updateAllLineTotalsAndGrandTotal();
+}
+
+function removeInvoiceLineRow(rowId) {
+    const container = document.getElementById('invoiceLineRowsContainer');
+    const rows = container.querySelectorAll('.invoice-line-row');
+    if (rows.length <= 1) {
+        showToast('يجب إدخال بند واحد على الأقل بفاتورة الشراء', 'warning');
+        return;
+    }
+    const row = document.getElementById(rowId);
+    if (row) row.remove();
+    updateAllLineTotalsAndGrandTotal();
+}
+
+function onLineItemChanged(rowId) {
+    const row = document.getElementById(rowId);
+    if (!row) return;
+
+    const itemSelect = row.querySelector('.line-item-select');
+    const unitSelect = row.querySelector('.line-unit-select');
+    const itemId = itemSelect ? parseInt(itemSelect.value) : null;
+
+    if (!itemId) {
+        unitSelect.innerHTML = '<option value="">-- اختر الوحدة --</option>';
+        unitSelect.disabled = true;
+        onLineInputsCalculated(rowId);
+        return;
+    }
+
+    const selectedItem = cachedActiveItems.find(i => i.id === itemId);
+    if (selectedItem && Array.isArray(selectedItem.units)) {
+        unitSelect.innerHTML = selectedItem.units.map(u => `<option value="${u.id}" data-rate="${u.conversionRate}">${u.name}${u.isBaseUnit ? ' (أساسية)' : ''}</option>`).join('');
+        unitSelect.disabled = false;
+    } else {
+        unitSelect.innerHTML = '<option value="">-- اختر الوحدة --</option>';
+        unitSelect.disabled = true;
+    }
+
+    onLineInputsCalculated(rowId);
+}
+
+function onLineInputsCalculated(rowId) {
+    const row = document.getElementById(rowId);
+    if (!row) return;
+
+    const itemSelect = row.querySelector('.line-item-select');
+    const unitSelect = row.querySelector('.line-unit-select');
+    const qtyInput = row.querySelector('.line-qty-input');
+    const priceInput = row.querySelector('.line-price-input');
+    const lineTotalEl = row.querySelector('.line-total-text');
+    const stockInfoEl = row.querySelector('.line-stock-info');
+
+    const itemId = itemSelect ? parseInt(itemSelect.value) : null;
+    const qty = qtyInput ? parseFloat(qtyInput.value) || 0 : 0;
+    const price = priceInput ? parseFloat(priceInput.value) || 0 : 0;
+    const lineTotal = Math.round((qty * price + Number.EPSILON) * 100) / 100;
+
+    if (lineTotalEl) {
+        lineTotalEl.textContent = formatCurrency(lineTotal);
+    }
+
+    if (itemId) {
+        const itemObj = cachedActiveItems.find(i => i.id === itemId);
+        const selectedOption = unitSelect ? unitSelect.options[unitSelect.selectedIndex] : null;
+        const conversionRate = selectedOption && selectedOption.dataset.rate ? parseFloat(selectedOption.dataset.rate) : 1.0;
+        
+        const availableStock = itemObj ? (Number(itemObj.currentStock) || 0) : 0;
+        const baseUnitName = itemObj && itemObj.baseUnit ? itemObj.baseUnit.name : 'الوحدة الأساسية';
+        const requestedBase = qty * conversionRate;
+
+        if (stockInfoEl) {
+            stockInfoEl.classList.remove('hidden');
+            if (qty > 0 && requestedBase > availableStock) {
+                stockInfoEl.className = 'line-stock-info text-[11px] font-medium px-sm py-1 rounded-md border bg-amber-500/10 border-amber-500/30 text-amber-800';
+                stockInfoEl.innerHTML = `⚠️ <strong>الكمية المطلوبة (${requestedBase} ${baseUnitName}) أكبر من المتاح بالمخزون (${availableStock} ${baseUnitName})</strong> - سيتم القبول وتدوين العجز في المخزون`;
+            } else {
+                stockInfoEl.className = 'line-stock-info text-[11px] font-medium px-sm py-1 rounded-md border bg-primary/5 border-primary/10 text-primary';
+                stockInfoEl.innerHTML = `المتاح حالياً في المخزون: <strong>${availableStock} ${baseUnitName}</strong>`;
+            }
+        }
+    } else {
+        if (stockInfoEl) stockInfoEl.classList.add('hidden');
+    }
+
+    updateAllLineTotalsAndGrandTotal();
+}
+
+function updateAllLineTotalsAndGrandTotal() {
+    const rows = Array.from(document.querySelectorAll('#invoiceLineRowsContainer .invoice-line-row'));
+    let grandTotal = 0;
+
+    rows.forEach(row => {
+        const qtyInput = row.querySelector('.line-qty-input');
+        const priceInput = row.querySelector('.line-price-input');
+        const qty = qtyInput ? parseFloat(qtyInput.value) || 0 : 0;
+        const price = priceInput ? parseFloat(priceInput.value) || 0 : 0;
+        grandTotal += qty * price;
+    });
+
+    grandTotal = Math.round((grandTotal + Number.EPSILON) * 100) / 100;
+
+    const grandTotalEl = document.getElementById('itemsGrandTotalText');
+    const invoiceAmountInput = document.getElementById('invoiceAmount');
+
+    if (grandTotalEl) grandTotalEl.textContent = formatCurrency(grandTotal);
+    if (invoiceAmountInput && currentTransactionType === 'purchase') {
+        invoiceAmountInput.value = grandTotal;
+    }
 }
 
 function closeInvoiceModal() {
@@ -1449,9 +1746,40 @@ document.getElementById('invoiceForm').addEventListener('submit', async function
     const endName = endClientNameInput.value.trim();
     const endClientId = endClientIdInput.value;
     
-    if (validateFormFields('invoiceForm')) {
-        showToast('الرجاء إكمال الحقول الإجبارية', 'warning');
-        return;
+    let itemsPayload = undefined;
+
+    if (currentTransactionType === 'purchase') {
+        const rows = Array.from(document.querySelectorAll('#invoiceLineRowsContainer .invoice-line-row'));
+        if (rows.length === 0) {
+            showToast('يجب إضافة بند واحد على الأقل بفاتورة الشراء', 'warning');
+            return;
+        }
+
+        itemsPayload = [];
+        for (let i = 0; i < rows.length; i++) {
+            const row = rows[i];
+            const itemSelect = row.querySelector('.line-item-select');
+            const unitSelect = row.querySelector('.line-unit-select');
+            const qtyInput = row.querySelector('.line-qty-input');
+            const priceInput = row.querySelector('.line-price-input');
+
+            const itemId = itemSelect ? parseInt(itemSelect.value) : 0;
+            const itemUnitId = unitSelect ? parseInt(unitSelect.value) : 0;
+            const quantity = qtyInput ? parseFloat(qtyInput.value) || 0 : 0;
+            const unitPrice = priceInput ? parseFloat(priceInput.value) || 0 : 0;
+
+            if (!itemId || !itemUnitId || quantity <= 0) {
+                showToast(`الرجاء استكمال بيانات البند رقم ${i + 1} (الصنف، الوحدة، والكمية)`, 'warning');
+                return;
+            }
+
+            itemsPayload.push({ itemId, itemUnitId, quantity, unitPrice });
+        }
+    } else {
+        if (validateFormFields('invoiceForm')) {
+            showToast('الرجاء إكمال الحقول الإجبارية', 'warning');
+            return;
+        }
     }
     
     try {
@@ -1468,17 +1796,25 @@ document.getElementById('invoiceForm').addEventListener('submit', async function
                 amount: parseFloat(amount) || 0,
                 details: details || (currentTransactionType === 'payment' ? 'سداد دفعة' : '-'),
                 address: address || '-',
-                type: currentTransactionType
+                type: currentTransactionType,
+                items: itemsPayload
             })
         });
 
+        const jsonRes = await res.json();
+
         if (res.ok) {
-            showToast('تم إضافة المعاملة بنجاح ✓', 'success');
             closeInvoiceModal();
             loadClientDetails();
+
+            if (Array.isArray(jsonRes.stockWarnings) && jsonRes.stockWarnings.length > 0) {
+                const warnNames = jsonRes.stockWarnings.map(w => w.itemName).join('، ');
+                showToast(`تم حفظ الفاتورة بنجاح ✓ لكن تم تجاوز المخزون المتاح في: [${warnNames}]`, 'warning');
+            } else {
+                showToast('تم إضافة المعاملة بنجاح ✓', 'success');
+            }
         } else {
-            const err = await res.json();
-            showToast(err.error || 'فشل في حفظ المعاملة', 'error');
+            showToast(jsonRes.error || 'فشل في حفظ المعاملة', 'error');
         }
     } catch (err) {
         showToast('حدث خطأ في الاتصال بالخادم', 'error');
@@ -1833,6 +2169,7 @@ document.getElementById('convertToClientModal')?.addEventListener('click', funct
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
     loadClientDetails();
+    fetchActiveItemsCatalog();
 });
 </script>
 </body></html>

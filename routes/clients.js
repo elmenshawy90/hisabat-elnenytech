@@ -104,7 +104,13 @@ router.get('/:id', async (req, res) => {
         include: {
           invoices: {
             include: {
-              endClient: true
+              endClient: true,
+              items: {
+                include: {
+                  item: true,
+                  itemUnit: true
+                }
+              }
             },
             orderBy: [
               { date: 'desc' },

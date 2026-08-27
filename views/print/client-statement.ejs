@@ -341,7 +341,16 @@
                                     <span class="badge badge-payment">دفع</span>
                                 <% } %>
                             </td>
-                            <td><%= inv.details || '-' %></td>
+                            <td>
+                                <%= inv.details || '-' %>
+                                <% if (inv.items && inv.items.length > 0) { %>
+                                    <div style="font-size: 11px; color: #475569; margin-top: 4px; border-top: 1px dashed #cbd5e1; padding-top: 4px; line-height: 1.4;">
+                                        <% inv.items.forEach(function(it) { %>
+                                            <div>• <strong><%= it.item ? it.item.name : 'صنف' %></strong> (<%= it.quantity %> <%= it.itemUnit ? it.itemUnit.name : '' %> × <%= formatCurrency(it.unitPrice) %> = <%= formatCurrency(it.lineTotal) %>)</div>
+                                        <% }); %>
+                                    </div>
+                                <% } %>
+                            </td>
                             <td style="color: #475569;"><%= inv.endClientName || '-' %></td>
                             <td class="text-left font-bold" style="color: <%= inv.type === 'payment' ? '#16a34a' : '#0f172a' %>;">
                                 <%= inv.type === 'payment' ? '-' : '+' %><%= formatCurrency(inv.amount) %>

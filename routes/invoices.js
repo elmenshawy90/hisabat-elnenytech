@@ -4,6 +4,7 @@ const prisma = require('../lib/prisma');
 const { requireAuth } = require('../middleware/auth');
 const { normalize } = require('../lib/normalize');
 const { getClientBalance } = require('../lib/balance');
+const { checkStockAvailability, deductStock } = require('../lib/stock');
 
 // Apply auth middleware to all routes
 router.use(requireAuth);
@@ -25,6 +26,15 @@ router.get('/', async (req, res) => {
     const total = await prisma.invoice.count({ where });
     const invoices = await prisma.invoice.findMany({
       where,
+      include: {
+        endClient: true,
+        items: {
+          include: {
+            item: true,
+            itemUnit: true
+          }
+        }
+      },
       orderBy: [
         { date: 'desc' },
         { createdAt: 'desc' }
@@ -139,15 +149,71 @@ router.post('/', async (req, res) => {
       endClientName = endClient.name;
     }
 
-    const rawAmount = isNaN(parseFloat(data.amount)) ? 0 : parseFloat(data.amount);
-    const amount = Math.round((rawAmount + Number.EPSILON) * 100) / 100;
-    if (amount < 0) {
-      return res.status(400).json({ error: 'المبلغ لا يمكن أن يكون سالباً' });
+    // Process Line Items for purchase invoices
+    const hasItems = data.type === 'purchase' && Array.isArray(data.items) && data.items.length > 0;
+    let finalAmount = 0;
+    let processedItems = [];
+    let stockWarnings = [];
+
+    if (hasItems) {
+      for (let i = 0; i < data.items.length; i++) {
+        const itemInput = data.items[i];
+        const itemId = Number(itemInput.itemId);
+        const itemUnitId = Number(itemInput.itemUnitId);
+        const quantity = Number(itemInput.quantity);
+        const unitPrice = Number(itemInput.unitPrice);
+
+        if (isNaN(itemId) || isNaN(itemUnitId) || isNaN(quantity) || quantity <= 0 || isNaN(unitPrice) || unitPrice < 0) {
+          return res.status(400).json({ error: `بيانات البند ${i + 1} غير صالحة` });
+        }
+
+        const unit = await prisma.itemUnit.findUnique({
+          where: { id: itemUnitId },
+          include: { item: true }
+        });
+
+        if (!unit || unit.itemId !== itemId) {
+          return res.status(400).json({ error: `وحدة القياس للصنف في البند ${i + 1} غير موجودة` });
+        }
+
+        const quantityBase = quantity * Number(unit.conversionRate);
+        const lineTotal = Math.round((quantity * unitPrice + Number.EPSILON) * 100) / 100;
+        finalAmount += lineTotal;
+
+        // Stock availability warning check
+        const stockAvail = await checkStockAvailability(prisma, itemId, quantityBase);
+        if (!stockAvail.sufficient) {
+          stockWarnings.push({
+            itemId,
+            itemName: unit.item.name,
+            requestedBase: quantityBase,
+            availableBase: stockAvail.available,
+            unitName: unit.name
+          });
+        }
+
+        processedItems.push({
+          itemId,
+          itemUnitId,
+          quantity,
+          quantityBase,
+          unitPrice,
+          lineTotal
+        });
+      }
+
+      finalAmount = Math.round((finalAmount + Number.EPSILON) * 100) / 100;
+    } else {
+      const rawAmount = isNaN(parseFloat(data.amount)) ? 0 : parseFloat(data.amount);
+      finalAmount = Math.round((rawAmount + Number.EPSILON) * 100) / 100;
+      if (finalAmount < 0) {
+        return res.status(400).json({ error: 'المبلغ لا يمكن أن يكون سالباً' });
+      }
     }
 
     const newNotes = data.details || (data.type === 'purchase' ? 'عملية شراء' : 'دفعة');
 
-    // Use transaction to increment counter, create invoice with invoiceCode, and update client notes
+    // Use transaction to increment counter, create invoice with invoiceCode, items, stock logs and update client notes
     const { invoice, updatedClient } = await prisma.$transaction(async (tx) => {
       const counter = await tx.counter.upsert({
         where: { id: 'invoice' },
@@ -165,13 +231,39 @@ router.post('/', async (req, res) => {
           endClientId: endClientId || null,
           endClientName: endClientName || '',
           type: data.type,
-          amount,
+          amount: finalAmount,
           details: data.details || '-',
           address: data.address || '-',
           status: data.status || 'pending',
-          date: data.date ? new Date(data.date) : new Date()
+          date: data.date ? new Date(data.date) : new Date(),
+          items: hasItems ? {
+            create: processedItems.map(pi => ({
+              itemId: pi.itemId,
+              itemUnitId: pi.itemUnitId,
+              quantity: pi.quantity,
+              quantityBase: pi.quantityBase,
+              unitPrice: pi.unitPrice,
+              lineTotal: pi.lineTotal
+            }))
+          } : undefined
+        },
+        include: {
+          endClient: true,
+          items: {
+            include: {
+              item: true,
+              itemUnit: true
+            }
+          }
         }
       });
+
+      // Deduct stock for each item if present
+      if (hasItems) {
+        for (const pi of processedItems) {
+          await deductStock(tx, pi.itemId, pi.quantityBase, createdInvoice.id, `فاتورة شراء ${invoiceCode}`);
+        }
+      }
 
       const updated = await tx.client.update({
         where: { id: clientId },
@@ -193,7 +285,8 @@ router.post('/', async (req, res) => {
       client: invoice.clientId,
       endClientId: invoice.endClientId,
       endClientName: invoice.endClientName,
-      currentBalance
+      currentBalance,
+      stockWarnings: stockWarnings.length > 0 ? stockWarnings : undefined
     });
   } catch (err) {
     console.error(err);

@@ -53,23 +53,24 @@ model EndClient {
 }
 
 model Invoice {
-  id                Int        @id @default(autoincrement())
-  invoiceCode       String?    @unique
+  id                Int           @id @default(autoincrement())
+  invoiceCode       String?       @unique
   clientId          Int
-  client            Client     @relation(fields: [clientId], references: [id])
+  client            Client        @relation(fields: [clientId], references: [id])
   clientName        String
-  clientPhone       String     @default("")
+  clientPhone       String        @default("")
   endClientId       Int?
-  endClient         EndClient? @relation(fields: [endClientId], references: [id])
-  endClientName     String?    @default("")
-  type              String     // 'purchase' or 'payment'
+  endClient         EndClient?    @relation(fields: [endClientId], references: [id])
+  endClientName     String?       @default("")
+  type              String        // 'purchase' or 'payment'
   amount            Float
   details           String
   address           String
-  date              DateTime   @default(now())
-  status            String     @default("pending") // 'pending', 'paid', 'overdue'
-  createdAt         DateTime   @default(now())
-  updatedAt         DateTime   @updatedAt
+  date              DateTime      @default(now())
+  status            String        @default("pending") // 'pending', 'paid', 'overdue'
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  items             InvoiceItem[]
 
   @@index([clientId])
   @@index([endClientId])
@@ -89,26 +90,28 @@ model Session {
 }
 
 model Item {
-  id        Int          @id @default(autoincrement())
-  name      String       // مثال: "أسمنت مسيرة"
-  notes     String       @default("")
-  isActive  Boolean      @default(true)
-  createdAt DateTime     @default(now())
-  updatedAt DateTime     @updatedAt
-  units     ItemUnit[]
-  stockLogs StockLog[]
+  id           Int           @id @default(autoincrement())
+  name         String        // مثال: "أسمنت مسيرة"
+  notes        String        @default("")
+  isActive     Boolean       @default(true)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  units        ItemUnit[]
+  stockLogs    StockLog[]
+  invoiceItems InvoiceItem[]
 
   @@index([name])
 }
 
 model ItemUnit {
-  id             Int      @id @default(autoincrement())
+  id             Int           @id @default(autoincrement())
   itemId         Int
-  item           Item     @relation(fields: [itemId], references: [id], onDelete: Cascade)
-  name           String   // مثال: "طن"، "شكارة"، "كيلو"
-  isBaseUnit     Boolean  @default(false) // الوحدة الأساسية اللي المخزون متخزن بيها فعليًا
-  conversionRate Float    // كام وحدة أساسية = 1 من الوحدة دي
-  createdAt      DateTime @default(now())
+  item           Item          @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  name           String        // مثال: "طن"، "شكارة"، "كيلو"
+  isBaseUnit     Boolean       @default(false) // الوحدة الأساسية اللي المخزون متخزن بيها فعليًا
+  conversionRate Float         // كام وحدة أساسية = 1 من الوحدة دي
+  createdAt      DateTime      @default(now())
+  invoiceItems   InvoiceItem[]
 
   @@index([itemId])
   @@unique([itemId, name])
@@ -125,5 +128,23 @@ model StockLog {
   notes         String   @default("")
   createdAt     DateTime @default(now())
 
+  @@index([itemId])
+}
+
+model InvoiceItem {
+  id            Int      @id @default(autoincrement())
+  invoiceId     Int
+  invoice       Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  itemId        Int
+  item          Item     @relation(fields: [itemId], references: [id])
+  itemUnitId    Int
+  itemUnit      ItemUnit @relation(fields: [itemUnitId], references: [id])
+  quantity      Float    // الكمية بالوحدة المختارة
+  quantityBase  Float    // الكمية محوّلة للوحدة الأساسية
+  unitPrice     Float    // سعر الوحدة المختارة وقت البيع
+  lineTotal     Float    // quantity * unitPrice
+  createdAt     DateTime @default(now())
+
+  @@index([invoiceId])
   @@index([itemId])
 }

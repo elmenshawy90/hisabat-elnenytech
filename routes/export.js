@@ -371,7 +371,18 @@ router.get('/client/:id/excel', async (req, res) => {
 
     const client = await prisma.client.findUnique({
       where: { id: clientId },
-      include: { invoices: true }
+      include: {
+        invoices: {
+          include: {
+            items: {
+              include: {
+                item: true,
+                itemUnit: true
+              }
+            }
+          }
+        }
+      }
     });
 
     if (!client) {
@@ -489,7 +500,18 @@ router.get('/client/:id/pdf', async (req, res) => {
 
     const client = await prisma.client.findUnique({
       where: { id: clientId },
-      include: { invoices: true }
+      include: {
+        invoices: {
+          include: {
+            items: {
+              include: {
+                item: true,
+                itemUnit: true
+              }
+            }
+          }
+        }
+      }
     });
 
     if (!client) {
@@ -712,7 +734,18 @@ router.get('/client/:id/image', async (req, res) => {
 
     const client = await prisma.client.findUnique({
       where: { id: clientId },
-      include: { invoices: true }
+      include: {
+        invoices: {
+          include: {
+            items: {
+              include: {
+                item: true,
+                itemUnit: true
+              }
+            }
+          }
+        }
+      }
     });
 
     if (!client) {
