@@ -3,9 +3,44 @@ const router = express.Router();
 const prisma = require('../lib/prisma');
 const { requireAuth } = require('../middleware/auth');
 const { normalize } = require('../lib/normalize');
+const { getClientBalance } = require('../lib/balance');
 
 // Apply auth middleware to all routes
 router.use(requireAuth);
+
+// GET /api/end-clients/check-name-match?name=... - Search Client table for matching independent client name
+router.get('/check-name-match', async (req, res) => {
+  try {
+    const { name } = req.query;
+    if (!name || !String(name).trim()) {
+      return res.json({ matches: [] });
+    }
+
+    const normInputName = normalize(String(name).trim());
+    const allClients = await prisma.client.findMany({
+      select: { id: true, name: true, phone: true, address: true }
+    });
+
+    const matchedClients = allClients.filter(c => normalize(c.name) === normInputName);
+
+    const results = await Promise.all(
+      matchedClients.map(async (c) => {
+        const balance = await getClientBalance(prisma, c.id);
+        return {
+          id: c.id,
+          name: c.name,
+          phone: c.phone,
+          balance
+        };
+      })
+    );
+
+    res.json({ matches: results });
+  } catch (err) {
+    console.error('Error checking name match:', err);
+    res.status(500).json({ error: 'فشل في البحث عن تطابق أسماء العملاء' });
+  }
+});
 
 // GET /api/end-clients - Search / list end clients (up to 20 for autocomplete)
 router.get('/', async (req, res) => {
@@ -79,74 +114,57 @@ router.post('/', async (req, res) => {
   }
 });
 
-// POST /api/end-clients/:id/convert-to-client - Convert end client to an independent Client with historical copy
+// POST /api/end-clients/:id/convert-to-client - Convert end client to an independent Client (Full Transfer + optional merge)
 router.post('/:id/convert-to-client', async (req, res) => {
   try {
     const rawId = parseInt(req.params.id);
-    const { name, contractorName } = req.body;
+    const { mergeWithClientId, newClientName, name, contractorName } = req.body;
 
     let endClient = null;
     if (!isNaN(rawId) && rawId > 0) {
       endClient = await prisma.endClient.findUnique({ where: { id: rawId } });
     }
 
-    // If not found by ID or ID is 0, find by name
     const clientName = (endClient?.name || name || '').trim();
-    if (!clientName) {
-      return res.status(400).json({ error: 'اسم العميل النهائي مطلوب' });
-    }
-
-    const normName = normalize(clientName);
-
-    if (!endClient) {
+    if (!endClient && clientName) {
+      const normName = normalize(clientName);
       const allEndClients = await prisma.endClient.findMany();
       endClient = allEndClients.find(ec => normalize(ec.name) === normName);
     }
 
-    // If still doesn't exist in endClient table, create one
     if (!endClient) {
-      endClient = await prisma.endClient.create({
-        data: {
-          name: clientName,
-          phone: '-',
-          address: '',
-          notes: ''
-        }
-      });
+      return res.status(404).json({ error: 'العميل النهائي غير موجود' });
     }
-
-    // Check if already converted
-    if (endClient.convertedToClientId) {
-      const existingConverted = await prisma.client.findUnique({
-        where: { id: endClient.convertedToClientId }
-      });
-      if (existingConverted) {
-        return res.status(200).json({
-          ...existingConverted,
-          _id: existingConverted.id,
-          alreadyConverted: true,
-          message: 'العميل ده اتحول بالفعل لعميل مستقل'
-        });
-      }
-    }
-
-    let originNote = 'تم التحويل من عميل نهائي';
-    if (contractorName && String(contractorName).trim()) {
-      originNote = `تم التحويل من عميل نهائي كان يطلب سابقًا من خلال: ${String(contractorName).trim()}`;
-    }
-
-    // Check if client with this name already exists in main Client table
-    const existingClients = await prisma.client.findMany({ select: { id: true, name: true, phone: true, address: true } });
-    const existingClient = existingClients.find(c => normalize(c.name) === normName);
 
     const result = await prisma.$transaction(async (tx) => {
-      let targetClient;
-      if (existingClient) {
-        targetClient = await tx.client.findUnique({ where: { id: existingClient.id } });
+      let targetClient = null;
+
+      if (mergeWithClientId) {
+        const targetId = parseInt(mergeWithClientId);
+        targetClient = await tx.client.findUnique({ where: { id: targetId } });
+        if (!targetClient) {
+          throw new Error('العميل المستقل المراد الدمج معه غير موجود');
+        }
       } else {
+        const finalName = (newClientName && String(newClientName).trim()) ? String(newClientName).trim() : endClient.name.trim();
+
+        // Server-side check: Ensure finalName does NOT match any existing independent Client using normalize()
+        const normFinalName = normalize(finalName);
+        const existingClients = await tx.client.findMany({ select: { id: true, name: true } });
+        const duplicate = existingClients.find(c => normalize(c.name) === normFinalName);
+
+        if (duplicate) {
+          throw new Error('الاسم لازم يكون مختلفًا عن عميل موجود بالفعل');
+        }
+
+        let originNote = 'تم التحويل من عميل نهائي';
+        if (contractorName && String(contractorName).trim()) {
+          originNote = `تم التحويل من عميل نهائي كان يطلب سابقًا من خلال: ${String(contractorName).trim()}`;
+        }
+
         targetClient = await tx.client.create({
           data: {
-            name: endClient.name.trim(),
+            name: finalName,
             phone: endClient.phone || '-',
             address: endClient.address || '',
             notes: originNote,
@@ -155,73 +173,59 @@ router.post('/:id/convert-to-client', async (req, res) => {
         });
       }
 
-      // Fetch all original invoices for this end client that do not already belong to target client
-      const originalInvoices = await tx.invoice.findMany({
+      // Fetch all invoices belonging to this end client
+      const invoicesToTransfer = await tx.invoice.findMany({
         where: {
           OR: [
             { endClientId: endClient.id },
             { endClientName: endClient.name }
-          ],
-          isHistoricalCopy: false,
-          NOT: {
-            clientId: targetClient.id
-          }
+          ]
         }
       });
 
-      let copiedCount = 0;
-      for (const orig of originalInvoices) {
-        // Prevent duplicate copy if already copied
-        const existingCopy = await tx.invoice.findFirst({
-          where: {
-            clientId: targetClient.id,
-            originalInvoiceId: orig.id,
-            isHistoricalCopy: true
-          }
-        });
+      const transferredCount = invoicesToTransfer.length;
+      const totalAmount = invoicesToTransfer.reduce((sum, inv) => sum + (Number(inv.amount) || 0), 0);
 
-        if (!existingCopy) {
-          await tx.invoice.create({
-            data: {
-              clientId: targetClient.id,
-              clientName: targetClient.name,
-              clientPhone: targetClient.phone || '-',
-              endClientId: null,
-              endClientName: '',
-              type: orig.type,
-              amount: orig.amount,
-              details: orig.details || '-',
-              address: orig.address || '-',
-              status: orig.status || 'pending',
-              date: orig.date,
-              isHistoricalCopy: true,
-              originalInvoiceId: orig.id,
-              invoiceCode: null // Safe: null avoids any unique constraint collision
-            }
-          });
-          copiedCount++;
-        }
-      }
-
-      await tx.endClient.update({
-        where: { id: endClient.id },
+      // Update all invoices to point directly to target independent client and detach endClient
+      await tx.invoice.updateMany({
+        where: {
+          OR: [
+            { endClientId: endClient.id },
+            { endClientName: endClient.name }
+          ]
+        },
         data: {
-          convertedToClientId: targetClient.id
+          clientId: targetClient.id,
+          clientName: targetClient.name,
+          clientPhone: targetClient.phone || '-',
+          endClientId: null,
+          endClientName: ''
         }
       });
 
-      return { client: targetClient, copiedCount };
+      // Delete the end client record since all invoices were transferred
+      await tx.endClient.delete({
+        where: { id: endClient.id }
+      });
+
+      return { client: targetClient, transferredCount, totalAmount };
     });
 
-    res.status(201).json({
+    res.status(200).json({
       ...result.client,
       _id: result.client.id,
-      balance: 0,
-      copiedInvoicesCount: result.copiedCount
+      transferredInvoicesCount: result.transferredCount,
+      totalTransferredAmount: result.totalAmount
     });
   } catch (err) {
-    console.error('Error converting end client to client:', err);
-    res.status(500).json({ error: 'فشل في تحويل العميل النهائي لعميل مستقل' });
+    console.error('Error converting end client:', err);
+    let status = 500;
+    if (err.message === 'العميل المستقل المراد الدمج معه غير موجود') status = 404;
+    if (err.message === 'الاسم لازم يكون مختلفًا عن عميل موجود بالفعل') status = 400;
+
+    res.status(status).json({
+      error: err.message || 'فشل في تحويل العميل النهائي'
+    });
   }
 });
 

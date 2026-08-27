@@ -430,7 +430,75 @@
     </div>
 </div>
 
-<!-- Convert To Client Modal -->
+<!-- Name Match Merge Choice Modal -->
+<div class="fixed inset-0 z-[120] hidden items-center justify-center bg-black/50 p-4" id="convertNameMatchModal">
+    <div class="bg-surface rounded-2xl shadow-2xl w-full max-w-lg p-lg space-y-md border border-outline-variant/60">
+        <div class="flex items-center justify-between border-b border-outline-variant/60 pb-sm">
+            <div class="flex items-center gap-sm text-amber-600">
+                <div class="w-10 h-10 rounded-full bg-amber-500/10 flex items-center justify-center">
+                    <span class="material-symbols-outlined text-2xl">group</span>
+                </div>
+                <h3 class="font-headline-sm font-bold text-on-surface">عميل مستقل موجود بنفس الاسم</h3>
+            </div>
+            <button type="button" onclick="closeConvertNameMatchModal()" class="text-secondary hover:text-on-surface">
+                <span class="material-symbols-outlined">close</span>
+            </button>
+        </div>
+        
+        <p class="font-body-md text-on-surface font-bold text-base">
+            لقينا عميل مستقل موجود بنفس الاسم: <span id="matchedClientNameDisplay" class="text-primary underline font-bold"></span>
+        </p>
+        
+        <!-- Step 1: Initial Choice Container -->
+        <div id="matchStepChoiceContainer" class="space-y-md">
+            <div class="bg-amber-500/5 rounded-xl p-md text-sm text-secondary space-y-sm leading-relaxed border border-amber-500/20">
+                <p>
+                    العميل المستقل الحالي: <strong id="matchedClientNameBold" class="text-on-surface font-bold"></strong> (رصيده الحالي: <span id="matchedClientBalanceDisplay" class="font-bold text-primary dir-ltr inline-block"></span>).
+                </p>
+                <p class="text-on-surface font-medium pt-1">
+                    عايز تدمج فواتير <strong id="matchedEndClientName" class="text-primary font-bold"></strong> مع هذا العميل الموجود بالفعل، ولا تعمل عميل جديد منفصل بنفس الاسم؟
+                </p>
+            </div>
+
+            <div class="flex flex-col sm:flex-row items-center justify-end gap-sm pt-md border-t border-outline-variant/60">
+                <button type="button" onclick="showCreateSeparateClientNameInput()" class="w-full sm:w-auto px-md py-sm rounded-full border border-outline-variant text-on-surface font-label-md hover:bg-surface-container transition-colors">إنشاء عميل جديد منفصل</button>
+                <button type="button" onclick="chooseMergeClient()" class="w-full sm:w-auto px-lg py-sm rounded-full bg-primary text-on-primary font-label-md hover:opacity-90 transition-opacity flex items-center justify-center gap-1 shadow-sm font-bold">
+                    <span class="material-symbols-outlined text-sm">merge_type</span>
+                    <span>دمج مع الموجود</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Step 2: Change Name Container for Separate Client -->
+        <div id="matchStepNameInputContainer" class="hidden space-y-md">
+            <div class="bg-primary/5 rounded-xl p-md text-sm text-secondary space-y-sm leading-relaxed border border-primary/20">
+                <p class="text-on-surface font-bold flex items-center gap-1">
+                    <span class="material-symbols-outlined text-primary text-base">info</span>
+                    <span>تنبيه تغيير الاسم:</span>
+                </p>
+                <p class="text-on-surface-variant font-medium">
+                    بما إن فيه عميل موجود بنفس الاسم، لازم تغيّر الاسم شوية قبل ما نكمل (مثلاً: إضافة رقم أو كلمة توضيحية).
+                </p>
+            </div>
+
+            <div class="space-y-xs">
+                <label class="block text-xs font-bold text-on-surface-variant">الاسم الجديد للعميل المستقل:</label>
+                <input type="text" id="newSeparateClientNameInput" class="w-full h-11 px-md rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none text-right font-bold text-on-surface" placeholder="أدخل اسم جديد..." />
+                <p id="nameInputHint" class="text-[11px] text-amber-600 hidden">يجب أن يكون الاسم الجديد مختلفاً عن الاسم الحالي بعد التبديل وتجريد التشكيل.</p>
+            </div>
+
+            <div class="flex flex-col sm:flex-row items-center justify-end gap-sm pt-md border-t border-outline-variant/60">
+                <button type="button" onclick="backToChoiceStep()" class="w-full sm:w-auto px-md py-sm rounded-full border border-outline-variant text-on-surface font-label-md hover:bg-surface-container transition-colors">رجوع</button>
+                <button type="button" id="confirmNewNameBtn" disabled onclick="confirmNewSeparateClientName()" class="w-full sm:w-auto px-lg py-sm rounded-full bg-primary text-on-primary font-label-md hover:opacity-90 transition-opacity flex items-center justify-center gap-1 shadow-sm font-bold disabled:opacity-40 disabled:cursor-not-allowed">
+                    <span class="material-symbols-outlined text-sm">check</span>
+                    <span>تأكيد الاسم الجديد وإنشاء العميل</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Convert To Client Final Confirmation Modal -->
 <div class="fixed inset-0 z-[120] hidden items-center justify-center bg-black/50 p-4" id="convertToClientModal">
     <div class="bg-surface rounded-2xl shadow-2xl w-full max-w-lg p-lg space-y-md border border-outline-variant/60">
         <div class="flex items-center justify-between border-b border-outline-variant/60 pb-sm">
@@ -438,7 +506,7 @@
                 <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
                     <span class="material-symbols-outlined text-2xl">person_add</span>
                 </div>
-                <h3 class="font-headline-sm font-bold text-on-surface">تحويل لعميل مستقل</h3>
+                <h3 class="font-headline-sm font-bold text-on-surface">تأكيد نقل الفواتير</h3>
             </div>
             <button type="button" onclick="closeConvertToClientModal()" class="text-secondary hover:text-on-surface">
                 <span class="material-symbols-outlined">close</span>
@@ -446,26 +514,23 @@
         </div>
         
         <p class="font-body-md text-on-surface font-bold text-base">
-            هل تريد جعل <span id="convertModalClientName" class="text-primary underline"></span> عميلاً مستقلاً؟
+            تأكيد نقل حساب <span id="convertModalClientName" class="text-primary underline"></span>
         </p>
         
         <div class="bg-surface-container-low rounded-xl p-md text-sm text-secondary space-y-sm leading-relaxed border border-outline-variant/60">
             <p>
-                سيتم إنشاء حساب مستقل جديد باسم <strong id="convertModalClientNameBold" class="text-on-surface font-bold"></strong>، مع نسخة مرجعية من سجله السابق (<span id="convertModalTxCount" class="font-bold text-on-surface">0</span> فاتورة بقيمة <span id="convertModalAmount" class="font-bold text-on-surface">0 ج.م</span>) لسهولة الاطلاع على تاريخه.
-            </p>
-            <p>
-                الفواتير الأصلية ستبقى محفوظة كما هي في سجل <strong id="convertModalContractorName" class="text-on-surface font-bold"></strong> كتاريخ سابق، <span class="font-bold text-primary">ولن تُحتسب النسخة المرجعية ضمن رصيده الجديد (رصيده الأولي سيكون 0 ج.م).</span>
+                سيتم نقل جميع فواتير <strong id="convertModalClientNameBold" class="text-on-surface font-bold"></strong> (عددها <span id="convertModalTxCount" class="font-bold text-on-surface">0</span> بقيمة <span id="convertModalAmount" class="font-bold text-on-surface">0 ج.م</span>) بالكامل من حساب <strong id="convertModalContractorName" class="text-on-surface font-bold"></strong> إلى <span id="convertModalTargetAccountText" class="font-bold text-primary">حساب مستقل جديد</span>.
             </p>
             <p class="text-on-surface-variant font-medium pt-1">
-                أي عملية شراء أو دفع جديدة لهذا العميل من الآن ستُسجَّل مباشرة على حسابه المستقل الجديد.
+                لن يعد اسمه ظاهرًا تحت هذا المقاول.
             </p>
         </div>
 
         <div class="flex items-center justify-end gap-sm pt-md border-t border-outline-variant/60">
             <button type="button" onclick="closeConvertToClientModal()" class="px-lg py-sm rounded-full border border-outline-variant text-on-surface font-label-md hover:bg-surface-container transition-colors">إلغاء</button>
-            <button type="button" id="confirmConvertBtn" onclick="confirmConvertToClient()" class="px-lg py-sm rounded-full bg-primary text-on-primary font-label-md hover:opacity-90 transition-opacity flex items-center gap-1 shadow-sm">
+            <button type="button" id="confirmConvertBtn" onclick="confirmConvertToClient()" class="px-lg py-sm rounded-full bg-primary text-on-primary font-label-md hover:opacity-90 transition-opacity flex items-center gap-1 shadow-sm font-bold">
                 <span class="material-symbols-outlined text-sm">check</span>
-                <span>تأكيد التحويل</span>
+                <span>تأكيد النقل</span>
             </button>
         </div>
     </div>
@@ -715,8 +780,8 @@ async function loadClientDetails() {
         document.getElementById('clientTotalTx').textContent = invoices.length + ' معاملة';
         document.getElementById('statTxCount').textContent = invoices.length;
 
-        const totalPurchases = invoices.filter(i => i.type === 'purchase' && !i.isHistoricalCopy).reduce((s, i) => s + i.amount, 0);
-        const totalPayments = invoices.filter(i => i.type === 'payment' && !i.isHistoricalCopy).reduce((s, i) => s + i.amount, 0);
+        const totalPurchases = invoices.filter(i => i.type === 'purchase').reduce((s, i) => s + i.amount, 0);
+        const totalPayments = invoices.filter(i => i.type === 'payment').reduce((s, i) => s + i.amount, 0);
         document.getElementById('statPurchases').textContent = formatCurrency(totalPurchases);
         document.getElementById('statPayments').textContent = formatCurrency(totalPayments);
 
@@ -754,16 +819,17 @@ function renderEndClientBreakdown(invoices) {
     const grid = document.getElementById('endClientsCardsGrid');
     const badge = document.getElementById('endClientsCountBadge');
 
-    const activeInvoices = (invoices || []).filter(i => !i.isHistoricalCopy);
-    const normalizedInvoices = activeInvoices.map(inv => {
+    const activeInvoices = invoices || [];
+    const taggedInvoices = activeInvoices.filter(inv => {
+        const rawName = (inv.endClientName || (inv.endClient?.name || '')).trim();
+        return rawName && rawName !== '-';
+    }).map(inv => {
         const rawName = (inv.endClientName || (inv.endClient?.name || '')).trim();
         return {
             ...inv,
-            effectiveEndClientName: rawName && rawName !== '-' ? rawName : 'شخصي'
+            effectiveEndClientName: rawName
         };
     });
-
-    const taggedInvoices = normalizedInvoices.filter(i => i.effectiveEndClientName);
 
     if (taggedInvoices.length === 0) {
         container.classList.add('hidden');
@@ -779,7 +845,6 @@ function renderEndClientBreakdown(invoices) {
             groupsMap.set(key, {
                 id: inv.endClientId || null,
                 name,
-                convertedToClientId: inv.endClient?.convertedToClientId || null,
                 invoiceCount: 0,
                 totalPurchases: 0,
                 totalPayments: 0,
@@ -787,9 +852,6 @@ function renderEndClientBreakdown(invoices) {
             });
         }
         const g = groupsMap.get(key);
-        if (!g.convertedToClientId && inv.endClient?.convertedToClientId) {
-            g.convertedToClientId = inv.endClient.convertedToClientId;
-        }
         if (!g.id && inv.endClientId) {
             g.id = inv.endClientId;
         }
@@ -810,7 +872,6 @@ function renderEndClientBreakdown(invoices) {
 
     grid.innerHTML = groups.map((item, index) => {
         const netColor = item.net <= 0 ? 'text-green-600' : 'text-tertiary';
-        const isConverted = Boolean(item.convertedToClientId);
         const isSelected = selectedEndClientFilter && (
             (selectedEndClientFilter.id && item.id && String(selectedEndClientFilter.id) === String(item.id)) ||
             (normalizeArabic(selectedEndClientFilter.name) === normalizeArabic(item.name))
@@ -849,17 +910,10 @@ function renderEndClientBreakdown(invoices) {
                     <span class="font-bold text-sm ${netColor}">${formatCurrency(item.net)}</span>
                 </div>
                 <div class="pt-xs flex justify-end">
-                    ${isConverted ? `
-                        <a href="/client-details?id=${item.convertedToClientId}" onclick="event.stopPropagation();" class="w-full text-center flex items-center justify-center gap-1 text-xs text-primary bg-primary/10 hover:bg-primary hover:text-white py-1.5 px-2 rounded-lg font-bold transition-all">
-                            <span class="material-symbols-outlined text-sm">open_in_new</span>
-                            <span>عرض كعميل مستقل</span>
-                        </a>
-                    ` : `
-                        <button type="button" onclick="event.stopPropagation(); openConvertToClientModalByIndex(${index})" class="w-full flex items-center justify-center gap-1 text-xs text-secondary hover:text-primary bg-surface-container hover:bg-primary/10 py-1.5 px-2 rounded-lg font-bold transition-all cursor-pointer">
-                            <span class="material-symbols-outlined text-sm">person_add</span>
-                            <span>تحويل لعميل مستقل</span>
-                        </button>
-                    `}
+                    <button type="button" onclick="event.stopPropagation(); handleConvertToClientClick(${index})" class="w-full flex items-center justify-center gap-1 text-xs text-secondary hover:text-primary bg-surface-container hover:bg-primary/10 py-1.5 px-2 rounded-lg font-bold transition-all cursor-pointer">
+                        <span class="material-symbols-outlined text-sm">person_add</span>
+                        <span>تحويل لعميل مستقل</span>
+                    </button>
                 </div>
             </div>
         `;
@@ -896,9 +950,7 @@ function toggleEndClientFilterByIndex(index) {
 }
 
 function openConvertToClientModalByIndex(index) {
-    const item = currentEndClientGroups[index];
-    if (!item) return;
-    openConvertToClientModal(item.id, item.name, item.invoiceCount, item.net);
+    handleConvertToClientClick(index);
 }
 
 function toggleEndClientFilter(id, name) {
@@ -1059,10 +1111,6 @@ function renderTransactions(invoices, resetPage = false) {
     let running = 0;
     const balanceMap = new Map();
     for (const inv of chronological) {
-        if (inv.isHistoricalCopy) {
-            inv.runningBalance = null;
-            continue; // Historical copies do not participate in running balance
-        }
         if (inv.type === 'purchase') {
             running += (Number(inv.amount) || 0);
         } else if (inv.type === 'payment') {
@@ -1105,45 +1153,20 @@ function renderTransactions(invoices, resetPage = false) {
 
     tbody.innerHTML = pagedInvoices.map(inv => {
         const isPurchase = inv.type === 'purchase';
-        const isHistory = Boolean(inv.isHistoricalCopy);
+        const typeBadge = isPurchase
+            ? '<span class="px-sm py-1 rounded-full bg-primary-fixed text-on-primary-fixed font-label-sm text-label-sm">شراء</span>'
+            : '<span class="px-sm py-1 rounded-full bg-secondary-container text-on-secondary-container font-label-sm text-label-sm">دفع</span>';
 
-        let typeBadge = '';
-        if (isHistory) {
-            typeBadge = `
-                <div class="flex items-center gap-1.5 flex-wrap">
-                    <span class="px-sm py-0.5 rounded-full ${isPurchase ? 'bg-primary-fixed text-on-primary-fixed' : 'bg-secondary-container text-on-secondary-container'} font-label-sm text-[11px]">${isPurchase ? 'شراء' : 'دفع'}</span>
-                    <span class="px-2 py-0.5 rounded-full bg-slate-200 text-slate-700 font-label-sm text-[11px] font-bold border border-slate-300">سجل سابق</span>
-                </div>
-            `;
-        } else {
-            typeBadge = isPurchase
-                ? '<span class="px-sm py-1 rounded-full bg-primary-fixed text-on-primary-fixed font-label-sm text-label-sm">شراء</span>'
-                : '<span class="px-sm py-1 rounded-full bg-secondary-container text-on-secondary-container font-label-sm text-label-sm">دفع</span>';
-        }
-
-        const amountClass = isHistory
-            ? 'font-bold text-slate-600'
-            : (isPurchase ? 'font-bold' : 'text-primary font-bold');
+        const amountClass = isPurchase ? 'font-bold' : 'text-primary font-bold';
         const amountPrefix = isPurchase ? '+' : '-';
 
-        let balanceBadge = '';
-        if (isHistory) {
-            balanceBadge = '<span class="text-secondary font-medium">-</span>';
-        } else {
-            const runBal = inv.runningBalance !== undefined && inv.runningBalance !== null ? inv.runningBalance : (balanceMap.get(String(inv._id || inv.id)) ?? 0);
-            if (runBal <= 0) {
-                balanceBadge = `<span class="text-green-600 font-bold dir-ltr inline-block">${formatCurrency(runBal)}</span>`;
-            } else {
-                balanceBadge = `<span class="text-primary font-bold dir-ltr inline-block">${formatCurrency(runBal)}</span>`;
-            }
-        }
-
-        const rowBgClass = isHistory
-            ? 'bg-slate-50/70 hover:bg-slate-100/70 text-slate-700'
-            : 'hover:bg-primary/5';
+        const runBal = inv.runningBalance !== undefined && inv.runningBalance !== null ? inv.runningBalance : (balanceMap.get(String(inv._id || inv.id)) ?? 0);
+        const balanceBadge = runBal <= 0
+            ? `<span class="text-green-600 font-bold dir-ltr inline-block">${formatCurrency(runBal)}</span>`
+            : `<span class="text-primary font-bold dir-ltr inline-block">${formatCurrency(runBal)}</span>`;
 
         return `
-            <tr class="cursor-pointer transition-colors group ${rowBgClass}" onclick="openTransactionDetails(${inv._id})">
+            <tr class="cursor-pointer transition-colors group hover:bg-primary/5" onclick="openTransactionDetails(${inv._id})">
                 <td class="px-md py-md font-body-md text-body-md">
                     <div class="flex flex-col">
                         <span>${formatDate(inv.date)}</span>
@@ -1563,14 +1586,152 @@ document.getElementById('editClientForm').addEventListener('submit', async funct
 
 // Convert To Client Modal Logic
 let pendingConvertData = null;
+let currentMatchedClient = null;
 
-function openConvertToClientModal(id, name, txCount, netAmount) {
+async function handleConvertToClientClick(index) {
+    const item = currentEndClientGroups[index];
+    if (!item) return;
+
     pendingConvertData = {
-        id: id || null,
-        name: name,
-        txCount: txCount || 0,
-        netAmount: netAmount || 0
+        id: item.id || null,
+        name: item.name,
+        txCount: item.invoiceCount || 0,
+        netAmount: item.net || 0,
+        mergeWithClientId: null
     };
+
+    try {
+        const res = await fetch(`/api/end-clients/check-name-match?name=${encodeURIComponent(item.name)}`);
+        const data = await res.json();
+
+        if (res.ok && data.matches && data.matches.length > 0) {
+            currentMatchedClient = data.matches[0];
+            openConvertNameMatchModal(item.name, currentMatchedClient);
+        } else {
+            currentMatchedClient = null;
+            openConvertToClientModal();
+        }
+    } catch (err) {
+        console.error('Error checking name match:', err);
+        currentMatchedClient = null;
+        openConvertToClientModal();
+    }
+}
+
+function openConvertNameMatchModal(endClientName, matchedClient) {
+    const nameDisplay = document.getElementById('matchedClientNameDisplay');
+    if (nameDisplay) nameDisplay.textContent = matchedClient.name;
+
+    const nameBold = document.getElementById('matchedClientNameBold');
+    if (nameBold) nameBold.textContent = matchedClient.name;
+
+    const balDisplay = document.getElementById('matchedClientBalanceDisplay');
+    if (balDisplay) balDisplay.textContent = formatCurrency(matchedClient.balance);
+
+    const endNameDisplay = document.getElementById('matchedEndClientName');
+    if (endNameDisplay) endNameDisplay.textContent = endClientName;
+
+    // Reset step state
+    backToChoiceStep();
+
+    const modal = document.getElementById('convertNameMatchModal');
+    if (modal) {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        document.body.style.overflow = 'hidden';
+    }
+}
+
+function closeConvertNameMatchModal() {
+    const modal = document.getElementById('convertNameMatchModal');
+    if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+        document.body.style.overflow = '';
+    }
+}
+
+function showCreateSeparateClientNameInput() {
+    const choiceContainer = document.getElementById('matchStepChoiceContainer');
+    const inputContainer = document.getElementById('matchStepNameInputContainer');
+    const nameInput = document.getElementById('newSeparateClientNameInput');
+
+    if (choiceContainer) choiceContainer.classList.add('hidden');
+    if (inputContainer) inputContainer.classList.remove('hidden');
+
+    if (nameInput && pendingConvertData) {
+        nameInput.value = pendingConvertData.name || '';
+        validateNewNameInput();
+        nameInput.focus();
+
+        nameInput.oninput = validateNewNameInput;
+    }
+}
+
+function backToChoiceStep() {
+    const choiceContainer = document.getElementById('matchStepChoiceContainer');
+    const inputContainer = document.getElementById('matchStepNameInputContainer');
+    if (choiceContainer) choiceContainer.classList.remove('hidden');
+    if (inputContainer) inputContainer.classList.add('hidden');
+}
+
+function validateNewNameInput() {
+    const nameInput = document.getElementById('newSeparateClientNameInput');
+    const confirmBtn = document.getElementById('confirmNewNameBtn');
+    const hint = document.getElementById('nameInputHint');
+
+    if (!nameInput || !confirmBtn || !pendingConvertData) return;
+
+    const currentVal = nameInput.value.trim();
+    const origNorm = normalizeArabic(pendingConvertData.name || '');
+    const matchedNorm = currentMatchedClient ? normalizeArabic(currentMatchedClient.name || '') : '';
+    const newNorm = normalizeArabic(currentVal);
+
+    const isValid = newNorm.length > 0 && newNorm !== origNorm && newNorm !== matchedNorm;
+
+    confirmBtn.disabled = !isValid;
+    if (hint) {
+        if (!isValid && currentVal.length > 0) {
+            hint.classList.remove('hidden');
+        } else {
+            hint.classList.add('hidden');
+        }
+    }
+}
+
+function confirmNewSeparateClientName() {
+    const nameInput = document.getElementById('newSeparateClientNameInput');
+    if (!nameInput || !pendingConvertData) return;
+
+    const val = nameInput.value.trim();
+    if (!val) return;
+
+    pendingConvertData.newClientName = val;
+    pendingConvertData.mergeWithClientId = null;
+
+    closeConvertNameMatchModal();
+    openConvertToClientModal();
+}
+
+function chooseMergeClient() {
+    if (pendingConvertData && currentMatchedClient) {
+        pendingConvertData.mergeWithClientId = currentMatchedClient.id;
+        pendingConvertData.newClientName = null;
+    }
+    closeConvertNameMatchModal();
+    openConvertToClientModal();
+}
+
+function chooseCreateNewClient() {
+    showCreateSeparateClientNameInput();
+}
+
+function openConvertToClientModal() {
+    if (!pendingConvertData) return;
+
+    const name = pendingConvertData.newClientName || pendingConvertData.name;
+    const txCount = pendingConvertData.txCount;
+    const netAmount = pendingConvertData.netAmount;
 
     const clientNameEl = document.getElementById('convertModalClientName');
     if (clientNameEl) clientNameEl.textContent = name || '';
@@ -1587,6 +1748,17 @@ function openConvertToClientModal(id, name, txCount, netAmount) {
     const contractorNameEl = document.getElementById('convertModalContractorName');
     if (contractorNameEl) contractorNameEl.textContent = currentClientData?.name || 'المقاول';
 
+    const targetAccountText = document.getElementById('convertModalTargetAccountText');
+    if (targetAccountText) {
+        if (pendingConvertData.mergeWithClientId && currentMatchedClient) {
+            targetAccountText.textContent = `حساب ${currentMatchedClient.name} الموجود بالفعل`;
+        } else if (pendingConvertData.newClientName) {
+            targetAccountText.textContent = `حساب مستقل جديد باسم "${pendingConvertData.newClientName}"`;
+        } else {
+            targetAccountText.textContent = 'حساب مستقل جديد';
+        }
+    }
+
     const modal = document.getElementById('convertToClientModal');
     if (modal) {
         modal.classList.remove('hidden');
@@ -1597,10 +1769,13 @@ function openConvertToClientModal(id, name, txCount, netAmount) {
 
 function closeConvertToClientModal() {
     const modal = document.getElementById('convertToClientModal');
-    modal.classList.add('hidden');
-    modal.classList.remove('flex');
-    document.body.style.overflow = '';
+    if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+        document.body.style.overflow = '';
+    }
     pendingConvertData = null;
+    currentMatchedClient = null;
 }
 
 async function confirmConvertToClient() {
@@ -1608,7 +1783,7 @@ async function confirmConvertToClient() {
 
     const confirmBtn = document.getElementById('confirmConvertBtn');
     confirmBtn.disabled = true;
-    confirmBtn.innerHTML = '<span class="material-symbols-outlined text-sm animate-spin">progress_activity</span> <span>جاري التحويل...</span>';
+    confirmBtn.innerHTML = '<span class="material-symbols-outlined text-sm animate-spin">progress_activity</span> <span>جاري النقل...</span>';
 
     try {
         const endClientId = pendingConvertData.id || 0;
@@ -1617,6 +1792,8 @@ async function confirmConvertToClient() {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
+                mergeWithClientId: pendingConvertData.mergeWithClientId || undefined,
+                newClientName: pendingConvertData.newClientName || undefined,
                 name: pendingConvertData.name,
                 contractorName: currentClientData?.name || ''
             })
@@ -1625,41 +1802,29 @@ async function confirmConvertToClient() {
         const data = await res.json();
 
         if (!res.ok) {
-            throw new Error(data.error || 'فشل في تحويل العميل');
+            throw new Error(data.error || 'فشل في نقل الفواتير وتحويل العميل');
         }
-
-        const newClientId = data.id || data._id;
-
-        // Update local clientInvoices so the card reflects the conversion immediately
-        const normName = normalizeArabic(pendingConvertData.name);
-        clientInvoices.forEach(inv => {
-            if ((endClientId && String(inv.endClientId) === String(endClientId)) ||
-                normalizeArabic(inv.endClientName || '') === normName) {
-                inv.endClientId = endClientId || inv.endClientId;
-                inv.endClient = {
-                    ...(inv.endClient || {}),
-                    id: endClientId || inv.endClientId,
-                    convertedToClientId: newClientId
-                };
-            }
-        });
 
         closeConvertToClientModal();
-        renderEndClientBreakdown(clientInvoices);
 
-        if (data.alreadyConverted) {
-            showToast(`العميل محوّل بالفعل كعميل مستقل باسم "${data.name}".`, 'info');
-        } else {
-            showToast(`تم إنشاء حساب مستقل لـ "${data.name}". يمكنك الآن تسجيل فواتيره عليه مباشرة.`, 'success');
-        }
+        const targetId = data.id || data._id;
+        const toastMsg = `تم نقل الفواتير بنجاح إلى "${data.name}". <a href="/client-details?id=${targetId}" class="underline font-bold mr-1">عرض صفحة العميل المستقل ←</a>`;
+        showToast(toastMsg, 'success');
+
+        await loadClientDetails();
+
     } catch (err) {
         console.error(err);
         showToast(err.message || 'فشل في تحويل العميل', 'error');
     } finally {
         confirmBtn.disabled = false;
-        confirmBtn.innerHTML = '<span class="material-symbols-outlined text-sm">check</span> <span>تأكيد التحويل</span>';
+        confirmBtn.innerHTML = '<span class="material-symbols-outlined text-sm">check</span> <span>تأكيد النقل</span>';
     }
 }
+
+document.getElementById('convertNameMatchModal')?.addEventListener('click', function(e) {
+    if (e.target === this) closeConvertNameMatchModal();
+});
 
 document.getElementById('convertToClientModal')?.addEventListener('click', function(e) {
     if (e.target === this) closeConvertToClientModal();

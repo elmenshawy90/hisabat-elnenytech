@@ -23,14 +23,10 @@ router.get('/', async (req, res) => {
       getAllClientBalances(prisma),
       prisma.invoice.count({
         where: {
-          date: { gte: startOfDay, lte: endOfDay },
-          isHistoricalCopy: false
+          date: { gte: startOfDay, lte: endOfDay }
         }
       }),
       prisma.invoice.findMany({
-        where: {
-          isHistoricalCopy: false
-        },
         orderBy: [
           { date: 'desc' },
           { createdAt: 'desc' }
@@ -39,8 +35,7 @@ router.get('/', async (req, res) => {
       }),
       prisma.invoice.findMany({
         where: {
-          date: { gte: sixWeeksAgo },
-          isHistoricalCopy: false
+          date: { gte: sixWeeksAgo }
         }
       })
     ]);

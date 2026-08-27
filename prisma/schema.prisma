@@ -44,7 +44,6 @@ model EndClient {
   phone               String    @default("-")
   address             String    @default("")
   notes               String    @default("")
-  convertedToClientId Int?
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
   invoices            Invoice[]
@@ -56,8 +55,6 @@ model EndClient {
 model Invoice {
   id                Int        @id @default(autoincrement())
   invoiceCode       String?    @unique
-  isHistoricalCopy  Boolean    @default(false)
-  originalInvoiceId Int?
   clientId          Int
   client            Client     @relation(fields: [clientId], references: [id])
   clientName        String
