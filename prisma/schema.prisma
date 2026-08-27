@@ -87,3 +87,43 @@ model Session {
   data      String
   expiresAt DateTime
 }
+
+model Item {
+  id        Int          @id @default(autoincrement())
+  name      String       // مثال: "أسمنت مسيرة"
+  notes     String       @default("")
+  isActive  Boolean      @default(true)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+  units     ItemUnit[]
+  stockLogs StockLog[]
+
+  @@index([name])
+}
+
+model ItemUnit {
+  id             Int      @id @default(autoincrement())
+  itemId         Int
+  item           Item     @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  name           String   // مثال: "طن"، "شكارة"، "كيلو"
+  isBaseUnit     Boolean  @default(false) // الوحدة الأساسية اللي المخزون متخزن بيها فعليًا
+  conversionRate Float    // كام وحدة أساسية = 1 من الوحدة دي
+  createdAt      DateTime @default(now())
+
+  @@index([itemId])
+  @@unique([itemId, name])
+}
+
+model StockLog {
+  id            Int      @id @default(autoincrement())
+  itemId        Int
+  item          Item     @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  changeType    String   // 'restock' (توريد) أو 'sale' (خصم بيع) أو 'adjustment' (تصحيح)
+  quantityBase  Float    // التغيير بوحدة القياس الأساسية
+  balanceAfter  Float    // رصيد المخزون بعد العملية بالوحدة الأساسية
+  invoiceId     Int?     // الفاتورة المربوطة
+  notes         String   @default("")
+  createdAt     DateTime @default(now())
+
+  @@index([itemId])
+}

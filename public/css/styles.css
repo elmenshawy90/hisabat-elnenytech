@@ -74,3 +74,12 @@ input[type="number"] {
     -moz-appearance: textfield;
 }
 
+/* ─── RTL Select Arrow & Padding Fix ────────────────────────── */
+[dir="rtl"] select,
+select {
+    background-position: left 0.75rem center !important;
+    padding-left: 2.25rem !important;
+    padding-right: 0.75rem !important;
+}
+
+

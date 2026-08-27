@@ -1,0 +1,984 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>سجل الديون - كتالوج الأصناف</title>
+<meta name="description" content="إدارة كتالوج الأصناف ومخزون مواد البناء والوحدات الهرمية"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script src="js/tailwind-config.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="css/styles.css" rel="stylesheet"/>
+</head>
+<body class="bg-background text-on-surface overflow-hidden max-w-[100vw]">
+<!-- Shell Container -->
+<div class="flex h-screen w-full">
+<%- include('partials/aside', { active: 'items' }) %>
+<!-- Main Content Area -->
+<main class="flex-1 min-w-0 flex flex-col md:mr-64 h-full relative">
+
+<!-- Page Canvas -->
+<div class="flex-1 overflow-y-auto p-container-margin pb-24 md:pb-xl md:p-xl custom-scrollbar">
+<%- include('partials/header', { title: 'الأصناف' }) %>
+
+<!-- Content Header -->
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-md mb-xl">
+    <div class="flex flex-col">
+        <h2 class="font-headline-md text-headline-md text-on-surface font-bold">كتالوج الأصناف والمخزون</h2>
+        <p class="font-body-md text-body-md text-secondary">إدارة الأصناف، وحدات القياس الهرمية التراكمية، وتوريد المخزون</p>
+    </div>
+    <div class="flex flex-wrap items-center gap-xs sm:gap-sm">
+        <button onclick="openAddItemModal()" class="px-md py-sm bg-primary hover:bg-primary-container text-white rounded-full flex items-center justify-center gap-xs font-bold text-sm shadow-sm transition-all active:scale-95 cursor-pointer">
+            <span class="material-symbols-outlined text-xl">add_box</span>
+            <span>صنف جديد</span>
+        </button>
+    </div>
+</div>
+
+<!-- Stats Row -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-md mb-xl">
+    <div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-md flex items-center justify-between shadow-sm">
+        <div class="flex flex-col">
+            <span class="font-label-md text-label-md text-secondary">إجمالي الأصناف</span>
+            <span class="font-headline-md text-headline-md text-primary font-bold" id="statTotalItems">--</span>
+        </div>
+        <div class="w-12 h-12 rounded-lg bg-primary-fixed flex items-center justify-center text-on-primary-fixed">
+            <span class="material-symbols-outlined">inventory_2</span>
+        </div>
+    </div>
+    <div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-md flex items-center justify-between shadow-sm">
+        <div class="flex flex-col">
+            <span class="font-label-md text-label-md text-secondary">أصناف بالمخزون</span>
+            <span class="font-headline-md text-headline-md text-green-600 font-bold" id="statInStock">--</span>
+        </div>
+        <div class="w-12 h-12 rounded-lg bg-green-100 flex items-center justify-center text-green-700">
+            <span class="material-symbols-outlined">warehouse</span>
+        </div>
+    </div>
+    <div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-md flex items-center justify-between shadow-sm">
+        <div class="flex flex-col">
+            <span class="font-label-md text-label-md text-secondary">أصناف بها عجز/صفر</span>
+            <span class="font-headline-md text-headline-md text-tertiary font-bold" id="statZeroStock">--</span>
+        </div>
+        <div class="w-12 h-12 rounded-lg bg-tertiary-fixed flex items-center justify-center text-on-tertiary-fixed">
+            <span class="material-symbols-outlined">warning</span>
+        </div>
+    </div>
+</div>
+
+<!-- Search & Controls Bar -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-md mb-md shadow-sm flex flex-col md:flex-row items-center justify-between gap-md">
+    <div class="relative w-full md:flex-1">
+        <span class="material-symbols-outlined absolute right-md top-1/2 -translate-y-1/2 text-outline">search</span>
+        <input class="w-full h-12 pr-12 pl-md rounded-xl bg-background border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none font-body-md text-body-md transition-all" placeholder="البحث باسم الصنف..." type="text" id="searchInput" oninput="debounceSearch()"/>
+    </div>
+    
+    <!-- Show Inactive Toggle -->
+    <label class="flex items-center gap-xs cursor-pointer select-none border border-outline-variant/70 bg-surface px-md py-sm rounded-xl hover:bg-surface-container transition-colors shrink-0">
+        <input type="checkbox" id="showInactiveToggle" onchange="loadItems()" class="w-4 h-4 text-primary rounded border-outline focus:ring-primary" />
+        <span class="text-xs font-bold text-on-surface">إظهار الأصناف المعطّلة</span>
+    </label>
+</div>
+
+<!-- Items Table Container -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-2xl shadow-sm overflow-hidden mb-xl">
+    <div class="overflow-x-auto">
+        <table class="w-full text-right border-collapse">
+            <thead>
+                <tr class="bg-surface-container-low border-b border-outline-variant text-secondary font-label-md text-xs">
+                    <th class="px-md py-md font-bold">اسم الصنف</th>
+                    <th class="px-md py-md font-bold">الوحدة الأساسية</th>
+                    <th class="px-md py-md font-bold">الوحدات المعرفة</th>
+                    <th class="px-md py-md font-bold">رصيد المخزون الحالي</th>
+                    <th class="px-md py-md font-bold text-center">الإجراءات</th>
+                </tr>
+            </thead>
+            <tbody id="itemsTableBody" class="divide-y divide-outline-variant/60 font-body-md text-sm">
+                <!-- Loaded via JS -->
+            </tbody>
+        </table>
+    </div>
+    <!-- Loading / Empty State -->
+    <div id="itemsLoading" class="py-xl text-center text-secondary">
+        <div class="flex flex-col items-center justify-center gap-sm">
+            <div class="w-8 h-8 border-3 border-outline-variant border-t-primary rounded-full animate-spin"></div>
+            <span>جاري تحميل الأصناف...</span>
+        </div>
+    </div>
+    <div id="itemsEmpty" class="hidden py-xl text-center text-secondary space-y-xs">
+        <span class="material-symbols-outlined text-4xl text-outline">inventory_2</span>
+        <p class="font-bold">لا يوجد أصناف مسجلة</p>
+        <p class="text-xs">اضغط على زر "صنف جديد" لإضافة أول صنف في الكتالوج.</p>
+    </div>
+</div>
+
+</div>
+</main>
+</div>
+
+<!-- Item Form Modal (Unified for Add & Edit) -->
+<div class="fixed inset-0 z-[120] hidden items-center justify-center bg-black/50 p-4" id="itemModal">
+    <div class="bg-surface rounded-2xl shadow-2xl w-full max-w-2xl p-lg space-y-md border border-outline-variant/60 max-h-[90vh] overflow-y-auto custom-scrollbar">
+        <div class="flex items-center justify-between border-b border-outline-variant/60 pb-sm">
+            <div class="flex items-center gap-sm text-primary">
+                <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                    <span class="material-symbols-outlined text-2xl" id="itemModalIcon">add_box</span>
+                </div>
+                <h3 class="font-headline-sm font-bold text-on-surface" id="itemModalTitle">إضافة صنف جديد</h3>
+            </div>
+            <button type="button" onclick="closeItemModal()" class="text-secondary hover:text-on-surface">
+                <span class="material-symbols-outlined">close</span>
+            </button>
+        </div>
+        
+        <form id="itemForm" onsubmit="submitItemForm(event)" class="space-y-md">
+            <input type="hidden" id="itemModalId" value="" />
+
+            <div class="space-y-xs">
+                <label class="block text-xs font-bold text-on-surface-variant">اسم الصنف <span class="text-error">*</span></label>
+                <input type="text" id="itemName" required class="w-full h-11 px-md rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none text-right font-bold text-on-surface" placeholder="مثال: أسمنت مسيرة، حديد تسليح..." />
+            </div>
+
+            <div class="space-y-xs">
+                <label class="block text-xs font-bold text-on-surface-variant">ملاحظات (اختياري)</label>
+                <input type="text" id="itemNotes" class="w-full h-11 px-md rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none text-right text-on-surface" placeholder="أي تفاصيل أو مواصفات إضافية..." />
+            </div>
+
+            <!-- Stock Log Warning Banner when editing items with stock logs -->
+            <div id="stockProtectedWarning" class="hidden bg-amber-500/10 border border-amber-500/30 text-amber-800 rounded-xl p-sm text-xs font-medium space-y-1">
+                <div class="flex items-center gap-1 font-bold text-amber-900">
+                    <span class="material-symbols-outlined text-base">lock</span>
+                    <span>الوحدات القديمة مقفولة لحماية حركات المخزون</span>
+                </div>
+                <p>لا يمكن تعديل أو حذف الوحدات المستخدمة بالفعل في حركات مخزون سابقة حتى لا تتأثر الحسابات التاريخية. يمكنك إضافة وحدات جديدة فقط.</p>
+            </div>
+
+            <!-- Units Builder Section -->
+            <div class="border border-outline-variant/80 rounded-xl p-md bg-surface-container-lowest space-y-sm">
+                <div class="flex items-center justify-between border-b border-outline-variant/40 pb-xs">
+                    <div>
+                        <h4 class="font-bold text-sm text-on-surface">وحدات القياس الهرمية والنسبية</h4>
+                        <p class="text-[11px] text-secondary">يمكنك تحديد أي صف كـ "الوحد الأساسية" وإجراء علاقات نسبية بين أي وحدتين بسهولة.</p>
+                    </div>
+                    <button type="button" onclick="addUnitRow()" class="px-sm py-1 bg-primary/10 hover:bg-primary text-primary hover:text-white rounded-lg text-xs font-bold transition-all flex items-center gap-1 cursor-pointer">
+                        <span class="material-symbols-outlined text-sm">add</span>
+                        <span>إضافة وحدة</span>
+                    </button>
+                </div>
+
+                <div id="unitsRowsContainer" class="space-y-xs pt-xs">
+                    <!-- Dynamic unit rows rendered via JS -->
+                </div>
+            </div>
+
+            <div class="flex items-center justify-end gap-sm pt-md border-t border-outline-variant/60">
+                <button type="button" onclick="closeItemModal()" class="px-lg py-sm rounded-full border border-outline-variant text-on-surface font-label-md hover:bg-surface-container transition-colors">إلغاء</button>
+                <button type="submit" id="submitItemBtn" class="px-lg py-sm rounded-full bg-primary text-on-primary font-label-md hover:opacity-90 transition-opacity flex items-center gap-1 shadow-sm font-bold">
+                    <span class="material-symbols-outlined text-sm">check</span>
+                    <span>حفظ الصنف</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Restock Modal -->
+<div class="fixed inset-0 z-[120] hidden items-center justify-center bg-black/50 p-4" id="restockModal">
+    <div class="bg-surface rounded-2xl shadow-2xl w-full max-w-md p-lg space-y-md border border-outline-variant/60">
+        <div class="flex items-center justify-between border-b border-outline-variant/60 pb-sm">
+            <div class="flex items-center gap-sm text-green-700">
+                <div class="w-10 h-10 rounded-full bg-green-500/10 flex items-center justify-center">
+                    <span class="material-symbols-outlined text-2xl">warehouse</span>
+                </div>
+                <h3 class="font-headline-sm font-bold text-on-surface">توريد مخزون جديد</h3>
+            </div>
+            <button type="button" onclick="closeRestockModal()" class="text-secondary hover:text-on-surface">
+                <span class="material-symbols-outlined">close</span>
+            </button>
+        </div>
+
+        <form id="restockForm" onsubmit="submitRestock(event)" class="space-y-md">
+            <p class="text-sm font-bold text-on-surface">
+                الصنف: <span id="restockItemName" class="text-primary underline"></span>
+            </p>
+
+            <div class="space-y-xs">
+                <label class="block text-xs font-bold text-on-surface-variant">اختيار الوحدة المُدخلة <span class="text-error">*</span></label>
+                <select id="restockUnitSelect" required class="w-full h-11 px-md rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary outline-none text-right font-bold text-on-surface cursor-pointer">
+                    <!-- Populated dynamically -->
+                </select>
+            </div>
+
+            <div class="space-y-xs">
+                <label class="block text-xs font-bold text-on-surface-variant">الكمية الموردة <span class="text-error">*</span></label>
+                <input type="number" step="any" min="0.001" id="restockQuantity" required class="w-full h-11 px-md rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary outline-none text-right font-bold text-on-surface dir-ltr" placeholder="0.00" />
+            </div>
+
+            <div class="space-y-xs">
+                <label class="block text-xs font-bold text-on-surface-variant">ملاحظات التوريد (اختياري)</label>
+                <input type="text" id="restockNotes" class="w-full h-11 px-md rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary outline-none text-right text-on-surface" placeholder="اسم المورد، رقم الإذن..." />
+            </div>
+
+            <div class="flex items-center justify-end gap-sm pt-md border-t border-outline-variant/60">
+                <button type="button" onclick="closeRestockModal()" class="px-lg py-sm rounded-full border border-outline-variant text-on-surface font-label-md hover:bg-surface-container transition-colors">إلغاء</button>
+                <button type="submit" id="submitRestockBtn" class="px-lg py-sm rounded-full bg-green-700 text-white font-label-md hover:opacity-90 transition-opacity flex items-center gap-1 shadow-sm font-bold">
+                    <span class="material-symbols-outlined text-sm">check</span>
+                    <span>حفظ التوريد</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Stock Log Modal -->
+<div class="fixed inset-0 z-[120] hidden items-center justify-center bg-black/50 p-4" id="stockLogModal">
+    <div class="bg-surface rounded-2xl shadow-2xl w-full max-w-3xl p-lg space-y-md border border-outline-variant/60 max-h-[85vh] flex flex-col">
+        <div class="flex items-center justify-between border-b border-outline-variant/60 pb-sm shrink-0">
+            <div class="flex items-center gap-sm text-primary">
+                <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                    <span class="material-symbols-outlined text-2xl">history</span>
+                </div>
+                <div>
+                    <h3 class="font-headline-sm font-bold text-on-surface">سجل حركة المخزون</h3>
+                    <p class="text-xs text-secondary">الصنف: <strong id="stockLogItemName" class="text-primary"></strong></p>
+                </div>
+            </div>
+            <button type="button" onclick="closeStockLogModal()" class="text-secondary hover:text-on-surface">
+                <span class="material-symbols-outlined">close</span>
+            </button>
+        </div>
+
+        <div class="overflow-y-auto custom-scrollbar flex-1 border border-outline-variant/60 rounded-xl">
+            <table class="w-full text-right border-collapse text-xs">
+                <thead class="sticky top-0 bg-surface-container-low border-b border-outline-variant text-secondary">
+                    <tr>
+                        <th class="px-md py-sm font-bold">التاريخ</th>
+                        <th class="px-md py-sm font-bold">نوع الحركة</th>
+                        <th class="px-md py-sm font-bold">الكمية (بالوحدة الأساسية)</th>
+                        <th class="px-md py-sm font-bold">الرصيد بعدها</th>
+                        <th class="px-md py-sm font-bold">ملاحظات</th>
+                    </tr>
+                </thead>
+                <tbody id="stockLogTableBody" class="divide-y divide-outline-variant/40 font-body-md">
+                    <!-- Logs populated via JS -->
+                </tbody>
+            </table>
+            <div id="stockLogEmpty" class="hidden py-lg text-center text-secondary">
+                لا توجد حركات مخزون مسجلة لهذا الصنف بعد.
+            </div>
+        </div>
+
+        <div class="flex items-center justify-end pt-sm border-t border-outline-variant/60 shrink-0">
+            <button type="button" onclick="closeStockLogModal()" class="px-lg py-sm rounded-full border border-outline-variant text-on-surface font-label-md hover:bg-surface-container transition-colors">إغلاق</button>
+        </div>
+    </div>
+</div>
+
+<!-- Confirm Toggle Active Modal -->
+<div class="fixed inset-0 z-[120] hidden items-center justify-center bg-black/50 p-4" id="confirmToggleModal">
+    <div class="bg-surface rounded-2xl shadow-2xl w-full max-w-md p-lg space-y-md border border-outline-variant/60">
+        <div class="flex items-center gap-sm text-amber-600 border-b border-outline-variant/60 pb-sm">
+            <div class="w-10 h-10 rounded-full bg-amber-500/10 flex items-center justify-center">
+                <span class="material-symbols-outlined text-2xl" id="confirmModalIcon">warning</span>
+            </div>
+            <h3 class="font-headline-sm font-bold text-on-surface" id="confirmModalTitle">تأكيد تعطيل الصنف</h3>
+        </div>
+
+        <p class="font-body-md text-on-surface text-sm leading-relaxed" id="confirmModalText">
+            هل تريد تعطيل هذا الصنف؟ لن يظهر في قوائم الاختيار الجديدة، لكن سجله التاريخي سيبقى محفوظًا.
+        </p>
+
+        <div class="flex items-center justify-end gap-sm pt-md border-t border-outline-variant/60">
+            <button type="button" onclick="closeConfirmToggleModal()" class="px-lg py-sm rounded-full border border-outline-variant text-on-surface font-label-md hover:bg-surface-container transition-colors">إلغاء</button>
+            <button type="button" id="confirmToggleBtn" onclick="executeToggleActive()" class="px-lg py-sm rounded-full bg-amber-600 text-white font-label-md hover:opacity-90 transition-opacity flex items-center gap-1 shadow-sm font-bold">
+                <span class="material-symbols-outlined text-sm">check</span>
+                <span id="confirmToggleBtnText">تأكيد التعطيل</span>
+            </button>
+        </div>
+    </div>
+</div>
+
+<%- include('partials/bottom-nav', { active: 'items' }) %>
+<script src="/js/shared-ui.js"></script>
+<script>
+let allItemsData = [];
+let activeSearchTimeout = null;
+let currentRestockItemId = null;
+let pendingToggleItemId = null;
+let currentItemHasStockLogs = false;
+
+// Initialize Page
+document.addEventListener('DOMContentLoaded', () => {
+    checkAuth();
+    loadItems();
+});
+
+function debounceSearch() {
+    clearTimeout(activeSearchTimeout);
+    activeSearchTimeout = setTimeout(() => {
+        loadItems();
+    }, 300);
+}
+
+async function loadItems() {
+    const tableBody = document.getElementById('itemsTableBody');
+    const loadingEl = document.getElementById('itemsLoading');
+    const emptyEl = document.getElementById('itemsEmpty');
+    const searchVal = document.getElementById('searchInput').value.trim();
+    const showInactive = document.getElementById('showInactiveToggle').checked;
+
+    loadingEl.classList.remove('hidden');
+    emptyEl.classList.add('hidden');
+
+    try {
+        let url = `/api/items?includeInactive=${showInactive}`;
+        if (searchVal) {
+            url += `&search=${encodeURIComponent(searchVal)}`;
+        }
+
+        const res = await fetch(url);
+        const json = await res.json();
+
+        if (!res.ok) throw new Error(json.error || 'فشل في جلب الأصناف');
+
+        allItemsData = json.data || [];
+
+        updateStats(allItemsData);
+
+        if (allItemsData.length === 0) {
+            tableBody.innerHTML = '';
+            loadingEl.classList.add('hidden');
+            emptyEl.classList.remove('hidden');
+            return;
+        }
+
+        tableBody.innerHTML = allItemsData.map(item => {
+            const baseUnitName = item.baseUnit ? item.baseUnit.name : 'غير محددة';
+            const isActive = item.isActive !== false;
+            
+            const unitsBadges = (item.units || []).map(u => {
+                if (u.isBaseUnit) {
+                    return `<span class="bg-primary/10 text-primary px-2 py-0.5 rounded-full font-bold text-[11px]">${u.name} (أساسية)</span>`;
+                }
+                const formattedRate = Number(u.conversionRate) < 1 ? u.conversionRate.toFixed(4) : u.conversionRate;
+                return `<span class="bg-surface-container text-secondary px-2 py-0.5 rounded-full font-bold text-[11px]">${u.name} (${formattedRate} ${baseUnitName})</span>`;
+            }).join(' ');
+
+            const stockNum = Number(item.currentStock) || 0;
+            const stockColorClass = stockNum > 0 ? 'text-green-600 font-bold' : (stockNum < 0 ? 'text-error font-bold' : 'text-secondary font-bold');
+            
+            const rowClass = isActive 
+                ? 'hover:bg-primary/5 transition-colors' 
+                : 'bg-surface-container-low/60 opacity-70 hover:opacity-100 transition-opacity';
+
+            return `
+                <tr class="${rowClass}">
+                    <td class="px-md py-md">
+                        <div class="flex flex-col">
+                            <div class="flex items-center gap-2">
+                                <span class="font-bold text-on-surface text-base">${item.name}</span>
+                                ${!isActive ? `<span class="bg-slate-200 text-slate-700 font-bold px-2 py-0.5 rounded-full text-[10px]">معطّل</span>` : ''}
+                            </div>
+                            ${item.notes ? `<span class="text-xs text-secondary">${item.notes}</span>` : ''}
+                        </div>
+                    </td>
+                    <td class="px-md py-md">
+                        <span class="px-2 py-1 bg-primary-container text-on-primary-container rounded-lg font-bold text-xs">${baseUnitName}</span>
+                    </td>
+                    <td class="px-md py-md">
+                        <div class="flex flex-wrap gap-1">
+                            ${unitsBadges}
+                        </div>
+                    </td>
+                    <td class="px-md py-md">
+                        <span class="text-base dir-ltr inline-block ${stockColorClass}">${formatCurrency(stockNum).replace(' ج.م', '')} ${baseUnitName}</span>
+                    </td>
+                    <td class="px-md py-md">
+                        <div class="flex items-center justify-center gap-1 flex-wrap">
+                            ${isActive ? `
+                                <button type="button" onclick="openRestockModal(${item.id})" class="px-2.5 py-1 bg-green-700 hover:bg-green-800 text-white rounded-lg text-xs font-bold transition-all flex items-center gap-1 shadow-xs cursor-pointer" title="توريد مخزون">
+                                    <span class="material-symbols-outlined text-sm">warehouse</span>
+                                    <span>توريد</span>
+                                </button>
+                            ` : ''}
+                            <button type="button" onclick="openStockLogModal(${item.id})" class="px-2.5 py-1 bg-surface-container hover:bg-primary/10 text-secondary hover:text-primary rounded-lg text-xs font-bold transition-all flex items-center gap-1 cursor-pointer" title="عرض السجل">
+                                <span class="material-symbols-outlined text-sm">history</span>
+                                <span>السجل</span>
+                            </button>
+                            <button type="button" onclick="openEditItemModal(${item.id})" class="px-2.5 py-1 border border-outline-variant hover:bg-surface-container text-secondary rounded-lg text-xs font-bold transition-all cursor-pointer" title="تعديل">
+                                <span class="material-symbols-outlined text-sm">edit</span>
+                            </button>
+                            ${isActive ? `
+                                <button type="button" onclick="promptToggleActive(${item.id}, true)" class="px-2.5 py-1 border border-amber-500/40 text-amber-700 hover:bg-amber-500/10 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1" title="تعطيل الصنف">
+                                    <span class="material-symbols-outlined text-sm">block</span>
+                                    <span>تعطيل</span>
+                                </button>
+                            ` : `
+                                <button type="button" onclick="promptToggleActive(${item.id}, false)" class="px-2.5 py-1 bg-green-600 hover:bg-green-700 text-white rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1" title="إعادة تفعيل الصنف">
+                                    <span class="material-symbols-outlined text-sm">restore</span>
+                                    <span>تفعيل</span>
+                                </button>
+                            `}
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+
+        loadingEl.classList.add('hidden');
+    } catch (err) {
+        console.error(err);
+        loadingEl.classList.add('hidden');
+        showToast(err.message || 'فشل في تحميل بيانات الأصناف', 'error');
+    }
+}
+
+function updateStats(items) {
+    document.getElementById('statTotalItems').textContent = items.length;
+    const inStock = items.filter(i => (Number(i.currentStock) || 0) > 0).length;
+    const zeroStock = items.filter(i => (Number(i.currentStock) || 0) <= 0).length;
+    document.getElementById('statInStock').textContent = inStock;
+    document.getElementById('statZeroStock').textContent = zeroStock;
+}
+
+// ─── Dynamic Relative Units Builder Logic ─────────────────────────────
+function renderUnitsBuilder(units = [], isProtected = false) {
+    const container = document.getElementById('unitsRowsContainer');
+    container.innerHTML = '';
+
+    if (!units || units.length === 0) {
+        // Default initial 2 rows for fresh creation: Row 0 ("كيلو"), Row 1 ("شكارة")
+        units = [
+            { name: '', isBaseUnit: true, conversionRate: 1.0 },
+            { name: '', isBaseUnit: false, conversionRate: 50.0 }
+        ];
+    }
+
+    units.forEach((u, idx) => {
+        appendUnitRowToDOM(u, idx, isProtected);
+    });
+
+    updateAllRelativeDropdownsAndPreviews();
+}
+
+function appendUnitRowToDOM(unitObj = {}, idx, isProtected = false) {
+    const container = document.getElementById('unitsRowsContainer');
+    const isBase = Boolean(unitObj.isBaseUnit);
+    const rowId = `unit_row_${idx}_${Date.now()}`;
+    const isRowProtected = isProtected && Boolean(unitObj.id);
+
+    const row = document.createElement('div');
+    row.className = 'unit-row space-y-xs bg-surface p-xs rounded-xl border border-outline-variant/60';
+    row.dataset.unitId = unitObj.id || '';
+    row.id = rowId;
+
+    row.innerHTML = `
+        <div class="flex items-center gap-xs flex-wrap sm:flex-nowrap">
+            <!-- Unit Name Input -->
+            <div class="flex-1 min-w-[120px]">
+                <label class="block text-[11px] font-bold text-secondary mb-1">اسم الوحدة <span class="text-error">*</span></label>
+                <input type="text" value="${unitObj.name || ''}" ${isRowProtected ? 'readonly' : ''} class="unit-name-input w-full h-9 px-sm rounded-md bg-surface-container-low border border-outline-variant text-xs font-bold text-right focus:border-primary outline-none" placeholder="مثال: كيلو، شكارة، طن..." required oninput="onUnitFormChanged()" />
+            </div>
+
+            <!-- Base Unit Radio Selector -->
+            <div class="w-28 flex flex-col justify-end">
+                <label class="block text-[11px] font-bold text-secondary mb-1">نوع الوحدة</label>
+                <label class="flex items-center justify-center gap-1.5 h-9 px-xs rounded-md bg-surface-container-low border border-outline-variant/60 cursor-pointer select-none">
+                    <input type="radio" name="baseUnitRadio" ${isRowProtected ? 'disabled' : ''} class="base-unit-radio w-4 h-4 text-primary focus:ring-primary cursor-pointer" ${isBase ? 'checked' : ''} onchange="onUnitFormChanged()" />
+                    <span class="text-xs font-bold text-on-surface">أساسية</span>
+                </label>
+            </div>
+
+            <!-- Relative Controls Container (Hidden when selected as Base Unit) -->
+            <div class="relative-controls-container flex items-center gap-xs flex-1 min-w-[200px]">
+                <div class="w-36">
+                    <label class="block text-[11px] font-bold text-secondary mb-1">بالنسبة لـ</label>
+                    <select ${isRowProtected ? 'disabled' : ''} class="unit-relative-select w-full h-9 px-xs rounded-md bg-surface-container-low border border-outline-variant text-xs font-bold text-right outline-none cursor-pointer" onchange="onUnitFormChanged()">
+                        <!-- Options filled dynamically -->
+                    </select>
+                </div>
+
+                <div class="w-28">
+                    <label class="block text-[11px] font-bold text-secondary mb-1">الكمية</label>
+                    <input type="number" step="any" min="0.000001" value="${unitObj.relativeQuantity || unitObj.conversionRate || ''}" ${isRowProtected ? 'readonly' : ''} class="unit-qty-input w-full h-9 px-sm rounded-md bg-surface-container-low border border-outline-variant text-xs font-bold text-center dir-ltr focus:border-primary outline-none" placeholder="مثال: 50" oninput="onUnitFormChanged()" />
+                </div>
+            </div>
+
+            <!-- Base Unit Badge Display (Shown when selected as Base Unit) -->
+            <div class="base-unit-badge-container hidden w-full sm:w-auto pt-4 shrink-0">
+                <span class="text-[11px] font-bold text-primary bg-primary/10 px-3 py-1.5 rounded-md block text-center border border-primary/20">
+                    ⭐ الوحدة الأساسية للمخزون
+                </span>
+            </div>
+
+            <!-- Delete Row Button -->
+            <div class="w-8 shrink-0 pt-4">
+                ${!isRowProtected ? `
+                    <button type="button" onclick="removeUnitRow('${rowId}')" class="w-8 h-8 flex items-center justify-center text-error hover:bg-error/10 rounded-md transition-colors shrink-0 cursor-pointer" title="حذف الوحدة">
+                        <span class="material-symbols-outlined text-base">delete</span>
+                    </button>
+                ` : ''}
+            </div>
+        </div>
+
+        <!-- Live Calculation Preview -->
+        <div class="unit-preview-text text-[11px] font-medium text-primary bg-primary/5 px-sm py-1 rounded-md border border-primary/10">
+            جاري حساب معامل التحويل...
+        </div>
+    `;
+
+    container.appendChild(row);
+}
+
+function addUnitRow() {
+    const container = document.getElementById('unitsRowsContainer');
+    const currentRowsCount = container.querySelectorAll('.unit-row').length;
+    appendUnitRowToDOM({}, currentRowsCount, false);
+    updateAllRelativeDropdownsAndPreviews();
+}
+
+function removeUnitRow(rowId) {
+    const container = document.getElementById('unitsRowsContainer');
+    const rows = container.querySelectorAll('.unit-row');
+    if (rows.length <= 1) {
+        showToast('يجب الاحتفاظ بوحدة قياس واحدة على الأقل', 'warning');
+        return;
+    }
+
+    const row = document.getElementById(rowId);
+    if (row) row.remove();
+    updateAllRelativeDropdownsAndPreviews();
+}
+
+function onUnitFormChanged() {
+    updateAllRelativeDropdownsAndPreviews();
+}
+
+function updateAllRelativeDropdownsAndPreviews() {
+    const rows = Array.from(document.querySelectorAll('#unitsRowsContainer .unit-row'));
+    if (rows.length === 0) return;
+
+    // Find index of row selected via baseUnitRadio
+    let baseRowIndex = rows.findIndex(row => {
+        const radio = row.querySelector('.base-unit-radio');
+        return radio && radio.checked;
+    });
+
+    if (baseRowIndex < 0) {
+        baseRowIndex = 0;
+        const firstRadio = rows[0]?.querySelector('.base-unit-radio');
+        if (firstRadio) firstRadio.checked = true;
+    }
+
+    // Step 1: Calculate raw reference value for each row
+    const rawRefMap = new Map();
+    const N = rows.length;
+
+    rows.forEach((row, idx) => {
+        const nameInput = row.querySelector('.unit-name-input');
+        const unitName = nameInput ? nameInput.value.trim() || `وحدة ${idx + 1}` : `وحدة ${idx + 1}`;
+
+        if (idx === 0) {
+            rawRefMap.set(0, { name: unitName, ref: 1.0 });
+        } else {
+            const select = row.querySelector('.unit-relative-select');
+            const qtyInput = row.querySelector('.unit-qty-input');
+            const targetIdx = select ? parseInt(select.value) || 0 : 0;
+            const targetData = rawRefMap.get(targetIdx) || { name: 'الوحدة 1', ref: 1.0 };
+            const qty = qtyInput ? parseFloat(qtyInput.value) || 0 : 0;
+
+            const rawRef = qty * targetData.ref;
+            rawRefMap.set(idx, { name: unitName, ref: rawRef });
+        }
+    });
+
+    // Selected Base Unit raw reference value:
+    const baseRawRef = rawRefMap.get(baseRowIndex)?.ref || 1.0;
+    const baseUnitName = rawRefMap.get(baseRowIndex)?.name || 'الوحدة الأساسية';
+
+    // Step 2: Render UI state, dropdown options & live previews for each row
+    rows.forEach((row, idx) => {
+        const isBase = idx === baseRowIndex;
+
+        const baseBadgeContainer = row.querySelector('.base-unit-badge-container');
+        const relativeControlsContainer = row.querySelector('.relative-controls-container');
+        const select = row.querySelector('.unit-relative-select');
+        const previewEl = row.querySelector('.unit-preview-text');
+
+        if (isBase) {
+            if (baseBadgeContainer) baseBadgeContainer.classList.remove('hidden');
+            if (relativeControlsContainer) relativeControlsContainer.classList.add('hidden');
+            if (previewEl) {
+                previewEl.innerHTML = `<span class="text-primary font-bold">⭐ الوحدة المرجعية الأساسية لتتبع المخزون (1.0)</span>`;
+            }
+        } else {
+            if (baseBadgeContainer) baseBadgeContainer.classList.add('hidden');
+            if (relativeControlsContainer) relativeControlsContainer.classList.remove('hidden');
+
+            const currentSelectedVal = select ? select.value : '';
+
+            // Re-populate relativeTo dropdown with all other unit options in the form (except itself)
+            if (select) {
+                let optionsHTML = '';
+                for (let otherIdx = 0; otherIdx < N; otherIdx++) {
+                    if (otherIdx === idx) continue; // Skip self
+                    const otherData = rawRefMap.get(otherIdx);
+                    const otherName = otherData ? otherData.name : `وحدة ${otherIdx + 1}`;
+                    optionsHTML += `<option value="${otherIdx}" ${String(otherIdx) === String(currentSelectedVal) ? 'selected' : ''}>${otherName}</option>`;
+                }
+                select.innerHTML = optionsHTML;
+            }
+
+            const currentRawRef = rawRefMap.get(idx)?.ref || 0;
+            const conversionRate = currentRawRef / baseRawRef;
+            const unitName = rawRefMap.get(idx)?.name || `وحدة ${idx + 1}`;
+
+            if (previewEl) {
+                if (currentRawRef > 0 && baseRawRef > 0) {
+                    const formattedRate = Number(conversionRate) < 1 ? Number(conversionRate.toFixed(4)) : conversionRate;
+                    previewEl.innerHTML = `يعني 1 <strong>${unitName}</strong> = <strong class="text-primary underline dir-ltr inline-block">${formattedRate}</strong> ${baseUnitName}`;
+                } else {
+                    previewEl.innerHTML = `أدخل الكمية لربط هذه الوحدة بالتعبير النسبة`;
+                }
+            }
+        }
+    });
+}
+
+// ─── Open Item Form (Add / Edit) ────────────────────────────────
+function openAddItemModal() {
+    currentItemHasStockLogs = false;
+    document.getElementById('itemModalId').value = '';
+    document.getElementById('itemModalTitle').textContent = 'إضافة صنف جديد';
+    document.getElementById('itemModalIcon').textContent = 'add_box';
+    document.getElementById('itemName').value = '';
+    document.getElementById('itemNotes').value = '';
+    document.getElementById('stockProtectedWarning').classList.add('hidden');
+
+    renderUnitsBuilder([], false);
+
+    const modal = document.getElementById('itemModal');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    document.body.style.overflow = 'hidden';
+    document.getElementById('itemName').focus();
+}
+
+async function openEditItemModal(itemId) {
+    try {
+        const res = await fetch(`/api/items/${itemId}`);
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'فشل في جلب بيانات الصنف');
+
+        currentItemHasStockLogs = Boolean(data.hasStockLogs);
+
+        document.getElementById('itemModalId').value = data.id;
+        document.getElementById('itemModalTitle').textContent = `تعديل الصنف "${data.name}"`;
+        document.getElementById('itemModalIcon').textContent = 'edit';
+        document.getElementById('itemName').value = data.name;
+        document.getElementById('itemNotes').value = data.notes || '';
+
+        const warningEl = document.getElementById('stockProtectedWarning');
+        if (currentItemHasStockLogs) {
+            warningEl.classList.remove('hidden');
+        } else {
+            warningEl.classList.add('hidden');
+        }
+
+        renderUnitsBuilder(data.units || [], currentItemHasStockLogs);
+
+        const modal = document.getElementById('itemModal');
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        document.body.style.overflow = 'hidden';
+    } catch (err) {
+        console.error(err);
+        showToast(err.message || 'فشل في جلب بيانات الصنف للتعديل', 'error');
+    }
+}
+
+function closeItemModal() {
+    const modal = document.getElementById('itemModal');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+    document.body.style.overflow = '';
+}
+
+async function submitItemForm(e) {
+    e.preventDefault();
+    const itemId = document.getElementById('itemModalId').value;
+    const submitBtn = document.getElementById('submitItemBtn');
+    const name = document.getElementById('itemName').value.trim();
+    const notes = document.getElementById('itemNotes').value.trim();
+
+    const rows = Array.from(document.querySelectorAll('#unitsRowsContainer .unit-row'));
+    if (rows.length === 0) {
+        showToast('يجب إدخال وحدة قياس واحدة على الأقل', 'warning');
+        return;
+    }
+
+    const unitsPayload = [];
+    const baseUnitName = rows[0].querySelector('.unit-name-input').value.trim();
+
+    rows.forEach((row, idx) => {
+        const uId = row.dataset.unitId ? parseInt(row.dataset.unitId) : undefined;
+        const uName = row.querySelector('.unit-name-input').value.trim();
+        const radio = row.querySelector('.base-unit-radio');
+        const isBase = radio ? radio.checked : (idx === 0);
+
+        if (isBase) {
+            unitsPayload.push({
+                id: uId,
+                name: uName,
+                isBaseUnit: true,
+                conversionRate: 1.0
+            });
+        } else {
+            const select = row.querySelector('.unit-relative-select');
+            const qtyInput = row.querySelector('.unit-qty-input');
+            const targetIdx = select ? parseInt(select.value) || 0 : 0;
+            const targetRow = rows[targetIdx];
+            const targetName = targetRow ? targetRow.querySelector('.unit-name-input').value.trim() : baseUnitName;
+            const relQty = parseFloat(qtyInput.value) || 0;
+
+            unitsPayload.push({
+                id: uId,
+                name: uName,
+                isBaseUnit: false,
+                relativeToName: targetName,
+                relativeToIndex: targetIdx,
+                relativeQuantity: relQty
+            });
+        }
+    });
+
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<span class="material-symbols-outlined text-sm animate-spin">progress_activity</span> <span>جاري الحفظ...</span>';
+
+    try {
+        const isEdit = Boolean(itemId);
+        const url = isEdit ? `/api/items/${itemId}` : '/api/items';
+        const method = isEdit ? 'PUT' : 'POST';
+
+        const res = await fetch(url, {
+            method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, notes, units: unitsPayload })
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'فشل في حفظ بيانات الصنف');
+
+        closeItemModal();
+        showToast(isEdit ? 'تم تحديث بيانات الصنف بنجاح ✓' : `تم إضافة الصنف "${data.name}" بنجاح ✓`, 'success');
+        loadItems();
+    } catch (err) {
+        console.error(err);
+        showToast(err.message || 'فشل في حفظ الصنف', 'error');
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<span class="material-symbols-outlined text-sm">check</span> <span>حفظ الصنف</span>';
+    }
+}
+
+// ─── Restock Modal Logic ─────────────────────────────────────────
+function openRestockModal(itemId) {
+    const item = allItemsData.find(i => i.id === itemId);
+    if (!item) return;
+
+    currentRestockItemId = itemId;
+    document.getElementById('restockItemName').textContent = item.name;
+
+    const select = document.getElementById('restockUnitSelect');
+    select.innerHTML = (item.units || []).map(u => {
+        const formattedRate = Number(u.conversionRate) < 1 ? u.conversionRate.toFixed(4) : u.conversionRate;
+        return `<option value="${u.id}">${u.name} ${u.isBaseUnit ? '(الوحدة الأساسية)' : `(${formattedRate} ${item.baseUnit?.name || ''})`}</option>`;
+    }).join('');
+
+    document.getElementById('restockForm').reset();
+    const modal = document.getElementById('restockModal');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeRestockModal() {
+    const modal = document.getElementById('restockModal');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+    document.body.style.overflow = '';
+    currentRestockItemId = null;
+}
+
+async function submitRestock(e) {
+    e.preventDefault();
+    if (!currentRestockItemId) return;
+
+    const submitBtn = document.getElementById('submitRestockBtn');
+    const unitId = document.getElementById('restockUnitSelect').value;
+    const quantity = document.getElementById('restockQuantity').value;
+    const notes = document.getElementById('restockNotes').value;
+
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<span class="material-symbols-outlined text-sm animate-spin">progress_activity</span> <span>جاري التوريد...</span>';
+
+    try {
+        const res = await fetch(`/api/items/${currentRestockItemId}/restock`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ quantity, unitId, notes })
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'فشل في إضافة التوريد');
+
+        closeRestockModal();
+        showToast('تم توريد المخزون بنجاح ✓', 'success');
+        loadItems();
+    } catch (err) {
+        console.error(err);
+        showToast(err.message || 'فشل في توريد المخزون', 'error');
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<span class="material-symbols-outlined text-sm">check</span> <span>حفظ التوريد</span>';
+    }
+}
+
+// ─── Stock Log Modal Logic ───────────────────────────────────────
+async function openStockLogModal(itemId) {
+    const item = allItemsData.find(i => i.id === itemId);
+    if (!item) return;
+
+    document.getElementById('stockLogItemName').textContent = item.name;
+    const tableBody = document.getElementById('stockLogTableBody');
+    const emptyEl = document.getElementById('stockLogEmpty');
+
+    tableBody.innerHTML = '<tr><td colspan="5" class="py-md text-center text-secondary">جاري تحميل حركة المخزون...</td></tr>';
+    emptyEl.classList.add('hidden');
+
+    const modal = document.getElementById('stockLogModal');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    document.body.style.overflow = 'hidden';
+
+    try {
+        const res = await fetch(`/api/items/${itemId}`);
+        const data = await res.json();
+
+        if (!res.ok) throw new Error(data.error || 'فشل في جلب سجل الحركة');
+
+        const logs = data.stockLogs || [];
+        const baseUnitName = data.baseUnit ? data.baseUnit.name : '';
+
+        if (logs.length === 0) {
+            tableBody.innerHTML = '';
+            emptyEl.classList.remove('hidden');
+            return;
+        }
+
+        tableBody.innerHTML = logs.map(log => {
+            let typeBadge = '';
+            if (log.changeType === 'restock') {
+                typeBadge = '<span class="px-2 py-0.5 rounded-full bg-green-100 text-green-700 font-bold text-[11px]">توريد +</span>';
+            } else if (log.changeType === 'sale') {
+                typeBadge = '<span class="px-2 py-0.5 rounded-full bg-tertiary-fixed text-on-tertiary-fixed font-bold text-[11px]">خصم مبيعات -</span>';
+            } else {
+                typeBadge = '<span class="px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 font-bold text-[11px]">تصحيح</span>';
+            }
+
+            const qtyVal = Number(log.quantityBase) || 0;
+            const qtySign = qtyVal > 0 ? '+' : '';
+
+            return `
+                <tr class="hover:bg-surface-container-high/50">
+                    <td class="px-md py-sm font-mono text-secondary">${formatDate(log.createdAt)}</td>
+                    <td class="px-md py-sm">${typeBadge}</td>
+                    <td class="px-md py-sm font-bold text-on-surface dir-ltr inline-block">${qtySign}${qtyVal} ${baseUnitName}</td>
+                    <td class="px-md py-sm font-bold text-primary dir-ltr inline-block">${log.balanceAfter} ${baseUnitName}</td>
+                    <td class="px-md py-sm text-secondary">${log.notes || '-'}</td>
+                </tr>
+            `;
+        }).join('');
+
+    } catch (err) {
+        console.error(err);
+        showToast(err.message || 'فشل في جلب سجل الحركة', 'error');
+    }
+}
+
+function closeStockLogModal() {
+    const modal = document.getElementById('stockLogModal');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+    document.body.style.overflow = '';
+}
+
+// ─── Soft Delete / Toggle Active Logic ────────────────────────────
+function promptToggleActive(itemId, willDeactivate) {
+    const item = allItemsData.find(i => i.id === itemId);
+    if (!item) return;
+
+    pendingToggleItemId = itemId;
+    const titleEl = document.getElementById('confirmModalTitle');
+    const textEl = document.getElementById('confirmModalText');
+    const btnText = document.getElementById('confirmToggleBtnText');
+    const iconEl = document.getElementById('confirmModalIcon');
+    const btn = document.getElementById('confirmToggleBtn');
+
+    if (willDeactivate) {
+        titleEl.textContent = `تعطيل الصنف "${item.name}"`;
+        textEl.textContent = 'هل تريد تعطيل هذا الصنف؟ لن يظهر في قوائم الاختيار الجديدة، لكن سجله التاريخي سيبقى محفوظًا.';
+        btnText.textContent = 'تأكيد التعطيل';
+        iconEl.textContent = 'warning';
+        btn.className = 'px-lg py-sm rounded-full bg-amber-600 text-white font-label-md hover:opacity-90 transition-opacity flex items-center gap-1 shadow-sm font-bold';
+    } else {
+        titleEl.textContent = `إعادة تفعيل الصنف "${item.name}"`;
+        textEl.textContent = 'هل تريد إعادة تفعيل هذا الصنف ليظهر مجدداً في قوائم الاختيار المعاملات الجديدة؟';
+        btnText.textContent = 'إعادة التفعيل';
+        iconEl.textContent = 'restore';
+        btn.className = 'px-lg py-sm rounded-full bg-green-600 text-white font-label-md hover:opacity-90 transition-opacity flex items-center gap-1 shadow-sm font-bold';
+    }
+
+    const modal = document.getElementById('confirmToggleModal');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeConfirmToggleModal() {
+    const modal = document.getElementById('confirmToggleModal');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+    document.body.style.overflow = '';
+    pendingToggleItemId = null;
+}
+
+async function executeToggleActive() {
+    if (!pendingToggleItemId) return;
+
+    const confirmBtn = document.getElementById('confirmToggleBtn');
+    confirmBtn.disabled = true;
+
+    try {
+        const res = await fetch(`/api/items/${pendingToggleItemId}`, {
+            method: 'DELETE'
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'فشل في تغيير حالة الصنف');
+
+        closeConfirmToggleModal();
+        showToast(data.message || 'تم تحديث حالة الصنف بنجاح', 'success');
+        loadItems();
+    } catch (err) {
+        console.error(err);
+        showToast(err.message || 'فشل في تغيير حالة الصنف', 'error');
+    } finally {
+        confirmBtn.disabled = false;
+    }
+}
+</script>
+</body>
+</html>

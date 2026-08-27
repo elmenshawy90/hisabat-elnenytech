@@ -16,8 +16,8 @@
 <span class="material-symbols-outlined <%= active === 'invoices' ? 'filled' : '' %>">receipt_long</span>
 <span class="text-[10px] font-label-sm">الفواتير</span>
 </a>
-<a class="flex flex-col items-center gap-xs text-secondary" href="#">
-<span class="material-symbols-outlined">settings</span>
-<span class="text-[10px] font-label-sm">الإعدادات</span>
+<a class="flex flex-col items-center gap-xs <%= active === 'items' ? 'text-primary' : 'text-secondary' %>" href="/items">
+<span class="material-symbols-outlined <%= active === 'items' ? 'filled' : '' %>">inventory_2</span>
+<span class="text-[10px] font-label-sm">الأصناف</span>
 </a>
 </nav>

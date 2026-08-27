@@ -19,6 +19,11 @@
             <span class="material-symbols-outlined <%= active === 'clients' ? 'filled' : '' %>">group</span>
             <span class="font-label-md text-label-md flex-grow text-right">العملاء</span>
         </a>
+        <a class="flex flex-row items-center gap-md <%= active === 'items' ? 'bg-primary-container text-on-primary-container' : 'text-secondary' %> px-md py-sm hover:bg-surface-container-highest transition-all rounded-lg"
+            href="/items">
+            <span class="material-symbols-outlined <%= active === 'items' ? 'filled' : '' %>">inventory_2</span>
+            <span class="font-label-md text-label-md flex-grow text-right">كتالوج الأصناف</span>
+        </a>
         <a class="flex flex-row items-center gap-md <%= active === 'invoices' ? 'bg-primary-container text-on-primary-container' : 'text-secondary' %> px-md py-sm hover:bg-surface-container-highest transition-all rounded-lg"
             href="/new-invoice">
             <span class="material-symbols-outlined <%= active === 'invoices' ? 'filled' : '' %>">add_circle</span>
