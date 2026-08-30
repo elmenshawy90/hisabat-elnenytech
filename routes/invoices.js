@@ -203,6 +203,21 @@ router.post('/', async (req, res) => {
       }
 
       finalAmount = Math.round((finalAmount + Number.EPSILON) * 100) / 100;
+
+      // Calculate discount amount if provided
+      let discountAmount = 0;
+      const discountType = data.discountType; // 'percentage' or 'fixed'
+      const discountVal = Number(data.discountValue);
+      if (!isNaN(discountVal) && discountVal > 0) {
+        if (discountType === 'percentage') {
+          const pct = Math.min(Math.max(discountVal, 0), 100);
+          discountAmount = Math.round((finalAmount * (pct / 100) + Number.EPSILON) * 100) / 100;
+        } else if (discountType === 'fixed') {
+          discountAmount = Math.round((discountVal + Number.EPSILON) * 100) / 100;
+        }
+      }
+      discountAmount = Math.min(discountAmount, finalAmount);
+      finalAmount = Math.round((finalAmount - discountAmount + Number.EPSILON) * 100) / 100;
     } else {
       const rawAmount = isNaN(parseFloat(data.amount)) ? 0 : parseFloat(data.amount);
       finalAmount = Math.round((rawAmount + Number.EPSILON) * 100) / 100;
@@ -235,6 +250,7 @@ router.post('/', async (req, res) => {
           type: data.type,
           balanceEffect,
           amount: finalAmount,
+          discountAmount: discountAmount || 0,
           details: data.details || '-',
           address: data.address || '-',
           status: data.status || 'pending',

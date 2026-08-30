@@ -226,7 +226,7 @@ router.get('/:id', async (req, res) => {
 // POST /api/items - Create item with units
 router.post('/', async (req, res) => {
   try {
-    const { name, notes, units } = req.body;
+    const { name, notes, units, defaultSellingPrice } = req.body;
 
     if (!name || !String(name).trim()) {
       return res.status(400).json({ error: 'اسم الصنف مطلوب' });
@@ -234,6 +234,8 @@ router.post('/', async (req, res) => {
 
     const trimmedName = String(name).trim();
     const normName = normalize(trimmedName);
+
+    const parsedPrice = defaultSellingPrice !== undefined && defaultSellingPrice !== null && defaultSellingPrice !== '' && !isNaN(Number(defaultSellingPrice)) ? Number(defaultSellingPrice) : null;
 
     // Duplicate name check
     const existingItems = await prisma.item.findMany({ select: { id: true, name: true } });
@@ -250,6 +252,7 @@ router.post('/', async (req, res) => {
         data: {
           name: trimmedName,
           notes: notes ? String(notes).trim() : '',
+          defaultSellingPrice: parsedPrice,
           units: {
             create: processedUnits.map(u => ({
               name: u.name,
@@ -298,13 +301,14 @@ router.put('/:id', async (req, res) => {
       return res.status(404).json({ error: 'الصنف غير موجود' });
     }
 
-    const { name, notes, units } = req.body;
+    const { name, notes, units, defaultSellingPrice } = req.body;
     if (!name || !String(name).trim()) {
       return res.status(400).json({ error: 'اسم الصنف مطلوب' });
     }
 
     const trimmedName = String(name).trim();
     const normName = normalize(trimmedName);
+    const parsedPrice = defaultSellingPrice !== undefined && defaultSellingPrice !== null && defaultSellingPrice !== '' && !isNaN(Number(defaultSellingPrice)) ? Number(defaultSellingPrice) : null;
 
     const existingItems = await prisma.item.findMany({ select: { id: true, name: true } });
     const duplicate = existingItems.find(i => i.id !== id && normalize(i.name) === normName);
@@ -339,12 +343,13 @@ router.put('/:id', async (req, res) => {
     }
 
     const updatedItem = await prisma.$transaction(async (tx) => {
-      // Update item name & notes
+      // Update item name, notes & defaultSellingPrice
       const itemRecord = await tx.item.update({
         where: { id },
         data: {
           name: trimmedName,
-          notes: notes ? String(notes).trim() : ''
+          notes: notes ? String(notes).trim() : '',
+          defaultSellingPrice: parsedPrice
         }
       });
 

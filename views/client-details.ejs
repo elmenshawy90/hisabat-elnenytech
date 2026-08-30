@@ -340,7 +340,7 @@
                 </div>
             </div>
 
-            <!-- Dynamic Line Items Container (Shown ONLY for purchase invoices, placed at end before buttons) -->
+            <!-- Dynamic Line Items Container (Shown ONLY for purchase invoices) -->
             <div id="purchaseItemsContainer" class="hidden space-y-sm border border-outline-variant/80 rounded-xl p-md bg-surface-container-lowest">
                 <div class="flex items-center justify-between border-b border-outline-variant/40 pb-xs">
                     <div>
@@ -357,10 +357,34 @@
                     <!-- Dynamic Line Rows Rendered via JS -->
                 </div>
 
-                <!-- Items Total Footer -->
-                <div class="flex items-center justify-between border-t border-outline-variant/60 pt-sm font-bold text-sm">
-                    <span class="text-on-surface-variant">الإجمالي الكلي للبنود:</span>
-                    <span id="itemsGrandTotalText" class="text-primary text-base font-bold dir-ltr">0.00 ج.م</span>
+                <!-- Subtotal, Discount & Final Total Footer -->
+                <div class="space-y-xs border-t border-outline-variant/60 pt-sm">
+                    <div class="flex items-center justify-between font-bold text-xs text-on-surface-variant">
+                        <span>مجموع البنود:</span>
+                        <span id="itemsSubtotalText" class="text-on-surface text-sm font-bold dir-ltr">0.00 ج.م</span>
+                    </div>
+                    <div class="flex items-center justify-between gap-sm pt-xs">
+                        <div class="flex items-center gap-xs">
+                            <span class="text-xs font-bold text-on-surface-variant">الخصم:</span>
+                            <div class="flex items-center gap-xs bg-surface-container-low p-1 rounded-lg border border-outline-variant">
+                                <label class="flex items-center gap-1 text-[11px] font-bold cursor-pointer px-1.5 py-0.5 rounded select-none">
+                                    <input type="radio" name="discountType" value="percentage" checked onchange="updateAllLineTotalsAndGrandTotal()" class="accent-primary" />
+                                    <span>نسبة %</span>
+                                </label>
+                                <label class="flex items-center gap-1 text-[11px] font-bold cursor-pointer px-1.5 py-0.5 rounded select-none">
+                                    <input type="radio" name="discountType" value="fixed" onchange="updateAllLineTotalsAndGrandTotal()" class="accent-primary" />
+                                    <span>مبلغ ثابت</span>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="w-28">
+                            <input type="number" step="any" min="0" id="discountValue" placeholder="0" class="w-full h-8 px-xs rounded-md bg-surface-container-low border border-outline-variant text-xs font-bold text-center dir-ltr focus:border-primary outline-none" oninput="updateAllLineTotalsAndGrandTotal()" />
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-between pt-xs font-bold text-sm border-t border-outline-variant/40">
+                        <span class="text-on-surface font-bold">الإجمالي الكلي بعد الخصم:</span>
+                        <span id="itemsGrandTotalText" class="text-primary text-base font-bold dir-ltr">0.00 ج.م</span>
+                    </div>
                 </div>
             </div>
             <div class="flex flex-row gap-sm pt-md border-t border-outline-variant mt-lg">
@@ -399,6 +423,11 @@
             <div class="flex justify-between border-b border-outline-variant pb-xs">
                 <span class="text-secondary font-label-md">المبلغ المستحق</span>
                 <span class="font-body-md font-bold" id="tdAmount"></span>
+            </div>
+            
+            <div id="tdDiscountRow" class="hidden flex justify-between border-b border-outline-variant pb-xs">
+                <span class="text-secondary font-label-md font-bold">الخصم المطبق</span>
+                <span class="font-body-md font-bold text-amber-700 dir-ltr" id="tdDiscountAmount"></span>
             </div>
             
             <!-- Itemized Breakdown Table (Shown if invoice has items) -->
@@ -1408,6 +1437,15 @@ function openTransactionDetails(id) {
     document.getElementById('tdAddress').textContent = inv.address || '-';
     document.getElementById('tdNotes').textContent = inv.details || '-';
 
+    const discountRow = document.getElementById('tdDiscountRow');
+    const discountAmountEl = document.getElementById('tdDiscountAmount');
+    if (inv.discountAmount && inv.discountAmount > 0) {
+        if (discountAmountEl) discountAmountEl.textContent = `-${formatCurrency(inv.discountAmount)}`;
+        if (discountRow) discountRow.classList.remove('hidden');
+    } else {
+        if (discountRow) discountRow.classList.add('hidden');
+    }
+
     // Render items breakdown if available
     const itemsContainer = document.getElementById('tdItemsBreakdownContainer');
     const itemsBody = document.getElementById('tdItemsBreakdownBody');
@@ -1455,6 +1493,7 @@ function openInvoiceModal(type = 'purchase') {
     const purchaseItemsContainer = document.getElementById('purchaseItemsContainer');
     const addressLabel = document.getElementById('addressLabel');
     const detailsLabel = document.getElementById('detailsLabel');
+    const detailsInputContainer = document.getElementById('invoiceDetails') ? document.getElementById('invoiceDetails').closest('.flex.flex-col') : null;
     const submitBtn = document.getElementById('submitBtn');
     
     document.getElementById('invoiceForm').reset();
@@ -1469,6 +1508,7 @@ function openInvoiceModal(type = 'purchase') {
         amountInput.required = true;
         purchaseItemsContainer.classList.add('hidden');
         addressLabel.textContent = 'المستلم / ملاحظات';
+        if (detailsInputContainer) detailsInputContainer.classList.remove('hidden');
         detailsLabel.textContent = 'تفاصيل السداد';
         submitBtn.textContent = 'حفظ السداد';
     } else {
@@ -1478,7 +1518,7 @@ function openInvoiceModal(type = 'purchase') {
         amountInput.required = false;
         purchaseItemsContainer.classList.remove('hidden');
         addressLabel.textContent = 'عنوان التوصيل';
-        detailsLabel.textContent = 'التفاصيل / المشتريات';
+        if (detailsInputContainer) detailsInputContainer.classList.add('hidden');
         submitBtn.textContent = 'حفظ الفاتورة';
 
         renderInvoiceLineRows();
@@ -1502,8 +1542,13 @@ function openInvoiceModal(type = 'purchase') {
 
 function renderInvoiceLineRows() {
     const container = document.getElementById('invoiceLineRowsContainer');
+    if (!container) return;
     container.innerHTML = '';
     addInvoiceLineRow();
+    addInvoiceLineRow();
+    addInvoiceLineRow();
+    const discountValInput = document.getElementById('discountValue');
+    if (discountValInput) discountValInput.value = '';
 }
 
 function addInvoiceLineRow() {
@@ -1516,7 +1561,21 @@ function addInvoiceLineRow() {
 
     row.innerHTML = `
         <div class="flex items-center gap-xs flex-wrap sm:flex-nowrap">
-            <!-- Item Select -->
+            <!-- 1. Quantity Input -->
+            <div class="w-24">
+                <label class="block text-[11px] font-bold text-secondary mb-1">الكمية <span class="text-error">*</span></label>
+                <input type="number" step="any" min="0.001" class="line-qty-input w-full h-9 px-xs rounded-md bg-surface-container-low border border-outline-variant text-xs font-bold text-center dir-ltr focus:border-primary outline-none" placeholder="0" oninput="onLineInputsCalculated('${rowId}')" />
+            </div>
+
+            <!-- 2. Unit Select -->
+            <div class="w-28">
+                <label class="block text-[11px] font-bold text-secondary mb-1">الوحدة <span class="text-error">*</span></label>
+                <select class="line-unit-select w-full h-9 px-xs rounded-md bg-surface-container-low border border-outline-variant text-xs font-bold text-right outline-none cursor-pointer" disabled onchange="onLineInputsCalculated('${rowId}')">
+                    <option value="">-- اختر الوحدة --</option>
+                </select>
+            </div>
+
+            <!-- 3. Item Select -->
             <div class="flex-1 min-w-[140px]">
                 <label class="block text-[11px] font-bold text-secondary mb-1">الصنف <span class="text-error">*</span></label>
                 <select class="line-item-select w-full h-9 px-xs rounded-md bg-surface-container-low border border-outline-variant text-xs font-bold text-right outline-none cursor-pointer" onchange="onLineItemChanged('${rowId}')">
@@ -1524,28 +1583,14 @@ function addInvoiceLineRow() {
                 </select>
             </div>
 
-            <!-- Unit Select -->
-            <div class="w-32">
-                <label class="block text-[11px] font-bold text-secondary mb-1">الوحدة <span class="text-error">*</span></label>
-                <select class="line-unit-select w-full h-9 px-xs rounded-md bg-surface-container-low border border-outline-variant text-xs font-bold text-right outline-none cursor-pointer" disabled onchange="onLineInputsCalculated('${rowId}')">
-                    <option value="">-- اختر الوحدة --</option>
-                </select>
-            </div>
-
-            <!-- Quantity Input -->
-            <div class="w-24">
-                <label class="block text-[11px] font-bold text-secondary mb-1">الكمية <span class="text-error">*</span></label>
-                <input type="number" step="any" min="0.001" class="line-qty-input w-full h-9 px-xs rounded-md bg-surface-container-low border border-outline-variant text-xs font-bold text-center dir-ltr focus:border-primary outline-none" placeholder="0" oninput="onLineInputsCalculated('${rowId}')" />
-            </div>
-
-            <!-- Unit Price Input -->
+            <!-- 4. Unit Price Input -->
             <div class="w-28">
                 <label class="block text-[11px] font-bold text-secondary mb-1">السعر (ج.م) <span class="text-error">*</span></label>
                 <input type="number" step="any" min="0" class="line-price-input w-full h-9 px-xs rounded-md bg-surface-container-low border border-outline-variant text-xs font-bold text-center dir-ltr focus:border-primary outline-none" placeholder="0.00" oninput="onLineInputsCalculated('${rowId}')" />
             </div>
 
-            <!-- Line Total Display -->
-            <div class="w-28 text-left">
+            <!-- 5. Line Total Display -->
+            <div class="w-24 text-left">
                 <label class="block text-[11px] font-bold text-secondary mb-1">الإجمالي</label>
                 <span class="line-total-text text-xs font-bold text-primary dir-ltr block pt-1">0.00 ج.م</span>
             </div>
@@ -1579,6 +1624,32 @@ function removeInvoiceLineRow(rowId) {
     updateAllLineTotalsAndGrandTotal();
 }
 
+function tryAutoFillDefaultPrice(rowId) {
+    const row = document.getElementById(rowId);
+    if (!row) return;
+
+    const itemSelect = row.querySelector('.line-item-select');
+    const unitSelect = row.querySelector('.line-unit-select');
+    const priceInput = row.querySelector('.line-price-input');
+
+    if (!itemSelect || !unitSelect || !priceInput) return;
+    if (priceInput.value.trim() !== '') return;
+
+    const itemId = parseInt(itemSelect.value);
+    if (!itemId) return;
+
+    const selectedItem = cachedActiveItems.find(i => i.id === itemId);
+    if (!selectedItem || selectedItem.defaultSellingPrice === undefined || selectedItem.defaultSellingPrice === null) return;
+
+    const selectedOption = unitSelect.options[unitSelect.selectedIndex];
+    const rate = selectedOption && selectedOption.dataset.rate ? parseFloat(selectedOption.dataset.rate) : 1.0;
+
+    if (!isNaN(rate) && rate > 0) {
+        const calculatedPrice = selectedItem.defaultSellingPrice * rate;
+        priceInput.value = Math.round((calculatedPrice + Number.EPSILON) * 100) / 100;
+    }
+}
+
 function onLineItemChanged(rowId) {
     const row = document.getElementById(rowId);
     if (!row) return;
@@ -1603,12 +1674,15 @@ function onLineItemChanged(rowId) {
         unitSelect.disabled = true;
     }
 
+    tryAutoFillDefaultPrice(rowId);
     onLineInputsCalculated(rowId);
 }
 
 function onLineInputsCalculated(rowId) {
     const row = document.getElementById(rowId);
     if (!row) return;
+
+    tryAutoFillDefaultPrice(rowId);
 
     const itemSelect = row.querySelector('.line-item-select');
     const unitSelect = row.querySelector('.line-unit-select');
@@ -1654,21 +1728,41 @@ function onLineInputsCalculated(rowId) {
 
 function updateAllLineTotalsAndGrandTotal() {
     const rows = Array.from(document.querySelectorAll('#invoiceLineRowsContainer .invoice-line-row'));
-    let grandTotal = 0;
+    let subtotal = 0;
 
     rows.forEach(row => {
         const qtyInput = row.querySelector('.line-qty-input');
         const priceInput = row.querySelector('.line-price-input');
         const qty = qtyInput ? parseFloat(qtyInput.value) || 0 : 0;
         const price = priceInput ? parseFloat(priceInput.value) || 0 : 0;
-        grandTotal += qty * price;
+        subtotal += qty * price;
     });
 
-    grandTotal = Math.round((grandTotal + Number.EPSILON) * 100) / 100;
+    subtotal = Math.round((subtotal + Number.EPSILON) * 100) / 100;
 
+    const discountTypeRadio = document.querySelector('input[name="discountType"]:checked');
+    const discountType = discountTypeRadio ? discountTypeRadio.value : 'percentage';
+    const discountValInput = document.getElementById('discountValue');
+    const discountVal = discountValInput ? parseFloat(discountValInput.value) || 0 : 0;
+
+    let discountAmount = 0;
+    if (discountVal > 0) {
+        if (discountType === 'percentage') {
+            const pct = Math.min(Math.max(discountVal, 0), 100);
+            discountAmount = Math.round((subtotal * (pct / 100) + Number.EPSILON) * 100) / 100;
+        } else if (discountType === 'fixed') {
+            discountAmount = Math.round((discountVal + Number.EPSILON) * 100) / 100;
+        }
+    }
+
+    discountAmount = Math.min(discountAmount, subtotal);
+    const grandTotal = Math.round((subtotal - discountAmount + Number.EPSILON) * 100) / 100;
+
+    const subtotalEl = document.getElementById('itemsSubtotalText');
     const grandTotalEl = document.getElementById('itemsGrandTotalText');
     const invoiceAmountInput = document.getElementById('invoiceAmount');
 
+    if (subtotalEl) subtotalEl.textContent = formatCurrency(subtotal);
     if (grandTotalEl) grandTotalEl.textContent = formatCurrency(grandTotal);
     if (invoiceAmountInput && currentTransactionType === 'purchase') {
         invoiceAmountInput.value = grandTotal;
@@ -1768,13 +1862,11 @@ document.getElementById('invoiceForm').addEventListener('submit', async function
     const endClientId = endClientIdInput.value;
     
     let itemsPayload = undefined;
+    let discountType = undefined;
+    let discountValue = undefined;
 
     if (currentTransactionType === 'purchase') {
         const rows = Array.from(document.querySelectorAll('#invoiceLineRowsContainer .invoice-line-row'));
-        if (rows.length === 0) {
-            showToast('يجب إضافة بند واحد على الأقل بفاتورة الشراء', 'warning');
-            return;
-        }
 
         itemsPayload = [];
         for (let i = 0; i < rows.length; i++) {
@@ -1789,13 +1881,26 @@ document.getElementById('invoiceForm').addEventListener('submit', async function
             const quantity = qtyInput ? parseFloat(qtyInput.value) || 0 : 0;
             const unitPrice = priceInput ? parseFloat(priceInput.value) || 0 : 0;
 
-            if (!itemId || !itemUnitId || quantity <= 0) {
-                showToast(`الرجاء استكمال بيانات البند رقم ${i + 1} (الصنف، الوحدة، والكمية)`, 'warning');
+            // Skip empty rows (where no item is selected)
+            if (!itemId) continue;
+
+            if (!itemUnitId || quantity <= 0) {
+                showToast(`الرجاء استكمال بيانات الوحدة والكمية للبند رقم ${i + 1}`, 'warning');
                 return;
             }
 
             itemsPayload.push({ itemId, itemUnitId, quantity, unitPrice });
         }
+
+        if (itemsPayload.length === 0) {
+            showToast('يجب إدخال بند واحد على الأقل بفاتورة الشراء', 'warning');
+            return;
+        }
+
+        const discountTypeRadio = document.querySelector('input[name="discountType"]:checked');
+        discountType = discountTypeRadio ? discountTypeRadio.value : 'percentage';
+        const discountValInput = document.getElementById('discountValue');
+        discountValue = discountValInput ? parseFloat(discountValInput.value) || 0 : 0;
     } else {
         if (validateFormFields('invoiceForm')) {
             showToast('الرجاء إكمال الحقول الإجبارية', 'warning');
@@ -1818,7 +1923,9 @@ document.getElementById('invoiceForm').addEventListener('submit', async function
                 details: details || (currentTransactionType === 'payment' ? 'سداد دفعة' : '-'),
                 address: address || '-',
                 type: currentTransactionType,
-                items: itemsPayload
+                items: itemsPayload,
+                discountType,
+                discountValue
             })
         });
 

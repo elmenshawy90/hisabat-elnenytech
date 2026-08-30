@@ -146,6 +146,14 @@
                 <input type="text" id="itemNotes" class="w-full h-11 px-md rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none text-right text-on-surface" placeholder="أي تفاصيل أو مواصفات إضافية..." />
             </div>
 
+            <div class="space-y-xs">
+                <label class="block text-xs font-bold text-on-surface-variant">سعر البيع الافتراضي (بالوحدة الأساسية) (اختياري)</label>
+                <div class="relative">
+                    <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline text-sm">payments</span>
+                    <input type="number" step="any" min="0" id="itemDefaultPrice" class="w-full h-11 pr-9 pl-md rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none text-right font-bold text-on-surface" placeholder="مثال: 150.00" />
+                </div>
+            </div>
+
             <!-- Stock Log Warning Banner when editing items with stock logs -->
             <div id="stockProtectedWarning" class="hidden bg-amber-500/10 border border-amber-500/30 text-amber-800 rounded-xl p-sm text-xs font-medium space-y-1">
                 <div class="flex items-center gap-1 font-bold text-amber-900">
@@ -655,6 +663,8 @@ function openAddItemModal() {
     document.getElementById('itemModalIcon').textContent = 'add_box';
     document.getElementById('itemName').value = '';
     document.getElementById('itemNotes').value = '';
+    const defPriceInput = document.getElementById('itemDefaultPrice');
+    if (defPriceInput) defPriceInput.value = '';
     document.getElementById('stockProtectedWarning').classList.add('hidden');
 
     renderUnitsBuilder([], false);
@@ -679,6 +689,10 @@ async function openEditItemModal(itemId) {
         document.getElementById('itemModalIcon').textContent = 'edit';
         document.getElementById('itemName').value = data.name;
         document.getElementById('itemNotes').value = data.notes || '';
+        const defPriceInput = document.getElementById('itemDefaultPrice');
+        if (defPriceInput) {
+            defPriceInput.value = data.defaultSellingPrice !== undefined && data.defaultSellingPrice !== null ? data.defaultSellingPrice : '';
+        }
 
         const warningEl = document.getElementById('stockProtectedWarning');
         if (currentItemHasStockLogs) {
@@ -701,8 +715,10 @@ async function openEditItemModal(itemId) {
 
 function closeItemModal() {
     const modal = document.getElementById('itemModal');
-    modal.classList.add('hidden');
-    modal.classList.remove('flex');
+    if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    }
     document.body.style.overflow = '';
 }
 
@@ -712,6 +728,8 @@ async function submitItemForm(e) {
     const submitBtn = document.getElementById('submitItemBtn');
     const name = document.getElementById('itemName').value.trim();
     const notes = document.getElementById('itemNotes').value.trim();
+    const priceVal = document.getElementById('itemDefaultPrice') ? document.getElementById('itemDefaultPrice').value.trim() : '';
+    const defaultSellingPrice = priceVal !== '' && !isNaN(parseFloat(priceVal)) ? parseFloat(priceVal) : null;
 
     const rows = Array.from(document.querySelectorAll('#unitsRowsContainer .unit-row'));
     if (rows.length === 0) {
@@ -765,7 +783,7 @@ async function submitItemForm(e) {
         const res = await fetch(url, {
             method,
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name, notes, units: unitsPayload })
+            body: JSON.stringify({ name, notes, units: unitsPayload, defaultSellingPrice })
         });
 
         const data = await res.json();

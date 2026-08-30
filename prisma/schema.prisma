@@ -67,6 +67,7 @@ model Invoice {
   // 'increase' (عليه / مدين / يزود الدين) or 'decrease' (له / دائن / يقلل الدين)
   balanceEffect     String        @default("increase")
   amount            Float
+  discountAmount    Float         @default(0)
   details           String
   address           String
   date              DateTime      @default(now())
@@ -93,10 +94,11 @@ model Session {
 }
 
 model Item {
-  id           Int           @id @default(autoincrement())
-  name         String        // مثال: "أسمنت مسيرة"
-  notes        String        @default("")
-  isActive     Boolean       @default(true)
+  id                  Int           @id @default(autoincrement())
+  name                String        // مثال: "أسمنت مسيرة"
+  notes               String        @default("")
+  defaultSellingPrice Float?        // سعر البيع الافتراضي بالوحدة الأساسية للصنف
+  isActive            Boolean       @default(true)
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
   units        ItemUnit[]
