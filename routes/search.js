@@ -12,31 +12,31 @@ router.use(requireAuth);
 router.get('/', async (req, res) => {
   try {
     const rawQ = req.query.q;
-    if (!rawQ || typeof rawQ !== 'string' || rawQ.trim().length < 2) {
+    if (!rawQ || typeof rawQ !== 'string' || rawQ.trim().length < 1) {
       return res.json({ contractors: [], endClientMatches: [] });
     }
 
     const terms = [...new Set(rawQ.trim().split(/\s+/).filter(Boolean))];
-    if (terms.length === 0) {
+    const normTerms = [...new Set(terms.map(t => normalize(t)).filter(Boolean))];
+    if (terms.length === 0 || normTerms.length === 0) {
       return res.json({ contractors: [], endClientMatches: [] });
     }
 
-    // 1. Search Contractors (Clients)
-    const contractorsWhere = {
-      OR: terms.flatMap(term => [
-        { name: { contains: term } },
-        { phone: { contains: term } }
-      ])
-    };
-
-    const [contractors, balanceMap] = await Promise.all([
+    // 1. Search Contractors (Clients) using normalized contains search
+    const [allClients, balanceMap] = await Promise.all([
       prisma.client.findMany({
-        where: contractorsWhere,
-        orderBy: { updatedAt: 'desc' },
-        take: 20
+        orderBy: { updatedAt: 'desc' }
       }),
       getAllClientBalances(prisma)
     ]);
+
+    const filteredContractors = allClients.filter(c => {
+      const normName = normalize(c.name || '');
+      const phone = c.phone || '';
+      return normTerms.some(term => normName.includes(term)) || terms.some(term => phone.includes(term));
+    });
+
+    const contractors = filteredContractors.slice(0, 20);
 
     const contractorIds = contractors.map(c => c.id);
     let invoicesForContractors = [];
@@ -76,28 +76,29 @@ router.get('/', async (req, res) => {
       };
     });
 
-    // 2. Search Invoices for End Clients matching terms
-    const endClientInvoices = await prisma.invoice.findMany({
+    // 2. Search Invoices for End Clients matching terms with normalized contains
+    const allInvoices = await prisma.invoice.findMany({
       where: {
-        OR: terms.map(term => ({
-          endClientName: { contains: term }
-        }))
+        endClientName: { not: '' }
       },
       include: {
         client: {
           select: { id: true, name: true }
         }
       },
-      orderBy: { updatedAt: 'desc' },
-      take: 100
+      orderBy: { updatedAt: 'desc' }
+    });
+
+    const filteredInvoices = allInvoices.filter(inv => {
+      if (!inv.endClientName || !inv.endClientName.trim() || inv.endClientName.trim() === '-') return false;
+      const normEndName = normalize(inv.endClientName);
+      return normTerms.some(term => normEndName.includes(term));
     });
 
     // In-memory aggregation by normalized endClientName
     const endClientGroups = new Map();
 
-    for (const inv of endClientInvoices) {
-      if (!inv.endClientName || !inv.endClientName.trim() || inv.endClientName.trim() === '-') continue;
-
+    for (const inv of filteredInvoices) {
       const normKey = normalize(inv.endClientName);
       if (!endClientGroups.has(normKey)) {
         endClientGroups.set(normKey, {
@@ -123,7 +124,7 @@ router.get('/', async (req, res) => {
     const endClientMatches = Array.from(endClientGroups.values()).map(g => ({
       endClientName: g.endClientName,
       contractors: Array.from(g.contractorMap.values())
-    }));
+    })).slice(0, 50);
 
     res.json({
       contractors: contractorsWithEndClients,

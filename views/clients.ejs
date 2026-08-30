@@ -61,35 +61,41 @@
 
 
 </div>
-<!-- Stats Row -->
-<div class="grid grid-cols-1 md:grid-cols-3 gap-md mb-xl">
-<div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-md flex items-center justify-between shadow-sm">
-<div class="flex flex-col">
-<span class="font-label-md text-label-md text-secondary">إجمالي العملاء</span>
-<span class="font-headline-md text-headline-md text-primary" id="statTotal">--</span>
-</div>
-<div class="w-12 h-12 rounded-lg bg-primary-fixed flex items-center justify-center text-on-primary-fixed">
-<span class="material-symbols-outlined">group</span>
-</div>
-</div>
-<div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-md flex items-center justify-between shadow-sm">
-<div class="flex flex-col">
-<span class="font-label-md text-label-md text-secondary">ديون مستحقة</span>
-<span class="font-headline-md text-headline-md text-tertiary" id="statDebt">--</span>
-</div>
-<div class="w-12 h-12 rounded-lg bg-tertiary-fixed flex items-center justify-center text-on-tertiary-fixed">
-<span class="material-symbols-outlined">payments</span>
-</div>
-</div>
-<div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-md flex items-center justify-between shadow-sm">
-<div class="flex flex-col">
-<span class="font-label-md text-label-md text-secondary">عملاء بدون ديون</span>
-<span class="font-headline-md text-headline-md text-primary-container" id="statClear">--</span>
-</div>
-<div class="w-12 h-12 rounded-lg bg-primary-container flex items-center justify-center text-on-primary-container">
-<span class="material-symbols-outlined">trending_up</span>
-</div>
-</div>
+<!-- Stats Row (Interactive Filter Cards) -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-md mb-xl">
+    <!-- Card 1: Credit Clients (عملاء لهم فلوس) -->
+    <div id="cardFilterCredit" onclick="toggleBalanceFilter('credit')" class="bg-surface-container-lowest border border-outline-variant rounded-xl p-md flex items-center justify-between shadow-sm cursor-pointer hover:border-green-600/60 transition-all select-none group">
+        <div class="flex flex-col gap-xs">
+            <div class="flex items-center gap-xs">
+                <span class="font-label-md text-label-md text-secondary font-bold">عملاء لهم فلوس</span>
+                <span class="text-[10px] bg-green-100 text-green-800 font-bold px-2 py-0.5 rounded-full">(رصيدهم ≤ 0)</span>
+            </div>
+            <div class="flex items-baseline gap-sm">
+                <span class="font-headline-md text-headline-md text-green-700 font-bold" id="statCreditTotal">0.00 ج.م</span>
+                <span class="text-xs text-secondary font-bold" id="statCreditCount">(0 عميل)</span>
+            </div>
+        </div>
+        <div id="iconCreditCard" class="w-12 h-12 rounded-xl bg-green-100 text-green-700 flex items-center justify-center group-hover:scale-105 transition-transform shrink-0">
+            <span class="material-symbols-outlined text-2xl">account_balance_wallet</span>
+        </div>
+    </div>
+
+    <!-- Card 2: Debt Clients (ديون مستحقة) -->
+    <div id="cardFilterDebt" onclick="toggleBalanceFilter('debt')" class="bg-surface-container-lowest border border-outline-variant rounded-xl p-md flex items-center justify-between shadow-sm cursor-pointer hover:border-tertiary/60 transition-all select-none group">
+        <div class="flex flex-col gap-xs">
+            <div class="flex items-center gap-xs">
+                <span class="font-label-md text-label-md text-secondary font-bold">ديون مستحقة</span>
+                <span class="text-[10px] bg-tertiary/10 text-tertiary font-bold px-2 py-0.5 rounded-full">(رصيدهم > 0)</span>
+            </div>
+            <div class="flex items-baseline gap-sm">
+                <span class="font-headline-md text-headline-md text-tertiary font-bold" id="statDebtTotal">0.00 ج.م</span>
+                <span class="text-xs text-secondary font-bold" id="statDebtCount">(0 عميل)</span>
+            </div>
+        </div>
+        <div id="iconDebtCard" class="w-12 h-12 rounded-xl bg-tertiary-fixed text-on-tertiary-fixed flex items-center justify-center group-hover:scale-105 transition-transform shrink-0">
+            <span class="material-symbols-outlined text-2xl">payments</span>
+        </div>
+    </div>
 </div>
 <!-- Search & Sort Controls -->
 <div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-md mb-md shadow-sm flex flex-col md:flex-row gap-sm items-center justify-between">
@@ -125,6 +131,27 @@
                     </span>
                     <span class="material-symbols-outlined text-primary text-base font-bold sort-check hidden" id="check-name">check</span>
                 </button>
+                <button type="button" onclick="selectSortOption('phone', 'رقم الهاتف')" class="sort-option w-full px-md py-2.5 flex items-center justify-between text-xs hover:bg-primary/10 transition-colors text-right font-medium text-on-surface" data-value="phone">
+                    <span class="flex items-center gap-xs">
+                        <span class="material-symbols-outlined text-base text-secondary">call</span>
+                        رقم الهاتف
+                    </span>
+                    <span class="material-symbols-outlined text-primary text-base font-bold sort-check hidden" id="check-phone">check</span>
+                </button>
+                <button type="button" onclick="selectSortOption('pageNumber', 'رقم الصفحة')" class="sort-option w-full px-md py-2.5 flex items-center justify-between text-xs hover:bg-primary/10 transition-colors text-right font-medium text-on-surface" data-value="pageNumber">
+                    <span class="flex items-center gap-xs">
+                        <span class="material-symbols-outlined text-base text-secondary">book</span>
+                        رقم الصفحة
+                    </span>
+                    <span class="material-symbols-outlined text-primary text-base font-bold sort-check hidden" id="check-pageNumber">check</span>
+                </button>
+                <button type="button" onclick="selectSortOption('balance', 'الرصيد')" class="sort-option w-full px-md py-2.5 flex items-center justify-between text-xs hover:bg-primary/10 transition-colors text-right font-medium text-on-surface" data-value="balance">
+                    <span class="flex items-center gap-xs">
+                        <span class="material-symbols-outlined text-base text-secondary">payments</span>
+                        الرصيد
+                    </span>
+                    <span class="material-symbols-outlined text-primary text-base font-bold sort-check hidden" id="check-balance">check</span>
+                </button>
             </div>
         </div>
 
@@ -139,13 +166,38 @@
 <div class="overflow-x-auto w-full max-w-[100vw]">
 <table class="w-full text-right whitespace-nowrap">
 <thead>
-<tr class="bg-surface-container-low border-b border-outline-variant">
-<th class="px-lg py-md font-label-md text-label-md text-secondary">اسم العميل</th>
-<th class="px-lg py-md font-label-md text-label-md text-secondary">رقم الهاتف</th>
+<tr class="bg-surface-container-low border-b border-outline-variant select-none">
+<th onclick="toggleHeaderSort('name')" class="px-lg py-md font-label-md text-label-md text-secondary cursor-pointer hover:bg-surface-container-high transition-colors">
+    <div class="flex items-center justify-between gap-xs">
+        <span>اسم العميل</span>
+        <span class="material-symbols-outlined text-sm font-bold text-outline opacity-60" id="sortHeaderIcon_name">unfold_more</span>
+    </div>
+</th>
+<th onclick="toggleHeaderSort('phone')" class="px-lg py-md font-label-md text-label-md text-secondary cursor-pointer hover:bg-surface-container-high transition-colors">
+    <div class="flex items-center justify-between gap-xs">
+        <span>رقم الهاتف</span>
+        <span class="material-symbols-outlined text-sm font-bold text-outline opacity-60" id="sortHeaderIcon_phone">unfold_more</span>
+    </div>
+</th>
 <th class="px-lg py-md font-label-md text-label-md text-secondary">العملاء تحته</th>
-<th class="px-lg py-md font-label-md text-label-md text-secondary">رقم الصفحة</th>
-<th class="px-lg py-md font-label-md text-label-md text-secondary">الرصيد الحالي</th>
-<th class="px-lg py-md font-label-md text-label-md text-secondary">آخر معاملة</th>
+<th onclick="toggleHeaderSort('pageNumber')" class="px-lg py-md font-label-md text-label-md text-secondary cursor-pointer hover:bg-surface-container-high transition-colors">
+    <div class="flex items-center justify-between gap-xs">
+        <span>رقم الصفحة</span>
+        <span class="material-symbols-outlined text-sm font-bold text-outline opacity-60" id="sortHeaderIcon_pageNumber">unfold_more</span>
+    </div>
+</th>
+<th onclick="toggleHeaderSort('balance')" class="px-lg py-md font-label-md text-label-md text-secondary cursor-pointer hover:bg-surface-container-high transition-colors">
+    <div class="flex items-center justify-between gap-xs">
+        <span>الرصيد الحالي</span>
+        <span class="material-symbols-outlined text-sm font-bold text-outline opacity-60" id="sortHeaderIcon_balance">unfold_more</span>
+    </div>
+</th>
+<th onclick="toggleHeaderSort('createdAt')" class="px-lg py-md font-label-md text-label-md text-secondary cursor-pointer hover:bg-surface-container-high transition-colors">
+    <div class="flex items-center justify-between gap-xs">
+        <span>تاريخ الإضافة</span>
+        <span class="material-symbols-outlined text-sm font-bold text-primary" id="sortHeaderIcon_createdAt">arrow_downward</span>
+    </div>
+</th>
 <th class="px-lg py-md font-label-md text-label-md text-secondary text-center">الإجراءات</th>
 </tr>
 </thead>
@@ -230,6 +282,7 @@
 <div class="relative">
 <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline">person</span>
 <input class="w-full h-12 pr-10 pl-md rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all text-right" id="newClientName" placeholder="مثال: أحمد محمد" type="text" required autocomplete="off"/>
+<div id="newClientNameDropdown" class="hidden absolute top-full left-0 right-0 mt-1 bg-white border border-outline-variant rounded-xl shadow-xl z-[999] max-h-[200px] overflow-y-auto custom-scrollbar"></div>
 </div>
 <p id="newClientNameError" class="hidden text-error text-[11px] mt-1 pr-1 font-bold">العميل مسجل مسبقاً، الرجاء تغيير الاسم للمتابعة</p>
 </div>
@@ -315,8 +368,9 @@
 <script src="/js/shared-ui.js"></script>
 <script>
 let allClients = [];
-let currentSortField = 'createdAt'; // 'createdAt' or 'name'
+let currentSortField = 'createdAt'; // 'createdAt', 'name', 'phone', or 'balance'
 let currentSortOrder = 'desc'; // 'asc' or 'desc'
+let activeBalanceFilter = null; // null, 'credit', or 'debt'
 
 function escapeJsString(value = '') {
     return String(value)
@@ -328,16 +382,29 @@ function escapeJsString(value = '') {
 function sortClientsList(clients) {
     const list = [...clients];
     list.sort((a, b) => {
+        let cmp = 0;
         if (currentSortField === 'name') {
             const nameA = (a.name || '').trim();
             const nameB = (b.name || '').trim();
-            const cmp = nameA.localeCompare(nameB, 'ar', { sensitivity: 'base' });
-            return currentSortOrder === 'asc' ? cmp : -cmp;
+            cmp = nameA.localeCompare(nameB, 'ar', { sensitivity: 'base' });
+        } else if (currentSortField === 'phone') {
+            const phoneA = (a.phone || '').trim();
+            const phoneB = (b.phone || '').trim();
+            cmp = phoneA.localeCompare(phoneB, 'ar', { numeric: true });
+        } else if (currentSortField === 'pageNumber') {
+            const pageA = Number(a.pageNumber) || 0;
+            const pageB = Number(b.pageNumber) || 0;
+            cmp = pageA - pageB;
+        } else if (currentSortField === 'balance') {
+            const balA = Number(a.balance) || 0;
+            const balB = Number(b.balance) || 0;
+            cmp = balA - balB;
         } else {
-            const timeA = new Date(a.createdAt || 0).getTime() || (Number(a.id) || 0);
-            const timeB = new Date(b.createdAt || 0).getTime() || (Number(b.id) || 0);
-            return currentSortOrder === 'asc' ? timeA - timeB : timeB - timeA;
+            const timeA = new Date(a.createdAt || a.updatedAt || 0).getTime() || (Number(a.id) || 0);
+            const timeB = new Date(b.createdAt || b.updatedAt || 0).getTime() || (Number(b.id) || 0);
+            cmp = timeA - timeB;
         }
+        return currentSortOrder === 'asc' ? cmp : -cmp;
     });
     return list;
 }
@@ -358,20 +425,110 @@ async function loadClients() {
         const res = await fetch('/api/clients?limit=1000');
         const responseData = await res.json();
         allClients = responseData.data || [];
-        renderClients(sortClientsList(allClients));
-        updateStats(allClients);
+        updateStats(responseData);
+        applyFiltersAndSort();
     } catch (err) {
         console.error('Failed to load clients:', err);
         showToast('فشل في تحميل بيانات العملاء', 'error');
     }
 }
 
-function updateStats(clients) {
-    document.getElementById('statTotal').textContent = clients.length;
-    const totalDebt = clients.reduce((sum, c) => sum + (c.balance > 0 ? c.balance : 0), 0);
-    document.getElementById('statDebt').textContent = formatCurrency(totalDebt);
-    const clearClients = clients.filter(c => c.balance <= 0).length;
-    document.getElementById('statClear').textContent = clearClients;
+function updateStats(responseData) {
+    const stats = responseData.stats || {};
+    const creditCount = stats.creditCount !== undefined ? stats.creditCount : allClients.filter(c => (Number(c.balance) || 0) <= 0).length;
+    const creditTotal = stats.creditTotal !== undefined ? stats.creditTotal : allClients.filter(c => (Number(c.balance) || 0) <= 0).reduce((sum, c) => sum + Math.abs(Number(c.balance) || 0), 0);
+    const debtCount = stats.debtCount !== undefined ? stats.debtCount : allClients.filter(c => (Number(c.balance) || 0) > 0).length;
+    const debtTotal = stats.debtTotal !== undefined ? stats.debtTotal : allClients.filter(c => (Number(c.balance) || 0) > 0).reduce((sum, c) => sum + (Number(c.balance) || 0), 0);
+
+    const creditTotalEl = document.getElementById('statCreditTotal');
+    if (creditTotalEl) creditTotalEl.textContent = formatCurrency(creditTotal);
+    const creditCountEl = document.getElementById('statCreditCount');
+    if (creditCountEl) creditCountEl.textContent = `(${creditCount} عميل)`;
+
+    const debtTotalEl = document.getElementById('statDebtTotal');
+    if (debtTotalEl) debtTotalEl.textContent = formatCurrency(debtTotal);
+    const debtCountEl = document.getElementById('statDebtCount');
+    if (debtCountEl) debtCountEl.textContent = `(${debtCount} عميل)`;
+}
+
+function toggleBalanceFilter(type) {
+    if (activeBalanceFilter === type) {
+        activeBalanceFilter = null;
+    } else {
+        activeBalanceFilter = type;
+    }
+    updateBalanceFilterUI();
+    applyFiltersAndSort();
+}
+
+function updateBalanceFilterUI() {
+    const cardCredit = document.getElementById('cardFilterCredit');
+    const cardDebt = document.getElementById('cardFilterDebt');
+    
+    if (!cardCredit || !cardDebt) return;
+
+    if (activeBalanceFilter === 'credit') {
+        cardCredit.className = "bg-green-50 border-2 border-green-600 rounded-xl p-md flex items-center justify-between shadow-md cursor-pointer transition-all select-none group ring-2 ring-green-600/20";
+        cardDebt.className = "bg-surface-container-lowest border border-outline-variant rounded-xl p-md flex items-center justify-between shadow-sm cursor-pointer hover:border-tertiary/60 opacity-60 transition-all select-none group";
+    } else if (activeBalanceFilter === 'debt') {
+        cardCredit.className = "bg-surface-container-lowest border border-outline-variant rounded-xl p-md flex items-center justify-between shadow-sm cursor-pointer hover:border-green-600/60 opacity-60 transition-all select-none group";
+        cardDebt.className = "bg-tertiary-fixed/20 border-2 border-tertiary rounded-xl p-md flex items-center justify-between shadow-md cursor-pointer transition-all select-none group ring-2 ring-tertiary/20";
+    } else {
+        cardCredit.className = "bg-surface-container-lowest border border-outline-variant rounded-xl p-md flex items-center justify-between shadow-sm cursor-pointer hover:border-green-600/60 transition-all select-none group";
+        cardDebt.className = "bg-surface-container-lowest border border-outline-variant rounded-xl p-md flex items-center justify-between shadow-sm cursor-pointer hover:border-tertiary/60 transition-all select-none group";
+    }
+}
+
+function toggleHeaderSort(field) {
+    if (currentSortField === field) {
+        currentSortOrder = currentSortOrder === 'asc' ? 'desc' : 'asc';
+    } else {
+        currentSortField = field;
+        currentSortOrder = (field === 'createdAt' || field === 'balance') ? 'desc' : 'asc';
+    }
+    updateHeaderSortIcons();
+
+    const labelMap = {
+        'createdAt': 'تاريخ الإضافة',
+        'name': 'الاسم',
+        'phone': 'رقم الهاتف',
+        'pageNumber': 'رقم الصفحة',
+        'balance': 'الرصيد'
+    };
+    const label = labelMap[field] || 'تاريخ الإضافة';
+    const sortLabelEl = document.getElementById('sortSelectedLabel');
+    if (sortLabelEl) sortLabelEl.textContent = label;
+    const sortOrderIcon = document.getElementById('sortOrderIcon');
+    if (sortOrderIcon) sortOrderIcon.textContent = currentSortOrder === 'asc' ? 'arrow_upward' : 'arrow_downward';
+
+    applyFiltersAndSort();
+}
+
+function updateHeaderSortIcons() {
+    ['name', 'phone', 'pageNumber', 'balance', 'createdAt'].forEach(field => {
+        const icon = document.getElementById(`sortHeaderIcon_${field}`);
+        if (!icon) return;
+        if (currentSortField === field) {
+            icon.textContent = currentSortOrder === 'asc' ? 'arrow_upward' : 'arrow_downward';
+            icon.className = "material-symbols-outlined text-sm font-bold text-primary";
+        } else {
+            icon.textContent = "unfold_more";
+            icon.className = "material-symbols-outlined text-sm font-bold text-outline opacity-60";
+        }
+    });
+}
+
+function applyFiltersAndSort() {
+    let list = [...allClients];
+
+    if (activeBalanceFilter === 'credit') {
+        list = list.filter(c => (Number(c.balance) || 0) <= 0);
+    } else if (activeBalanceFilter === 'debt') {
+        list = list.filter(c => (Number(c.balance) || 0) > 0);
+    }
+
+    const sortedList = sortClientsList(list);
+    renderClients(sortedList, true);
 }
 
 let currentClientsList = [];
@@ -565,21 +722,24 @@ function selectSortOption(field, label) {
     document.getElementById('sortSelectedLabel').textContent = label;
     
     // Update checkmarks
-    document.getElementById('check-createdAt').classList.toggle('hidden', field !== 'createdAt');
-    document.getElementById('check-name').classList.toggle('hidden', field !== 'name');
+    ['createdAt', 'name', 'phone', 'balance'].forEach(f => {
+        const chk = document.getElementById(`check-${f}`);
+        if (chk) chk.classList.toggle('hidden', f !== field);
+    });
     
+    updateHeaderSortIcons();
+
     // Close menu
     const menu = document.getElementById('sortDropdownMenu');
     const arrow = document.getElementById('sortDropdownArrow');
-    menu.classList.add('opacity-0', 'scale-95');
-    menu.classList.remove('opacity-100', 'scale-100');
-    arrow.classList.remove('rotate-180');
-    setTimeout(() => menu.classList.add('hidden'), 150);
-    
-    const query = (document.getElementById('searchInput').value || '').trim();
-    if (query.length === 0) {
-        renderClients(sortClientsList(allClients));
+    if (menu) {
+        menu.classList.add('opacity-0', 'scale-95');
+        menu.classList.remove('opacity-100', 'scale-100');
+        if (arrow) arrow.classList.remove('rotate-180');
+        setTimeout(() => menu.classList.add('hidden'), 150);
     }
+    
+    applyFiltersAndSort();
 }
 
 document.getElementById('sortDropdownBtn').addEventListener('click', toggleSortDropdown);
@@ -601,10 +761,8 @@ document.addEventListener('click', (e) => {
 document.getElementById('sortOrderToggle').addEventListener('click', () => {
     currentSortOrder = currentSortOrder === 'asc' ? 'desc' : 'asc';
     document.getElementById('sortOrderIcon').textContent = currentSortOrder === 'asc' ? 'arrow_upward' : 'arrow_downward';
-    const query = (document.getElementById('searchInput').value || '').trim();
-    if (query.length === 0) {
-        renderClients(sortClientsList(allClients));
-    }
+    updateHeaderSortIcons();
+    applyFiltersAndSort();
 });
 
 // Unified Search with 300ms Debounce
@@ -701,6 +859,7 @@ async function deleteClient(id, name) {
 
 // Add Client Modal & Validation
 const newClientNameInput = document.getElementById('newClientName');
+const newClientNameDropdown = document.getElementById('newClientNameDropdown');
 const newClientNameError = document.getElementById('newClientNameError');
 const newClientPhoneInput = document.getElementById('newClientPhone');
 const newClientPhoneError = document.getElementById('newClientPhoneError');
@@ -736,8 +895,109 @@ function validateClientNameDuplicate() {
     }
 }
 
-newClientNameInput.addEventListener('input', validateClientNameDuplicate);
+let newClientSearchDebounce = null;
+
+async function updateNewClientSuggestions(rawVal) {
+    if (!newClientNameDropdown) return;
+    const val = (rawVal || '').trim();
+
+    if (val.length === 0) {
+        newClientNameDropdown.classList.add('hidden');
+        return;
+    }
+
+    if (newClientSearchDebounce) clearTimeout(newClientSearchDebounce);
+
+    newClientSearchDebounce = setTimeout(async () => {
+        try {
+            const res = await fetch(`/api/search?q=${encodeURIComponent(val)}`);
+            if (!res.ok) return;
+            const data = await res.json();
+
+            const contractors = data.contractors || [];
+            const endClientMatches = data.endClientMatches || [];
+
+            if (contractors.length === 0 && endClientMatches.length === 0) {
+                newClientNameDropdown.classList.add('hidden');
+                return;
+            }
+
+            let html = '';
+
+            if (contractors.length > 0) {
+                html += `
+                    <div class="px-md py-xs bg-surface-container-low text-[11px] font-bold text-secondary border-b border-outline-variant/30 flex items-center justify-between">
+                        <span>عملاء (مقاولون) مسجلون بأسماء مشابهة:</span>
+                        <span class="text-primary">${contractors.length} عميل</span>
+                    </div>
+                `;
+                html += contractors.map(c => {
+                    const id = String(c.id || c._id);
+                    const phoneStr = c.phone && c.phone !== '-' ? c.phone : '';
+                    return `
+                        <a href="/client-details?id=${id}" target="_blank" class="px-md py-sm hover:bg-primary/10 cursor-pointer border-b border-outline-variant/30 last:border-0 transition-colors flex items-center justify-between no-underline block">
+                            <div class="font-body-md text-on-surface font-bold hover:text-primary flex items-center gap-xs">
+                                <span class="material-symbols-outlined text-sm text-primary">person</span>
+                                <span>${highlightArabic(c.name, val)}</span>
+                            </div>
+                            <div class="flex items-center gap-xs">
+                                ${phoneStr ? `<span class="font-label-sm text-secondary dir-ltr text-right">${highlightArabic(phoneStr, val)}</span>` : ''}
+                                <span class="material-symbols-outlined text-xs text-outline">open_in_new</span>
+                            </div>
+                        </a>
+                    `;
+                }).join('');
+            }
+
+            if (endClientMatches.length > 0) {
+                html += `
+                    <div class="px-md py-xs bg-surface-container-low text-[11px] font-bold text-tertiary border-b border-outline-variant/30 flex items-center justify-between ${contractors.length > 0 ? 'border-t border-outline-variant/40' : ''}">
+                        <span>عملاء نهائيون مسجلون بأسماء مشابهة:</span>
+                        <span class="text-tertiary">${endClientMatches.length} عميل نهائي</span>
+                    </div>
+                `;
+                html += endClientMatches.map(ec => {
+                    const primaryContractor = ec.contractors && ec.contractors[0];
+                    const primaryContractorId = primaryContractor ? primaryContractor.id : '';
+                    const encodedName = encodeURIComponent(ec.endClientName);
+                    const cardUrl = primaryContractorId ? `/client-details?id=${primaryContractorId}&filterEndClient=${encodedName}` : '#';
+                    return `
+                        <a href="${cardUrl}" target="_blank" class="px-md py-sm hover:bg-tertiary/10 cursor-pointer border-b border-outline-variant/30 last:border-0 transition-colors flex items-center justify-between no-underline block">
+                            <div class="font-body-md text-on-surface font-bold hover:text-tertiary flex items-center gap-xs">
+                                <span class="material-symbols-outlined text-sm text-tertiary">person_pin</span>
+                                <span>${highlightArabic(ec.endClientName, val)}</span>
+                            </div>
+                            <div class="flex items-center gap-xs text-[11px] text-secondary">
+                                ${primaryContractor ? `<span>عن طريق: ${primaryContractor.name}</span>` : ''}
+                                <span class="material-symbols-outlined text-xs text-outline">open_in_new</span>
+                            </div>
+                        </a>
+                    `;
+                }).join('');
+            }
+
+            newClientNameDropdown.innerHTML = html;
+            newClientNameDropdown.classList.remove('hidden');
+        } catch (err) {
+            console.error('Error in new client suggestions search:', err);
+        }
+    }, 150);
+}
+
+newClientNameInput.addEventListener('input', (e) => {
+    validateClientNameDuplicate();
+    updateNewClientSuggestions(e.target.value);
+});
+newClientNameInput.addEventListener('focus', (e) => {
+    updateNewClientSuggestions(e.target.value);
+});
 newClientNameInput.addEventListener('blur', validateClientNameDuplicate);
+
+document.addEventListener('click', (e) => {
+    if (newClientNameDropdown && !newClientNameInput.contains(e.target) && !newClientNameDropdown.contains(e.target)) {
+        newClientNameDropdown.classList.add('hidden');
+    }
+});
 
 function openAddClientModal() {
     const modal = document.getElementById('addClientModal');
@@ -751,6 +1011,7 @@ function openAddClientModal() {
     newClientNameInput.classList.remove('border-error');
     newClientPhoneError.classList.add('hidden');
     newClientPhoneInput.classList.remove('border-error');
+    if (newClientNameDropdown) newClientNameDropdown.classList.add('hidden');
     submitBtn.disabled = false;
     submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
     setTimeout(() => newClientNameInput.focus(), 50);
@@ -765,6 +1026,7 @@ function closeAddClientModal() {
     newClientNameError.classList.add('hidden');
     newClientNameInput.classList.remove('border-error');
     newClientPhoneError.classList.add('hidden');
+    if (newClientNameDropdown) newClientNameDropdown.classList.add('hidden');
     newClientPhoneInput.classList.remove('border-error');
     submitBtn.disabled = false;
     submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');

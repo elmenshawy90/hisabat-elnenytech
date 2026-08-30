@@ -75,7 +75,7 @@
                 <div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-md mb-md shadow-sm flex flex-col md:flex-row gap-sm items-center justify-between">
                     <div class="relative flex-1 w-full text-right">
                         <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline">search</span>
-                        <input class="w-full h-12 pr-10 pl-md rounded-xl bg-background border border-outline-variant form-input-focus transition-all text-right" id="searchInput" onkeyup="filterInvoices()" placeholder="ابحث باسم العميل أو رقم الجوال..." type="text" />
+                        <input class="w-full h-12 pr-10 pl-md rounded-xl bg-background border border-outline-variant form-input-focus transition-all text-right" id="searchInput" oninput="filterInvoices()" placeholder="ابحث باسم العميل أو رقم الجوال..." type="text" />
                     </div>
                     <div class="flex items-center gap-xs w-full md:w-auto">
                         <div class="relative flex-1 md:flex-initial" id="invSortDropdownContainer">
@@ -231,35 +231,20 @@
                     </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-lg">
-                        <div class="flex flex-col gap-xs relative">
-                            <label class="font-label-md text-label-md text-on-surface-variant mb-xs">اسم العميل <span
-                                    class="text-error">*</span></label>
+                        <div class="flex flex-col gap-xs">
+                            <label class="font-label-md text-label-md text-on-surface-variant mb-xs">اسم العميل <span class="text-error">*</span></label>
                             <div class="relative">
-                                <span
-                                    class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline">person</span>
-                                <input
-                                    class="w-full h-12 pr-10 pl-md rounded-xl bg-surface-container-low border border-outline-variant form-input-focus transition-all text-right"
-                                    id="clientName" placeholder="مثال: أحمد محمد علي" type="text" required
-                                    autocomplete="off" />
-                            </div>
-                            <!-- Dropdown -->
-                            <div id="clientDropdown"
-                                class="hidden absolute top-[72px] left-0 right-0 mt-1 bg-surface border border-outline-variant rounded-xl shadow-lg z-[110] max-h-[300px] overflow-y-auto custom-scrollbar">
+                                <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline">person</span>
+                                <input class="w-full h-12 pr-10 pl-md rounded-xl bg-surface-container-low border border-outline-variant form-input-focus transition-all text-right" id="clientName" placeholder="مثال: أحمد محمد علي" type="text" required autocomplete="off" />
+                                <div id="clientDropdown" class="hidden absolute top-full left-0 right-0 mt-1 bg-white border border-outline-variant rounded-xl shadow-xl z-[999] max-h-[250px] overflow-y-auto custom-scrollbar"></div>
                             </div>
                         </div>
-                        <div class="flex flex-col gap-xs relative">
+                        <div class="flex flex-col gap-xs">
                             <label class="font-label-md text-label-md text-on-surface-variant mb-xs">اسم العميل النهائي (اختياري)</label>
                             <div class="relative">
-                                <span
-                                    class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline">person_pin</span>
-                                <input
-                                    class="w-full h-12 pr-10 pl-md rounded-xl bg-surface-container-low border border-outline-variant form-input-focus transition-all text-right"
-                                    id="endClientName" placeholder="مثال: محمد إبراهيم (اختياري)" type="text"
-                                    autocomplete="off" />
-                            </div>
-                            <!-- End Client Dropdown -->
-                            <div id="endClientDropdown"
-                                class="hidden absolute top-[72px] left-0 right-0 mt-1 bg-surface border border-outline-variant rounded-xl shadow-lg z-[110] max-h-[300px] overflow-y-auto custom-scrollbar">
+                                <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline">person_pin</span>
+                                <input class="w-full h-12 pr-10 pl-md rounded-xl bg-surface-container-low border border-outline-variant form-input-focus transition-all text-right" id="endClientName" placeholder="مثال: محمد إبراهيم (اختياري)" type="text" autocomplete="off" />
+                                <div id="endClientDropdown" class="hidden absolute top-full left-0 right-0 mt-1 bg-white border border-outline-variant rounded-xl shadow-xl z-[999] max-h-[250px] overflow-y-auto custom-scrollbar"></div>
                             </div>
                         </div>
                         <div class="flex flex-col gap-xs">
@@ -423,7 +408,7 @@
 
             async function loadClients() {
                 try {
-                    const res = await fetch('/api/clients');
+                    const res = await fetch('/api/clients?limit=1000');
                     const data = await res.json();
                     allClientsList = data.data || [];
                 } catch (err) {
@@ -433,7 +418,7 @@
 
             async function loadEndClients() {
                 try {
-                    const res = await fetch('/api/end-clients');
+                    const res = await fetch('/api/end-clients?limit=1000');
                     const data = await res.json();
                     allEndClientsList = data.data || [];
                 } catch (err) {
@@ -562,7 +547,7 @@
                 });
 
                 try {
-                    const res = await fetch('/api/invoices');
+                    const res = await fetch('/api/invoices?limit=1000');
                     const responseData = await res.json();
                     allInvoices = responseData.data || [];
                     renderInvoices(sortInvoicesList(allInvoices));
@@ -589,11 +574,11 @@
                         menu.classList.remove('opacity-0', 'scale-95');
                         menu.classList.add('opacity-100', 'scale-100');
                     });
-                    arrow.classList.add('rotate-180');
+                    if (arrow) arrow.classList.add('rotate-180');
                 } else {
                     menu.classList.add('opacity-0', 'scale-95');
                     menu.classList.remove('opacity-100', 'scale-100');
-                    arrow.classList.remove('rotate-180');
+                    if (arrow) arrow.classList.remove('rotate-180');
                     setTimeout(() => menu.classList.add('hidden'), 150);
                 }
             }
@@ -611,16 +596,19 @@
                 // Close menu
                 const menu = document.getElementById('invoicesPageSizeMenu');
                 const arrow = document.getElementById('invoicesPageSizeArrow');
-                menu.classList.add('opacity-0', 'scale-95');
-                menu.classList.remove('opacity-100', 'scale-100');
-                arrow.classList.remove('rotate-180');
-                setTimeout(() => menu.classList.add('hidden'), 150);
+                if (menu) {
+                    menu.classList.add('opacity-0', 'scale-95');
+                    menu.classList.remove('opacity-100', 'scale-100');
+                    if (arrow) arrow.classList.remove('rotate-180');
+                    setTimeout(() => menu.classList.add('hidden'), 150);
+                }
                 
                 invoicesCurrentPage = 1;
                 renderInvoices(currentInvoicesList);
             }
 
-            document.getElementById('invoicesPageSizeBtn').addEventListener('click', toggleInvoicesPageSizeDropdown);
+            const invPageSizeBtn = document.getElementById('invoicesPageSizeBtn');
+            if (invPageSizeBtn) invPageSizeBtn.addEventListener('click', toggleInvoicesPageSizeDropdown);
 
             document.addEventListener('click', (e) => {
                 const container = document.getElementById('invoicesPageSizeContainer');
@@ -630,7 +618,7 @@
                     if (menu && !menu.classList.contains('hidden')) {
                         menu.classList.add('opacity-0', 'scale-95');
                         menu.classList.remove('opacity-100', 'scale-100');
-                        arrow.classList.remove('rotate-180');
+                        if (arrow) arrow.classList.remove('rotate-180');
                         setTimeout(() => menu.classList.add('hidden'), 150);
                     }
                 }
@@ -706,15 +694,34 @@
                     }
                 });
             }
-
-            // Search/Filter
             function filterInvoices() {
-                const filter = normalizeArabic(document.getElementById('searchInput').value);
-                const filtered = allInvoices.filter(inv =>
-                    normalizeArabic(inv.clientName).includes(filter) ||
-                    (inv.endClientName && normalizeArabic(inv.endClientName).includes(filter)) ||
-                    (inv.clientPhone && inv.clientPhone.includes(filter))
-                );
+                const rawVal = (document.getElementById('searchInput').value || '').trim();
+                if (!rawVal) {
+                    renderInvoices(sortInvoicesList(allInvoices), true);
+                    document.getElementById('noResults').classList.add('hidden');
+                    return;
+                }
+
+                const terms = rawVal.split(/\s+/).filter(Boolean);
+                const normTerms = terms.map(t => normalizeArabic(t)).filter(Boolean);
+
+                const filtered = allInvoices.filter(inv => {
+                    const normClientName = normalizeArabic(inv.clientName || '');
+                    const normEndClientName = normalizeArabic(inv.endClientName || '');
+                    const phone = (inv.clientPhone || '').trim();
+                    const invoiceCode = (inv.invoiceCode || '').toLowerCase().trim();
+                    const details = normalizeArabic(inv.details || '');
+
+                    return normTerms.every((term, idx) => {
+                        const rawTerm = terms[idx] ? terms[idx].toLowerCase() : term;
+                        return normClientName.includes(term) ||
+                               normEndClientName.includes(term) ||
+                               phone.includes(rawTerm) ||
+                               invoiceCode.includes(rawTerm) ||
+                               details.includes(term);
+                    });
+                });
+
                 renderInvoices(sortInvoicesList(filtered), true);
                 document.getElementById('noResults').classList.toggle('hidden', filtered.length > 0);
             }
@@ -1112,72 +1119,118 @@
             const clientDropdown = document.getElementById('clientDropdown');
             const clientIdInput = document.getElementById('clientId');
             const clientSummaryCard = document.getElementById('clientSummaryCard');
+            let clientSearchDebounce = null;
 
-            clientNameInput.addEventListener('input', (e) => {
-                const rawVal = e.target.value || '';
-                const terms = [...new Set(rawVal.trim().split(/\s+/).filter(Boolean))];
-
-                // Clear selection if user types
+            async function updateClientAutocomplete(rawVal) {
                 clientIdInput.value = '';
                 clientSummaryCard.classList.add('hidden');
                 clientSummaryCard.classList.remove('flex');
 
-                if (terms.length === 0) {
+                const val = (rawVal || '').trim();
+
+                if (val.length === 0) {
                     clientDropdown.classList.add('hidden');
                     return;
                 }
 
-                const scoredClients = [];
-                for (const c of allClientsList) {
-                    const normName = normalizeArabic(c.name || '');
-                    const phone = c.phone || '';
-                    let score = 0;
-                    for (const term of terms) {
-                        const normTerm = normalizeArabic(term);
-                        const nameMatches = normTerm && normName.includes(normTerm);
-                        const phoneMatches = phone && phone.includes(term);
-                        if (nameMatches || phoneMatches) {
-                            score++;
+                if (clientSearchDebounce) clearTimeout(clientSearchDebounce);
+
+                clientSearchDebounce = setTimeout(async () => {
+                    try {
+                        const res = await fetch(`/api/search?q=${encodeURIComponent(val)}`);
+                        if (!res.ok) return;
+                        const data = await res.json();
+
+                        const contractors = data.contractors || [];
+                        const endClientMatches = data.endClientMatches || [];
+
+                        if (contractors.length === 0 && endClientMatches.length === 0) {
+                            clientDropdown.innerHTML = '<div class="px-md py-sm text-xs text-secondary text-center">لا توجد نتائج مطابقة</div>';
+                            clientDropdown.classList.remove('hidden');
+                            return;
                         }
+
+                        let html = '';
+
+                        if (contractors.length > 0) {
+                            html += `
+                                <div class="px-md py-xs bg-surface-container-low text-[11px] font-bold text-secondary border-b border-outline-variant/30 flex items-center justify-between">
+                                    <span>عملاء مسجلون بالخزينة:</span>
+                                    <span class="text-primary">${contractors.length} عميل</span>
+                                </div>
+                            `;
+                            html += contractors.map(c => {
+                                const id = String(c.id || c._id);
+                                const phoneStr = c.phone && c.phone !== '-' ? c.phone : '';
+                                return `
+                                    <div class="px-md py-sm hover:bg-primary/10 cursor-pointer border-b border-outline-variant/30 last:border-0 transition-colors flex items-center justify-between"
+                                         onclick="selectClientById('${id}')">
+                                        <div class="font-body-md text-on-surface font-bold">${highlightArabic(c.name, val)}</div>
+                                        <div class="font-label-sm text-secondary dir-ltr text-right">${highlightArabic(phoneStr, val)}</div>
+                                    </div>
+                                `;
+                            }).join('');
+                        }
+
+                        if (endClientMatches.length > 0) {
+                            html += `
+                                <div class="px-md py-xs bg-surface-container-low text-[11px] font-bold text-tertiary border-b border-outline-variant/30 flex items-center justify-between ${contractors.length > 0 ? 'border-t border-outline-variant/40' : ''}">
+                                    <span>عملاء نهائيون مسجلون مسبقاً:</span>
+                                    <span class="text-tertiary">${endClientMatches.length} عميل نهائي</span>
+                                </div>
+                            `;
+                            html += endClientMatches.map(ec => {
+                                const primaryContractor = ec.contractors && ec.contractors[0];
+                                const primaryContractorId = primaryContractor ? primaryContractor.id : '';
+                                const safeEndName = String(ec.endClientName || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                                return `
+                                    <div class="px-md py-sm hover:bg-tertiary/10 cursor-pointer border-b border-outline-variant/30 last:border-0 transition-colors flex items-center justify-between"
+                                         onclick="selectEndClientFromSearch('${safeEndName}', '${primaryContractorId}')">
+                                        <div class="font-body-md text-on-surface font-bold flex items-center gap-xs">
+                                            <span class="material-symbols-outlined text-sm text-tertiary">person_pin</span>
+                                            <span>${highlightArabic(ec.endClientName, val)}</span>
+                                        </div>
+                                        ${primaryContractor ? `<div class="text-[11px] text-secondary">عن طريق: ${primaryContractor.name}</div>` : ''}
+                                    </div>
+                                `;
+                            }).join('');
+                        }
+
+                        clientDropdown.innerHTML = html;
+                        clientDropdown.classList.remove('hidden');
+                    } catch (err) {
+                        console.error('Error updating client autocomplete:', err);
                     }
-                    if (score > 0) {
-                        scoredClients.push({ client: c, score });
-                    }
+                }, 100);
+            }
+
+            function selectEndClientFromSearch(endName, contractorId) {
+                endClientNameInput.value = endName;
+                clientDropdown.classList.add('hidden');
+                if (contractorId) {
+                    selectClientById(contractorId);
                 }
+            }
 
-                scoredClients.sort((a, b) => b.score - a.score);
-                const matches = scoredClients.map(item => item.client);
+            clientNameInput.addEventListener('input', (e) => updateClientAutocomplete(e.target.value));
+            clientNameInput.addEventListener('focus', (e) => updateClientAutocomplete(e.target.value));
 
-                if (matches.length > 0) {
-                    clientDropdown.innerHTML = matches.map(c => {
-                        const id = String(c.id || c._id);
-                        const safeName = (c.name || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
-                        const safePhone = (c.phone || '').replace(/'/g, "\\'");
-                        const safeDate = (c.updatedAt || '').replace(/'/g, "\\'");
-                        return `
-                    <div class="px-md py-sm hover:bg-surface-container-highest cursor-pointer border-b border-outline-variant/30 last:border-0 transition-colors"
-                         onclick="selectClient('${id}', '${safeName}', '${safePhone}', ${c.balance || 0}, '${safeDate}')">
-                        <div class="font-body-md text-on-surface font-bold">${highlightArabic(c.name, rawVal)}</div>
-                        <div class="font-label-sm text-secondary dir-ltr text-right">${highlightArabic(c.phone || '', rawVal)}</div>
-                    </div>
-                `}).join('');
-                    clientDropdown.classList.remove('hidden');
-                } else {
-                    clientDropdown.classList.add('hidden');
-                }
-            });
+            function selectClientById(id) {
+                const c = allClientsList.find(item => String(item.id || item._id) === String(id));
+                if (!c) return;
 
-            function selectClient(id, name, phone, balance, lastTransaction) {
-                clientIdInput.value = id;
-                clientNameInput.value = name;
-                document.getElementById('mobileNumber').value = phone && phone !== '-' ? phone : '';
+                const clientId = c.id || c._id;
+                clientIdInput.value = clientId;
+                clientNameInput.value = c.name || '';
+                document.getElementById('mobileNumber').value = (c.phone && c.phone !== '-') ? c.phone : '';
 
+                const balance = Number(c.balance) || 0;
                 const balanceEl = document.getElementById('summaryBalance');
                 balanceEl.textContent = formatCurrency(balance);
                 balanceEl.className = `font-bold dir-ltr inline-block ${balance > 0 ? 'text-tertiary' : (balance < 0 ? 'text-error' : 'text-primary')}`;
 
-                document.getElementById('summaryLastTransaction').textContent = lastTransaction ? formatDate(lastTransaction) : '--';
-                document.getElementById('summaryProfileLink').href = `/client-details?id=${id}`;
+                document.getElementById('summaryLastTransaction').textContent = c.updatedAt ? formatDate(c.updatedAt) : '--';
+                document.getElementById('summaryProfileLink').href = `/client-details?id=${clientId}`;
 
                 clientDropdown.classList.add('hidden');
                 clientSummaryCard.classList.remove('hidden');
@@ -1189,58 +1242,52 @@
             const endClientDropdown = document.getElementById('endClientDropdown');
             const endClientIdInput = document.getElementById('endClientId');
 
-            endClientNameInput.addEventListener('input', (e) => {
-                const rawVal = e.target.value || '';
-                const terms = [...new Set(rawVal.trim().split(/\s+/).filter(Boolean))];
-
+            async function updateEndClientAutocomplete(rawVal) {
                 endClientIdInput.value = '';
 
-                if (terms.length === 0) {
+                const val = (rawVal || '').trim();
+
+                if (val.length === 0) {
                     endClientDropdown.classList.add('hidden');
                     return;
                 }
 
-                const scoredEndClients = [];
-                for (const ec of allEndClientsList) {
-                    const normName = normalizeArabic(ec.name || '');
-                    const phone = ec.phone || '';
-                    let score = 0;
-                    for (const term of terms) {
-                        const normTerm = normalizeArabic(term);
-                        const nameMatches = normTerm && normName.includes(normTerm);
-                        const phoneMatches = phone && phone.includes(term);
-                        if (nameMatches || phoneMatches) {
-                            score++;
-                        }
+                try {
+                    const res = await fetch(`/api/search?q=${encodeURIComponent(val)}`);
+                    if (!res.ok) return;
+                    const data = await res.json();
+                    const endClientMatches = data.endClientMatches || [];
+
+                    if (endClientMatches.length > 0) {
+                        endClientDropdown.innerHTML = endClientMatches.map(ec => {
+                            const safeEndName = String(ec.endClientName || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                            const primaryContractor = ec.contractors && ec.contractors[0];
+                            const primaryContractorId = primaryContractor ? primaryContractor.id : '';
+                            return `
+                                <div class="px-md py-sm hover:bg-primary/10 cursor-pointer border-b border-outline-variant/30 last:border-0 transition-colors flex items-center justify-between"
+                                     onclick="selectEndClientFromSearch('${safeEndName}', '${primaryContractorId}')">
+                                    <div class="font-body-md text-on-surface font-bold">${highlightArabic(ec.endClientName, val)}</div>
+                                    ${primaryContractor ? `<div class="font-label-sm text-secondary">عن طريق: ${primaryContractor.name}</div>` : ''}
+                                </div>
+                            `;
+                        }).join('');
+                        endClientDropdown.classList.remove('hidden');
+                    } else {
+                        endClientDropdown.innerHTML = '<div class="px-md py-sm text-xs text-secondary text-center">لا توجد نتائج مطابقة</div>';
+                        endClientDropdown.classList.remove('hidden');
                     }
-                    if (score > 0) {
-                        scoredEndClients.push({ client: ec, score });
-                    }
-                }
+                } catch (e) {}
+            }
 
-                scoredEndClients.sort((a, b) => b.score - a.score);
-                const matches = scoredEndClients.map(item => item.client);
+            endClientNameInput.addEventListener('input', (e) => updateEndClientAutocomplete(e.target.value));
+            endClientNameInput.addEventListener('focus', (e) => updateEndClientAutocomplete(e.target.value));
 
-                if (matches.length > 0) {
-                    endClientDropdown.innerHTML = matches.map(ec => {
-                        const id = String(ec.id || ec._id);
-                        const safeName = (ec.name || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
-                        return `
-                    <div class="px-md py-sm hover:bg-surface-container-highest cursor-pointer border-b border-outline-variant/30 last:border-0 transition-colors"
-                         onclick="selectEndClient('${id}', '${safeName}')">
-                        <div class="font-body-md text-on-surface font-bold">${highlightArabic(ec.name, rawVal)}</div>
-                        ${ec.phone && ec.phone !== '-' ? `<div class="font-label-sm text-secondary dir-ltr text-right">${highlightArabic(ec.phone, rawVal)}</div>` : ''}
-                    </div>
-                `}).join('');
-                    endClientDropdown.classList.remove('hidden');
-                } else {
-                    endClientDropdown.classList.add('hidden');
-                }
-            });
+            function selectEndClientById(id) {
+                const ec = allEndClientsList.find(item => String(item.id || item._id) === String(id));
+                if (!ec) return;
 
-            function selectEndClient(id, name) {
-                endClientIdInput.value = id;
-                endClientNameInput.value = name;
+                endClientIdInput.value = ec.id || ec._id;
+                endClientNameInput.value = ec.name || '';
                 endClientDropdown.classList.add('hidden');
             }
 

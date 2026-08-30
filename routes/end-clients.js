@@ -46,28 +46,25 @@ router.get('/check-name-match', async (req, res) => {
 router.get('/', async (req, res) => {
   try {
     const search = req.query.search;
-    let where = {};
-
-    if (search && typeof search === 'string') {
-      const terms = [...new Set(search.trim().split(/\s+/).filter(Boolean))];
-      if (terms.length > 0) {
-        where = {
-          OR: terms.flatMap(term => [
-            { name: { contains: term } },
-            { phone: { contains: term } }
-          ])
-        };
-      }
-    }
-
-    const endClients = await prisma.endClient.findMany({
-      where,
-      orderBy: { updatedAt: 'desc' },
-      take: 20
+    let endClients = await prisma.endClient.findMany({
+      orderBy: { updatedAt: 'desc' }
     });
 
+    if (search && typeof search === 'string' && search.trim()) {
+      const terms = [...new Set(search.trim().split(/\s+/).filter(Boolean))];
+      const normTerms = [...new Set(terms.map(t => normalize(t)).filter(Boolean))];
+
+      endClients = endClients.filter(ec => {
+        const normName = normalize(ec.name || '');
+        const phone = ec.phone || '';
+        return normTerms.some(term => normName.includes(term) || phone.includes(term));
+      });
+    }
+
+    const limit = parseInt(req.query.limit) || (search ? 20 : 1000);
+
     res.json({
-      data: endClients.map(ec => ({
+      data: endClients.slice(0, limit).map(ec => ({
         ...ec,
         _id: ec.id
       }))

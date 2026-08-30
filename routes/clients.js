@@ -8,37 +8,53 @@ const { getClientBalance, getAllClientBalances } = require('../lib/balance');
 // Apply auth middleware to all routes
 router.use(requireAuth);
 
-// GET /api/clients - List clients with pagination and search
+// GET /api/clients - List clients with pagination, search, and global statistics
 router.get('/', async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 20;
     const skip = (page - 1) * limit;
     const search = req.query.search;
-    let where = {};
 
-    if (search && typeof search === 'string') {
-      const terms = [...new Set(search.trim().split(/\s+/).filter(Boolean))];
-      if (terms.length > 0) {
-        where = {
-          OR: terms.flatMap(term => [
-            { name: { contains: term } },
-            { phone: { contains: term } }
-          ])
-        };
-      }
-    }
-
-    const [total, clients, balanceMap] = await Promise.all([
-      prisma.client.count({ where }),
+    const [allClients, balanceMap] = await Promise.all([
       prisma.client.findMany({
-        where,
-        orderBy: { updatedAt: 'desc' },
-        skip,
-        take: limit
+        orderBy: { updatedAt: 'desc' }
       }),
       getAllClientBalances(prisma)
     ]);
+
+    // Calculate global stats across all clients
+    let creditCount = 0;
+    let creditTotal = 0;
+    let debtCount = 0;
+    let debtTotal = 0;
+
+    for (const c of allClients) {
+      const bal = balanceMap.get(c.id) || 0;
+      if (bal <= 0) {
+        creditCount++;
+        creditTotal += Math.abs(bal);
+      } else {
+        debtCount++;
+        debtTotal += bal;
+      }
+    }
+
+    let filteredClients = allClients;
+
+    if (search && typeof search === 'string' && search.trim()) {
+      const terms = [...new Set(search.trim().split(/\s+/).filter(Boolean))];
+      const normTerms = [...new Set(terms.map(t => normalize(t)).filter(Boolean))];
+
+      filteredClients = allClients.filter(c => {
+        const normName = normalize(c.name || '');
+        const phone = c.phone || '';
+        return normTerms.some(term => normName.includes(term) || phone.includes(term));
+      });
+    }
+
+    const total = filteredClients.length;
+    const clients = filteredClients.slice(skip, skip + limit);
 
     const clientIds = clients.map(c => c.id);
     let invoicesForClients = [];
@@ -82,6 +98,12 @@ router.get('/', async (req, res) => {
         limit,
         total,
         pages: Math.ceil(total / limit)
+      },
+      stats: {
+        creditCount,
+        creditTotal,
+        debtCount,
+        debtTotal
       }
     });
 
