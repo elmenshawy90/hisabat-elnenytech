@@ -222,6 +222,8 @@ router.post('/', async (req, res) => {
       });
       const invoiceCode = `Nen${counter.value}`;
 
+      const balanceEffect = data.balanceEffect || (data.type === 'payment' ? 'decrease' : 'increase');
+
       const createdInvoice = await tx.invoice.create({
         data: {
           invoiceCode,
@@ -231,6 +233,7 @@ router.post('/', async (req, res) => {
           endClientId: endClientId || null,
           endClientName: endClientName || '',
           type: data.type,
+          balanceEffect,
           amount: finalAmount,
           details: data.details || '-',
           address: data.address || '-',

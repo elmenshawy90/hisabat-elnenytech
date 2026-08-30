@@ -301,11 +301,36 @@
 </div>
 <p id="newClientPhoneError" class="hidden text-error text-[11px] mt-1 pr-1 font-bold">يجب إدخال أرقام فقط في رقم الهاتف</p>
 </div>
+<div class="border-t border-outline-variant/60 pt-sm">
+<button type="button" onclick="toggleOpeningBalanceSection()" class="flex items-center justify-between w-full text-xs font-bold text-primary hover:underline cursor-pointer">
+<span class="flex items-center gap-xs">
+<span class="material-symbols-outlined text-base">account_balance_wallet</span>
+<span>+ إضافة رصيد افتتاحي</span>
+</span>
+<span class="material-symbols-outlined text-base transition-transform duration-200" id="openingBalanceArrow">expand_more</span>
+</button>
+<div id="openingBalanceSection" class="hidden mt-sm p-sm bg-surface-container-low rounded-xl border border-outline-variant/60 space-y-sm">
 <div class="flex flex-col gap-xs">
-<label class="font-label-md text-label-md text-on-surface-variant">العنوان (اختياري)</label>
+<label class="font-label-md text-xs font-bold text-on-surface-variant">المبلغ (ج.م)</label>
 <div class="relative">
-<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline">location_on</span>
-<input class="w-full h-12 pr-10 pl-md rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all text-right" id="newClientAddress" placeholder="الحي، الشارع..." type="text"/>
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline text-sm">payments</span>
+<input type="number" step="any" min="0" id="newClientOpeningBalance" placeholder="0.00" class="w-full h-10 pr-9 pl-md rounded-lg bg-white border border-outline-variant text-xs font-bold text-right outline-none focus:border-primary" />
+</div>
+</div>
+<div class="flex flex-col gap-xs">
+<label class="font-label-md text-xs font-bold text-on-surface-variant">نوع الرصيد <span class="text-error">*</span></label>
+<div class="grid grid-cols-2 gap-xs">
+<label class="flex items-center justify-center gap-xs p-2 rounded-lg border border-outline-variant cursor-pointer hover:bg-surface transition-colors">
+<input type="radio" name="openingBalanceType" value="debit" class="text-primary focus:ring-primary" />
+<span class="text-xs font-bold text-tertiary">عليه (مدين)</span>
+</label>
+<label class="flex items-center justify-center gap-xs p-2 rounded-lg border border-outline-variant cursor-pointer hover:bg-surface transition-colors">
+<input type="radio" name="openingBalanceType" value="credit" class="text-primary focus:ring-primary" />
+<span class="text-xs font-bold text-green-700">له (دائن)</span>
+</label>
+</div>
+<p id="openingBalanceTypeError" class="hidden text-error text-[11px] font-bold mt-0.5">الرجاء اختيار نوع الرصيد (له أو عليه)</p>
+</div>
 </div>
 </div>
 <div class="flex flex-col md:flex-row items-center gap-md pt-md border-t border-outline-variant">
@@ -999,6 +1024,20 @@ document.addEventListener('click', (e) => {
     }
 });
 
+function toggleOpeningBalanceSection() {
+    const section = document.getElementById('openingBalanceSection');
+    const arrow = document.getElementById('openingBalanceArrow');
+    if (!section) return;
+    const isHidden = section.classList.contains('hidden');
+    if (isHidden) {
+        section.classList.remove('hidden');
+        if (arrow) arrow.classList.add('rotate-180');
+    } else {
+        section.classList.add('hidden');
+        if (arrow) arrow.classList.remove('rotate-180');
+    }
+}
+
 function openAddClientModal() {
     const modal = document.getElementById('addClientModal');
     modal.classList.remove('hidden');
@@ -1012,9 +1051,32 @@ function openAddClientModal() {
     newClientPhoneError.classList.add('hidden');
     newClientPhoneInput.classList.remove('border-error');
     if (newClientNameDropdown) newClientNameDropdown.classList.add('hidden');
+    
+    const obSection = document.getElementById('openingBalanceSection');
+    const obArrow = document.getElementById('openingBalanceArrow');
+    if (obSection) obSection.classList.add('hidden');
+    if (obArrow) obArrow.classList.remove('rotate-180');
+    const obErr = document.getElementById('openingBalanceTypeError');
+    if (obErr) obErr.classList.add('hidden');
+
     submitBtn.disabled = false;
     submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
     setTimeout(() => newClientNameInput.focus(), 50);
+}
+
+function closeAddClientModal() {
+    const modal = document.getElementById('addClientModal');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+    document.body.style.overflow = '';
+    document.getElementById('addClientForm').reset();
+    
+    const obSection = document.getElementById('openingBalanceSection');
+    const obArrow = document.getElementById('openingBalanceArrow');
+    if (obSection) obSection.classList.add('hidden');
+    if (obArrow) obArrow.classList.remove('rotate-180');
+    const obErr = document.getElementById('openingBalanceTypeError');
+    if (obErr) obErr.classList.add('hidden');
 }
 
 function closeAddClientModal() {
@@ -1176,19 +1238,44 @@ document.getElementById('addClientForm').addEventListener('submit', async (e) =>
         newClientNameInput.focus();
         return;
     }
+
+    const obInput = document.getElementById('newClientOpeningBalance');
+    const obVal = obInput ? obInput.value.trim() : '';
+    const obNum = parseFloat(obVal);
+    const hasOb = !isNaN(obNum) && obNum > 0;
+
+    const obTypeEl = document.querySelector('input[name="openingBalanceType"]:checked');
+    const obType = obTypeEl ? obTypeEl.value : null;
+
+    const obSection = document.getElementById('openingBalanceSection');
+    const isObOpen = obSection && !obSection.classList.contains('hidden');
+
+    if (isObOpen && hasOb && !obType) {
+        showToast('الرجاء اختيار نوع الرصيد الافتتاحي (له أو عليه)', 'warning');
+        const obErr = document.getElementById('openingBalanceTypeError');
+        if (obErr) obErr.classList.remove('hidden');
+        return;
+    }
     
     try {
         submitBtn.disabled = true;
         const pageNumber = document.getElementById('newClientPageNumber').value.trim();
+        const payload = {
+            name,
+            phone: phone || '-',
+            address: address || '',
+            pageNumber: pageNumber === '' ? 0 : Number(pageNumber)
+        };
+
+        if (hasOb && obType) {
+            payload.openingBalance = obNum;
+            payload.openingBalanceType = obType;
+        }
+
         const res = await fetch('/api/clients', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                name,
-                phone: phone || '-',
-                address: address || '',
-                pageNumber: pageNumber === '' ? 0 : Number(pageNumber)
-            })
+            body: JSON.stringify(payload)
         });
         
         if (res.ok) {

@@ -171,7 +171,7 @@ router.get('/:id', async (req, res) => {
 // POST /api/clients - Create new client
 router.post('/', async (req, res) => {
   try {
-    const { name, phone, address, notes, pageNumber } = req.body;
+    const { name, phone, address, notes, pageNumber, openingBalance, openingBalanceType } = req.body;
     
     if (!name || !name.trim()) {
       return res.status(400).json({ error: 'اسم العميل مطلوب' });
@@ -189,16 +189,79 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ error: 'العميل مسجل مسبقاً، الرجاء تغيير الاسم للمتابعة' });
     }
 
-    const client = await prisma.client.create({
-      data: {
-        name: trimmedName,
-        phone: trimmedPhone,
-        address: address || '',
-        notes: notes || '',
-        pageNumber: Number.isFinite(parsedPageNumber) && parsedPageNumber >= 0 ? parsedPageNumber : 0
-      }
+    const hasOpeningBalance = openingBalance !== undefined && openingBalance !== null && !isNaN(Number(openingBalance)) && Number(openingBalance) > 0;
+    
+    if (hasOpeningBalance && (!openingBalanceType || (openingBalanceType !== 'debit' && openingBalanceType !== 'credit'))) {
+      return res.status(400).json({ error: 'الرجاء تحديد نوع الرصيد الافتتاحي (له أو عليه)' });
+    }
+
+    let resultClient;
+    let createdInvoice = null;
+
+    if (hasOpeningBalance) {
+      const parsedAmount = Math.round((Number(openingBalance) + Number.EPSILON) * 100) / 100;
+      const balanceEffect = openingBalanceType === 'debit' ? 'increase' : 'decrease';
+      const detailsText = openingBalanceType === 'debit' ? 'رصيد افتتاحي (عليه)' : 'رصيد افتتاحي (له)';
+
+      const resTx = await prisma.$transaction(async (tx) => {
+        const client = await tx.client.create({
+          data: {
+            name: trimmedName,
+            phone: trimmedPhone,
+            address: address || '',
+            notes: notes || '',
+            pageNumber: Number.isFinite(parsedPageNumber) && parsedPageNumber >= 0 ? parsedPageNumber : 0
+          }
+        });
+
+        const counter = await tx.counter.upsert({
+          where: { id: 'invoice' },
+          create: { id: 'invoice', value: 1 },
+          update: { value: { increment: 1 } }
+        });
+        const invoiceCode = `Nen${counter.value}`;
+
+        const inv = await tx.invoice.create({
+          data: {
+            invoiceCode,
+            clientId: client.id,
+            clientName: client.name,
+            clientPhone: client.phone,
+            type: 'opening_balance',
+            balanceEffect,
+            amount: parsedAmount,
+            details: detailsText,
+            address: client.address || '-',
+            status: 'paid',
+            date: new Date()
+          }
+        });
+
+        return { client, invoice: inv };
+      });
+
+      resultClient = resTx.client;
+      createdInvoice = resTx.invoice;
+    } else {
+      resultClient = await prisma.client.create({
+        data: {
+          name: trimmedName,
+          phone: trimmedPhone,
+          address: address || '',
+          notes: notes || '',
+          pageNumber: Number.isFinite(parsedPageNumber) && parsedPageNumber >= 0 ? parsedPageNumber : 0
+        }
+      });
+    }
+
+    const liveBalance = await getClientBalance(prisma, resultClient.id);
+
+    res.status(201).json({
+      ...resultClient,
+      _id: resultClient.id,
+      balance: liveBalance,
+      openingBalanceInvoice: createdInvoice
     });
-    res.status(201).json({ ...client, _id: client.id, balance: 0 });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'فشل في إنشاء العميل' });

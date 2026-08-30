@@ -1157,9 +1157,10 @@ function renderTransactions(invoices, resetPage = false) {
     let running = 0;
     const balanceMap = new Map();
     for (const inv of chronological) {
-        if (inv.type === 'purchase') {
+        const isIncrease = inv.balanceEffect === 'increase' || (!inv.balanceEffect && inv.type === 'purchase');
+        if (isIncrease) {
             running += (Number(inv.amount) || 0);
-        } else if (inv.type === 'payment') {
+        } else {
             running -= (Number(inv.amount) || 0);
         }
         const key = String(inv._id || inv.id);
@@ -1198,13 +1199,21 @@ function renderTransactions(invoices, resetPage = false) {
     const pagedInvoices = invoices.slice(startIndex, endIndex);
 
     tbody.innerHTML = pagedInvoices.map(inv => {
+        const isOpening = inv.type === 'opening_balance';
         const isPurchase = inv.type === 'purchase';
-        const typeBadge = isPurchase
-            ? '<span class="px-sm py-1 rounded-full bg-primary-fixed text-on-primary-fixed font-label-sm text-label-sm">شراء</span>'
-            : '<span class="px-sm py-1 rounded-full bg-secondary-container text-on-secondary-container font-label-sm text-label-sm">دفع</span>';
+        const isIncrease = inv.balanceEffect === 'increase' || (!inv.balanceEffect && isPurchase);
 
-        const amountClass = isPurchase ? 'font-bold' : 'text-primary font-bold';
-        const amountPrefix = isPurchase ? '+' : '-';
+        let typeBadge = '';
+        if (isOpening) {
+            typeBadge = '<span class="px-sm py-1 rounded-full bg-blue-100 text-blue-800 font-label-sm text-label-sm font-bold">رصيد افتتاحي</span>';
+        } else if (isPurchase) {
+            typeBadge = '<span class="px-sm py-1 rounded-full bg-primary-fixed text-on-primary-fixed font-label-sm text-label-sm">شراء</span>';
+        } else {
+            typeBadge = '<span class="px-sm py-1 rounded-full bg-secondary-container text-on-secondary-container font-label-sm text-label-sm">دفع</span>';
+        }
+
+        const amountClass = isIncrease ? 'font-bold' : 'text-primary font-bold';
+        const amountPrefix = isIncrease ? '+' : '-';
 
         const runBal = inv.runningBalance !== undefined && inv.runningBalance !== null ? inv.runningBalance : (balanceMap.get(String(inv._id || inv.id)) ?? 0);
         const balanceBadge = runBal <= 0
@@ -1378,11 +1387,23 @@ function openTransactionDetails(id) {
 
     document.getElementById('tdDate').textContent = formatDate(inv.date);
     document.getElementById('tdEndClient').textContent = inv.endClientName || '-';
-    document.getElementById('tdType').textContent = inv.type === 'payment' ? 'دفعة' : 'عملية شراء';
+
+    const isOpening = inv.type === 'opening_balance';
+    const isPayment = inv.type === 'payment';
+    const isIncrease = inv.balanceEffect === 'increase' || (!inv.balanceEffect && inv.type === 'purchase');
+
+    const typeEl = document.getElementById('tdType');
+    if (isOpening) {
+        typeEl.innerHTML = '<span class="px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 font-bold text-xs">رصيد افتتاحي</span>';
+    } else if (isPayment) {
+        typeEl.textContent = 'دفعة';
+    } else {
+        typeEl.textContent = 'عملية شراء';
+    }
     
     const amountEl = document.getElementById('tdAmount');
     amountEl.textContent = formatCurrency(inv.amount);
-    amountEl.className = `font-body-md font-bold ${inv.type === 'payment' ? 'text-green-600' : 'text-primary'}`;
+    amountEl.className = `font-body-md font-bold ${isIncrease ? 'text-on-surface' : 'text-primary'}`;
     
     document.getElementById('tdAddress').textContent = inv.address || '-';
     document.getElementById('tdNotes').textContent = inv.details || '-';
