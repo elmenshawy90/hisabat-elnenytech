@@ -4,8 +4,8 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta charset="utf-8"/>
     <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-    <title>حالة النظام - سجل الديون</title>
-    <meta name="description" content="عرض حالة النشر وقاعدة البيانات"/>
+    <title>حالة النظام - حسابات</title>
+    <meta name="description" content="عرض حالة النظام وسجل عمليات النشر وقاعدة البيانات"/>
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <script src="/js/tailwind-config.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
@@ -31,7 +31,7 @@
                     <span class="material-symbols-outlined text-primary text-2xl">dns</span>
                     حالة النظام والمعلومات البرمجية
                 </h1>
-                <p class="text-sm text-secondary mt-1">مراقبة حالة عملية النشر الأخيرة على Vercel وحالة قاعدة البيانات</p>
+                <p class="text-sm text-secondary mt-1">مراقبة حالة عمليات النشر وحالة الاتصال بقاعدة البيانات</p>
             </div>
             <button onclick="window.location.reload()" type="button" class="px-lg py-sm bg-primary text-on-primary rounded-full font-label-md text-label-md hover:opacity-90 active:scale-95 transition-all flex items-center gap-xs shadow-xs self-end sm:self-auto cursor-pointer">
                 <span class="material-symbols-outlined text-lg">refresh</span>
@@ -39,127 +39,52 @@
             </button>
         </div>
 
+        <!-- 1. Overall System Status Banner -->
+        <% if (systemStatus.healthy) { %>
+            <div class="bg-emerald-50 border border-emerald-200 text-emerald-950 rounded-2xl p-lg flex flex-col sm:flex-row sm:items-center justify-between gap-md shadow-xs transition-all">
+                <div class="flex items-center gap-md">
+                    <div class="w-12 h-12 rounded-full bg-emerald-600 text-white flex items-center justify-center flex-shrink-0 shadow-sm">
+                        <span class="material-symbols-outlined text-2xl" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+                    </div>
+                    <div>
+                        <h2 class="font-headline-sm text-headline-sm font-bold text-emerald-900 flex items-center gap-1">
+                            ✓ النظام يعمل بشكل طبيعي
+                        </h2>
+                        <p class="text-xs sm:text-sm text-emerald-700 mt-0.5">قاعدة البيانات متصلة وجاهزة، وعمليات النشر تمت بنجاح</p>
+                    </div>
+                </div>
+                <div class="self-start sm:self-center">
+                    <span class="inline-flex items-center gap-1.5 px-md py-1 rounded-full text-xs font-bold bg-emerald-600 text-white shadow-xs">
+                        <span class="w-2 h-2 rounded-full bg-white animate-pulse"></span>
+                        <%= systemStatus.badgeText %>
+                    </span>
+                </div>
+            </div>
+        <% } else { %>
+            <div class="bg-red-50 border border-red-200 text-red-950 rounded-2xl p-lg flex flex-col sm:flex-row sm:items-center justify-between gap-md shadow-xs transition-all">
+                <div class="flex items-center gap-md">
+                    <div class="w-12 h-12 rounded-full bg-red-600 text-white flex items-center justify-center flex-shrink-0 shadow-sm">
+                        <span class="material-symbols-outlined text-2xl" style="font-variation-settings: 'FILL' 1;">warning</span>
+                    </div>
+                    <div>
+                        <h2 class="font-headline-sm text-headline-sm font-bold text-red-900 flex items-center gap-1">
+                            ⚠ يوجد مشكلة حالياً
+                        </h2>
+                        <p class="text-xs sm:text-sm text-red-700 mt-0.5">يرجى التحقق من اتصال قاعدة البيانات أو السجلات أدناه</p>
+                    </div>
+                </div>
+                <div class="self-start sm:self-center">
+                    <span class="inline-flex items-center gap-1.5 px-md py-1 rounded-full text-xs font-bold bg-red-600 text-white shadow-xs">
+                        <span class="w-2 h-2 rounded-full bg-white animate-ping"></span>
+                        <%= systemStatus.badgeText %>
+                    </span>
+                </div>
+            </div>
+        <% } %>
+
         <div class="grid grid-cols-1 gap-lg">
 
-            <!-- Card 1: Vercel Deployment Status -->
-            <div class="bg-white rounded-xl border border-outline-variant p-lg shadow-sm space-y-md">
-                <div class="flex justify-between items-center border-b border-outline-variant/40 pb-md">
-                    <div class="flex items-center gap-sm">
-                        <div class="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold">
-                            <span class="material-symbols-outlined text-xl">rocket_launch</span>
-                        </div>
-                        <div>
-                            <h2 class="font-headline-sm text-headline-sm font-bold text-on-surface">آخر عملية نشر (Vercel Deployment)</h2>
-                            <p class="text-xs text-secondary">معلومات البيئة وحالة الـ Deployment الأخير</p>
-                        </div>
-                    </div>
-
-                    <% if (deployment.error) { %>
-                        <span class="px-md py-xs rounded-full font-label-sm text-label-sm border bg-amber-50 text-amber-800 border-amber-300 flex items-center gap-1">
-                            <span class="w-2 h-2 rounded-full bg-amber-500"></span>
-                            تعذر الاتصال بـ Vercel
-                        </span>
-                    <% } else if (deployment.state === 'READY') { %>
-                        <span class="px-md py-xs rounded-full font-label-sm text-label-sm border bg-green-50 text-green-800 border-green-300 flex items-center gap-1">
-                            <span class="w-2 h-2 rounded-full bg-green-600"></span>
-                            نشط وشغال
-                        </span>
-                    <% } else if (deployment.state === 'ERROR') { %>
-                        <span class="px-md py-xs rounded-full font-label-sm text-label-sm border bg-red-50 text-red-800 border-red-300 flex items-center gap-1">
-                            <span class="w-2 h-2 rounded-full bg-red-600 animate-pulse"></span>
-                            فشل النشر
-                        </span>
-                    <% } else if (['BUILDING', 'QUEUED', 'INITIALIZING'].includes(deployment.state)) { %>
-                        <span class="px-md py-xs rounded-full font-label-sm text-label-sm border bg-amber-50 text-amber-800 border-amber-300 flex items-center gap-1">
-                            <span class="w-2 h-2 rounded-full bg-amber-500 animate-ping"></span>
-                            جاري النشر الآن (<%= deployment.state %>)
-                        </span>
-                    <% } else { %>
-                        <span class="px-md py-xs rounded-full font-label-sm text-label-sm border bg-gray-50 text-gray-800 border-gray-300 flex items-center gap-1">
-                            <span class="w-2 h-2 rounded-full bg-gray-400"></span>
-                            <%= deployment.state %>
-                        </span>
-                    <% } %>
-                </div>
-
-                <% if (deployment.error) { %>
-                    <!-- Vercel API Error / Missing Token Warning -->
-                    <div class="bg-amber-50 border border-amber-200 text-amber-900 rounded-xl p-md space-y-sm text-sm">
-                        <div class="flex items-center gap-xs font-bold text-amber-800">
-                            <span class="material-symbols-outlined text-xl text-amber-600">warning</span>
-                            <span>تعذر جلب بيانات النشر من Vercel</span>
-                        </div>
-                        <p class="pr-6"><%= deployment.error %></p>
-                        <% if (deployment.details) { %>
-                            <p class="pr-6 text-xs text-amber-700 font-mono dir-ltr text-right bg-amber-100/50 p-sm rounded-lg"><%= deployment.details %></p>
-                        <% } %>
-                        <p class="pr-6 text-xs text-amber-800">
-                            تأكد من ضبط المتغيرات البيئية <code class="bg-amber-200 px-1 py-0.5 rounded font-mono">VERCEL_API_TOKEN</code> و <code class="bg-amber-200 px-1 py-0.5 rounded font-mono">VERCEL_PROJECT_ID</code> في إعدادات مشروك على Vercel أو في ملف <code class="bg-amber-200 px-1 py-0.5 rounded font-mono">.env</code> المحلي.
-                        </p>
-                    </div>
-                <% } else { %>
-                    <!-- Deployment Details Grid -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-md pt-sm">
-                        <div class="bg-surface-container-low p-sm rounded-xl border border-outline-variant/30 space-y-1">
-                            <span class="text-xs text-secondary font-medium">تاريخ ووقت آخر نشر</span>
-                            <p class="font-bold text-on-surface text-sm" id="deploymentDate">
-                                <% if (deployment.deployedAt) { %>
-                                    <%= new Date(deployment.deployedAt).toLocaleString('ar-EG', { dateStyle: 'full', timeStyle: 'short' }) %>
-                                <% } else { %>
-                                    <span class="text-secondary font-normal text-xs">غير متاح - يظهر فقط بعد النشر على Vercel</span>
-                                <% } %>
-                            </p>
-                        </div>
-
-
-                        <div class="bg-surface-container-low p-sm rounded-xl border border-outline-variant/30 space-y-1">
-                            <span class="text-xs text-secondary font-medium">رابط الـ Deployment</span>
-                            <p class="text-sm font-bold text-primary truncate" dir="ltr">
-                                <% if (deployment.url) { %>
-                                    <a href="<%= deployment.url %>" target="_blank" rel="noopener noreferrer" class="hover:underline flex items-center justify-end gap-1">
-                                        <span><%= deployment.url %></span>
-                                        <span class="material-symbols-outlined text-xs">open_in_new</span>
-                                    </a>
-                                <% } else { %>
-                                    <span class="text-secondary">-</span>
-                                <% } %>
-                            </p>
-                        </div>
-
-                        <% if (deployment.commitMessage) { %>
-                            <div class="md:col-span-2 bg-surface-container-low p-sm rounded-xl border border-outline-variant/30 space-y-1">
-                                <span class="text-xs text-secondary font-medium">رسالة الـ Commit</span>
-                                <p class="font-mono text-sm text-on-surface bg-surface/60 p-xs rounded border border-outline-variant/20 dir-ltr text-right">
-                                    <%= deployment.commitMessage %>
-                                </p>
-                            </div>
-                        <% } %>
-                    </div>
-
-                    <% if (deployment.state === 'ERROR') { %>
-                        <!-- Deployment Failure Alert Box -->
-                        <div class="bg-red-50 border border-red-200 text-red-900 rounded-xl p-md space-y-sm">
-                            <div class="flex items-center justify-between">
-                                <div class="flex items-center gap-xs font-bold text-red-800">
-                                    <span class="material-symbols-outlined text-xl text-red-600">error</span>
-                                    <span>تفاصيل خطأ النشر (Deployment Error)</span>
-                                </div>
-                                <% if (deployment.dashboardUrl) { %>
-                                    <a href="<%= deployment.dashboardUrl %>" target="_blank" rel="noopener noreferrer" class="text-xs font-bold text-red-700 hover:text-red-900 underline flex items-center gap-0.5">
-                                        <span>عرض التفاصيل الكاملة على Vercel</span>
-                                        <span class="material-symbols-outlined text-xs">open_in_new</span>
-                                    </a>
-                                <% } %>
-                            </div>
-                            <div class="bg-white/80 border border-red-200 p-sm rounded-lg font-mono text-xs text-red-800 dir-ltr text-right whitespace-pre-wrap max-h-48 overflow-y-auto">
-                                <%= deployment.errorMessage %>
-                            </div>
-                        </div>
-                    <% } %>
-                <% } %>
-            </div>
-
-            <!-- Card 2: Database Connection Status -->
+            <!-- 2. Database Connection Status Card -->
             <div class="bg-white rounded-xl border border-outline-variant p-lg shadow-sm space-y-md">
                 <div class="flex justify-between items-center border-b border-outline-variant/40 pb-md">
                     <div class="flex items-center gap-sm">
@@ -168,13 +93,13 @@
                         </div>
                         <div>
                             <h2 class="font-headline-sm text-headline-sm font-bold text-on-surface">حالة قاعدة البيانات (Supabase PostgreSQL)</h2>
-                            <p class="text-xs text-secondary">التحقق من الاتصال وزمن الاستجابة (Latency)</p>
+                            <p class="text-xs text-secondary">التحقق من الاتصال الحي وزمن الاستجابة (Latency)</p>
                         </div>
                     </div>
 
                     <% if (dbStatus.connected) { %>
-                        <span class="px-md py-xs rounded-full font-label-sm text-label-sm border bg-green-50 text-green-800 border-green-300 flex items-center gap-1">
-                            <span class="w-2 h-2 rounded-full bg-green-600"></span>
+                        <span class="px-md py-xs rounded-full font-label-sm text-label-sm border bg-emerald-50 text-emerald-800 border-emerald-300 flex items-center gap-1">
+                            <span class="w-2 h-2 rounded-full bg-emerald-600"></span>
                             متصلة وتعمل بشكل طبيعي
                         </span>
                     <% } else { %>
@@ -188,7 +113,7 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-md pt-sm">
                     <div class="bg-surface-container-low p-sm rounded-xl border border-outline-variant/30 space-y-1">
                         <span class="text-xs text-secondary font-medium">حالة الاتصال</span>
-                        <p class="font-bold text-sm <%= dbStatus.connected ? 'text-green-700' : 'text-red-700' %>">
+                        <p class="font-bold text-sm <%= dbStatus.connected ? 'text-emerald-700' : 'text-red-700' %>">
                             <%= dbStatus.connected ? 'متصل بنجاح (SELECT 1)' : 'فشل في الاتصال' %>
                         </p>
                     </div>
@@ -198,7 +123,7 @@
                         <p class="font-bold text-sm text-on-surface flex items-center gap-1">
                             <span><%= dbStatus.latencyMs %> مللي ثانية (ms)</span>
                             <% if (dbStatus.latencyMs < 200) { %>
-                                <span class="text-xs text-green-600 font-normal">(سريع جداً)</span>
+                                <span class="text-xs text-emerald-600 font-normal">(سريع جداً)</span>
                             <% } else if (dbStatus.latencyMs < 800) { %>
                                 <span class="text-xs text-amber-600 font-normal">(متوسط)</span>
                             <% } else { %>
@@ -222,6 +147,100 @@
                 <% } %>
             </div>
 
+            <!-- 3. Deployment Logs Card -->
+            <div class="bg-white rounded-xl border border-outline-variant p-lg shadow-sm space-y-md">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-xs border-b border-outline-variant/40 pb-md">
+                    <div class="flex items-center gap-sm">
+                        <div class="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold">
+                            <span class="material-symbols-outlined text-xl">history</span>
+                        </div>
+                        <div>
+                            <h2 class="font-headline-sm text-headline-sm font-bold text-on-surface">سجل عمليات النشر (Deployment Log)</h2>
+                            <p class="text-xs text-secondary">سجل تراكمي يُسجل تلقائيًا مع كل عملية Build ونشر</p>
+                        </div>
+                    </div>
+                    <% if (deployments && deployments.length > 0) { %>
+                        <span class="text-xs font-bold text-secondary bg-surface-container px-sm py-1 rounded-full border border-outline-variant/40">
+                            إجمالي السجلات: <%= deployments.length %>
+                        </span>
+                    <% } %>
+                </div>
+
+                <% if (!deployments || deployments.length === 0) { %>
+                    <!-- Empty State -->
+                    <div class="p-lg md:p-xl bg-surface-container-low rounded-xl border border-outline-variant/40 text-center space-y-sm">
+                        <div class="w-12 h-12 mx-auto rounded-full bg-secondary/10 text-secondary flex items-center justify-center">
+                            <span class="material-symbols-outlined text-2xl">info</span>
+                        </div>
+                        <h3 class="font-bold text-on-surface text-sm">لا يوجد سجل نشر بعد</h3>
+                        <p class="text-xs text-secondary max-w-md mx-auto leading-relaxed">
+                            يظهر تلقائيًا بعد أول عملية نشر أو بناء (Build) على Vercel أو عند تشغيل <code class="bg-surface-container px-1 py-0.5 rounded font-mono text-primary font-bold">npm run build</code> محليًا.
+                        </p>
+                    </div>
+                <% } else { %>
+                    <% 
+                        const displayedLogs = deployments.slice(0, 20); 
+                        function formatArabicDateTime(isoStr) {
+                            try {
+                                const d = new Date(isoStr);
+                                if (isNaN(d.getTime())) return isoStr;
+                                return d.toLocaleString('ar-EG', {
+                                    year: 'numeric',
+                                    month: 'long',
+                                    day: 'numeric',
+                                    hour: 'numeric',
+                                    minute: '2-digit',
+                                    hour12: true
+                                });
+                            } catch(e) {
+                                return isoStr;
+                            }
+                        }
+                    %>
+                    <div class="overflow-x-auto rounded-xl border border-outline-variant/40">
+                        <table class="w-full text-right border-collapse text-xs sm:text-sm">
+                            <thead>
+                                <tr class="bg-surface-container-low text-secondary border-b border-outline-variant/40 font-bold">
+                                    <th class="py-sm px-md w-3/4">التاريخ والوقت</th>
+                                    <th class="py-sm px-md w-1/4 text-center">الحالة</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-outline-variant/20">
+                                <% displayedLogs.forEach((item, idx) => { %>
+                                    <tr class="hover:bg-surface-container-lowest transition-colors <%= idx === 0 ? 'bg-emerald-50/40' : '' %>">
+                                        <td class="py-sm px-md font-medium text-on-surface">
+                                            <div class="flex items-center gap-xs">
+                                                <% if (idx === 0) { %>
+                                                    <span class="w-2 h-2 rounded-full bg-emerald-600 flex-shrink-0" title="أحدث نشر"></span>
+                                                <% } else { %>
+                                                    <span class="w-2 h-2 rounded-full bg-outline-variant flex-shrink-0"></span>
+                                                <% } %>
+                                                <span><%= formatArabicDateTime(item.timestamp) %></span>
+                                                <% if (idx === 0) { %>
+                                                    <span class="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.5 rounded mr-1">الأحدث</span>
+                                                <% } %>
+                                            </div>
+                                        </td>
+                                        <td class="py-sm px-md text-center">
+                                            <span class="inline-flex items-center gap-1 px-sm py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-300">
+                                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
+                                                ناجح
+                                            </span>
+                                        </td>
+                                    </tr>
+                                <% }); %>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <% if (deployments.length > 20) { %>
+                        <p class="text-xs text-secondary text-center pt-xs">
+                            يتم عرض آخر 20 عملية نشر من إجمالي <%= deployments.length %> عملية مسجلة
+                        </p>
+                    <% } %>
+                <% } %>
+            </div>
+
         </div>
 
     </div>
@@ -233,7 +252,6 @@
 <script src="/js/shared-ui.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', async () => {
-        // Authenticate user session
         await checkAuth();
     });
 </script>

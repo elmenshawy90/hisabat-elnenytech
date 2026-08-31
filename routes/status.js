@@ -4,20 +4,52 @@ const fs = require('fs');
 const path = require('path');
 const prisma = require('../lib/prisma');
 const { requireAuth } = require('../middleware/auth');
-const { getLatestDeployment } = require('../lib/vercel-status');
 const { getDatabaseStatus } = require('../lib/db-status');
 
-function getDeploymentInfo() {
-  const infoPath = path.join(__dirname, '..', 'deployment-info.json');
-  if (fs.existsSync(infoPath)) {
+const logFilePath = path.join(__dirname, '..', 'deployment-log.json');
+
+/**
+ * Reads all deployment records from deployment-log.json
+ * @returns {Array} List of deployment records sorted newest first
+ */
+function getDeploymentLogs() {
+  if (fs.existsSync(logFilePath)) {
     try {
-      const data = fs.readFileSync(infoPath, 'utf8');
-      return JSON.parse(data);
+      const data = fs.readFileSync(logFilePath, 'utf8');
+      const parsed = JSON.parse(data);
+      if (Array.isArray(parsed)) {
+        return parsed.slice().reverse();
+      }
     } catch (e) {
-      console.error('[status] Error reading deployment-info.json:', e);
+      console.error('[status] Error reading deployment-log.json:', e.message);
     }
   }
-  return null;
+  return [];
+}
+
+/**
+ * Calculates overall system health
+ * @param {Object} dbStatus Database status object
+ * @param {Object|null} latestDeployment Latest deployment record
+ * @returns {Object} { healthy: boolean, text: string, badgeText: string }
+ */
+function calculateSystemStatus(dbStatus, latestDeployment) {
+  const isDbHealthy = Boolean(dbStatus && dbStatus.connected);
+  const isDeployHealthy = !latestDeployment || latestDeployment.status === 'success';
+
+  if (isDbHealthy && isDeployHealthy) {
+    return {
+      healthy: true,
+      text: 'النظام يعمل بشكل طبيعي',
+      badgeText: 'فعّال'
+    };
+  }
+
+  return {
+    healthy: false,
+    text: 'يوجد مشكلة حالياً',
+    badgeText: 'في مشكلة'
+  };
 }
 
 // GET /status - Render status page (Protected page)
@@ -28,31 +60,30 @@ router.get('/', async (req, res) => {
   }
 
   try {
-    const [deployment, dbStatus] = await Promise.all([
-      getLatestDeployment(),
-      getDatabaseStatus(prisma)
-    ]);
-
-    const deployInfo = getDeploymentInfo();
+    const dbStatus = await getDatabaseStatus(prisma);
+    const deployments = getDeploymentLogs();
+    const latestDeployment = deployments.length > 0 ? deployments[0] : null;
+    const systemStatus = calculateSystemStatus(dbStatus, latestDeployment);
 
     res.render('status', {
-      deployment: {
-        ...deployment,
-        deployedAt: deployInfo?.deployedAt || null
-      },
+      systemStatus,
       dbStatus,
+      deployments,
+      latestDeployment,
       user: req.user
     });
   } catch (err) {
     console.error('[status] Error rendering status page:', err);
-    const deployInfo = getDeploymentInfo();
+    const deployments = getDeploymentLogs();
+    const latestDeployment = deployments.length > 0 ? deployments[0] : null;
+    const dbStatus = { connected: false, latencyMs: 0, error: err.message || 'خطأ غير متوقع' };
+    const systemStatus = { healthy: false, text: 'يوجد مشكلة حالياً', badgeText: 'في مشكلة' };
+
     res.render('status', {
-      deployment: {
-        error: 'تعذر جلب بيانات النشر',
-        details: err.message,
-        deployedAt: deployInfo?.deployedAt || null
-      },
-      dbStatus: { connected: false, error: 'حدث خطأ في استعلام قاعدة البيانات' },
+      systemStatus,
+      dbStatus,
+      deployments,
+      latestDeployment,
       user: req.user
     });
   }
@@ -61,17 +92,16 @@ router.get('/', async (req, res) => {
 // GET /status/data - API endpoint for fetching live status data (Protected API)
 router.get('/data', requireAuth, async (req, res) => {
   try {
-    const [deployment, dbStatus] = await Promise.all([
-      getLatestDeployment(),
-      getDatabaseStatus(prisma)
-    ]);
-    const deployInfo = getDeploymentInfo();
+    const dbStatus = await getDatabaseStatus(prisma);
+    const deployments = getDeploymentLogs();
+    const latestDeployment = deployments.length > 0 ? deployments[0] : null;
+    const systemStatus = calculateSystemStatus(dbStatus, latestDeployment);
+
     res.json({
-      deployment: {
-        ...deployment,
-        deployedAt: deployInfo?.deployedAt || null
-      },
-      dbStatus
+      systemStatus,
+      dbStatus,
+      deployments,
+      latestDeployment
     });
   } catch (err) {
     res.status(500).json({ error: 'فشل في جلب حالة النظام' });
@@ -79,4 +109,3 @@ router.get('/data', requireAuth, async (req, res) => {
 });
 
 module.exports = router;
-

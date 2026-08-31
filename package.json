@@ -8,7 +8,7 @@
     "dev": "nodemon -e js,ejs,json,css,html server.js",
     "seed": "node db/seed.js",
     "test": "node --test test_search.js",
-    "build": "node build.js",
+    "build": "node scripts/log-deployment.js && prisma generate",
     "postinstall": "prisma generate"
   },
   "dependencies": {
