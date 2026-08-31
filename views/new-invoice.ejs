@@ -325,12 +325,53 @@
                                     <span class="text-on-surface font-bold">الإجمالي الكلي بعد الخصم:</span>
                                     <span id="itemsGrandTotalText" class="text-primary text-base font-bold dir-ltr">0.00 ج.م</span>
                                 </div>
+
+                                <!-- Payment Fields Section -->
+                                <div id="paymentFieldsSection" class="pt-sm space-y-xs border-t border-outline-variant/40">
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-sm">
+                                        <div class="flex flex-col gap-1">
+                                            <label class="text-xs font-bold text-on-surface-variant">المبلغ المدفوع الآن (اختياري)</label>
+                                            <div class="relative">
+                                                <input type="number" step="any" min="0" id="paidAmount" placeholder="0.00" oninput="updateAllLineTotalsAndGrandTotal()" class="w-full h-10 px-sm rounded-lg bg-surface-container-low border border-outline-variant text-xs font-bold text-right dir-ltr focus:border-primary outline-none" />
+                                            </div>
+                                        </div>
+                                        <div class="flex flex-col gap-1">
+                                            <label class="text-xs font-bold text-on-surface-variant">طريقة الدفع</label>
+                                            <div class="flex items-center gap-md h-10 px-sm bg-surface-container-low border border-outline-variant rounded-lg">
+                                                <label class="flex items-center gap-1 text-xs font-bold cursor-pointer select-none">
+                                                    <input type="radio" name="paymentMethod" value="cash" checked class="accent-primary" />
+                                                    <span>كاش</span>
+                                                </label>
+                                                <label class="flex items-center gap-1 text-xs font-bold cursor-pointer select-none">
+                                                    <input type="radio" name="paymentMethod" value="transfer" class="accent-primary" />
+                                                    <span>تحويل بنكي</span>
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Remaining after Paid -->
+                                    <div class="flex items-center justify-between pt-xs font-bold text-sm border-t border-outline-variant/40">
+                                        <span class="text-on-surface font-bold">المتبقي بعد المدفوع:</span>
+                                        <span id="itemsRemainingAfterPaidText" class="text-primary text-base font-bold dir-ltr">0.00 ج.م</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Notes (The very last field in modal) -->
+                        <div class="md:col-span-2 flex flex-col gap-xs">
+                            <label class="font-label-md text-label-md text-on-surface-variant mb-xs">ملاحظات (اختياري)</label>
+                            <div class="relative">
+                                <span class="material-symbols-outlined absolute right-3 top-3 text-outline text-lg">notes</span>
+                                <textarea class="w-full h-20 pr-10 pl-md py-sm rounded-xl bg-surface-container-low border border-outline-variant form-input-focus transition-all text-right resize-none text-xs font-medium" id="invoiceNotes" placeholder="أي ملاحظات إضافية على الفاتورة..."></textarea>
                             </div>
                         </div>
                     </div>
                     <div class="flex flex-col md:flex-row items-center gap-md pt-lg border-t border-outline-variant mt-xl">
-                        <button class="w-full md:w-auto min-w-[160px] bg-primary text-on-primary h-14 rounded-full font-headline-sm text-headline-sm flex items-center justify-center gap-sm hover:opacity-90 active:scale-95 transition-all font-bold" type="submit">
-                            <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">save</span>
+                        <button id="submitBtn" class="w-full md:w-auto min-w-[160px] bg-primary text-on-primary h-14 rounded-full font-headline-sm text-headline-sm flex items-center justify-center gap-sm hover:opacity-90 active:scale-95 transition-all font-bold disabled:opacity-60 disabled:cursor-not-allowed" type="submit">
+                            <span class="material-symbols-outlined" id="submitBtnIcon" style="font-variation-settings: 'FILL' 1;">save</span>
+                            <span class="material-symbols-outlined text-xl animate-spin hidden" id="submitBtnSpinner">progress_activity</span>
                             <span id="submitButtonText">حفظ الفاتورة</span>
                         </button>
                         <button class="w-full md:w-auto min-w-[160px] bg-white border border-outline-variant text-on-surface h-14 rounded-full font-headline-sm text-headline-sm flex items-center justify-center gap-sm hover:bg-surface-container-low active:scale-95 transition-all" onclick="closeModal()" type="button">إلغاء</button>
@@ -400,15 +441,39 @@
                         <span class="text-secondary font-label-md">عنوان التوصيل</span>
                         <span class="font-body-md text-on-surface" id="tdAddress"></span>
                     </div>
+
+                    <!-- Payment Details in Modal -->
+                    <div id="tdPaidAmountRow" class="hidden flex justify-between border-b border-outline-variant pb-xs">
+                        <span class="text-secondary font-label-md font-bold">المبلغ المدفوع</span>
+                        <span class="font-body-md font-bold text-green-700 dir-ltr" id="tdPaidAmount"></span>
+                    </div>
+                    <div id="tdPaymentMethodRow" class="hidden flex justify-between border-b border-outline-variant pb-xs">
+                        <span class="text-secondary font-label-md font-bold">طريقة الدفع</span>
+                        <span class="font-body-md text-on-surface font-bold" id="tdPaymentMethod"></span>
+                    </div>
+
                     <div class="flex flex-col gap-xs pb-xs">
                         <span class="text-secondary font-label-md">التفاصيل / المشتريات</span>
                         <span class="font-body-md text-on-surface whitespace-pre-wrap" id="tdNotes"></span>
                     </div>
+
+                    <div id="tdAdditionalNotesRow" class="hidden flex flex-col gap-xs border-t border-outline-variant pt-xs pb-xs">
+                        <span class="text-secondary font-label-md font-bold">ملاحظات</span>
+                        <span class="font-body-md text-amber-800 whitespace-pre-wrap" id="tdAdditionalNotes"></span>
+                    </div>
                 </div>
-                <div class="pt-md mt-lg text-center">
+                <div class="pt-md mt-lg flex items-center justify-between gap-sm">
+                    <a id="tdExportReceiptBtn" href="#" target="_blank" class="px-md py-sm bg-primary/10 hover:bg-primary text-primary hover:text-white rounded-full font-bold text-xs transition-all inline-flex items-center gap-1">
+                        <span class="material-symbols-outlined text-sm">receipt_long</span>
+                        <span>تصدير إيصال كصورة</span>
+                    </a>
                     <button
                         class="bg-surface-container-low text-on-surface px-xl rounded-full py-sm font-label-md hover:bg-surface-container transition-colors"
-                        onclick="closeTransactionDetails()" type="button">إغلاق</button>
+                        onclick="closeTransactionDetails()"
+                        type="button"
+                    >
+                        إغلاق
+                    </button>
                 </div>
             </div>
         </div>
@@ -683,6 +748,9 @@
             <td class="p-md font-body-md text-secondary">${inv.details || '-'}</td>
             <td class="p-md text-center">
                 <div class="flex items-center justify-center gap-xs group-hover:gap-sm transition-all">
+                    <a href="/api/export/invoice/${inv._id || inv.id}/image" target="_blank" onclick="event.stopPropagation()" class="p-sm rounded-lg hover:bg-primary/20 text-secondary hover:text-primary transition-all active:scale-90 inline-flex items-center" title="تصدير إيصال الفاتورة كصورة">
+                        <span class="material-symbols-outlined text-[20px]">receipt_long</span>
+                    </a>
                     <button onclick="event.stopPropagation(); editInvoice(${inv._id})" class="p-sm rounded-lg hover:bg-primary/20 text-primary transition-all active:scale-90" title="تعديل">
                         <span class="material-symbols-outlined text-[20px]">edit</span>
                     </button>
@@ -895,6 +963,39 @@
 
                 document.getElementById('tdAddress').textContent = inv.address || '-';
                 document.getElementById('tdNotes').textContent = inv.details || '-';
+
+                // Paid amount & payment method
+                const paidRow = document.getElementById('tdPaidAmountRow');
+                const paidAmountEl = document.getElementById('tdPaidAmount');
+                if (inv.paidAmount && inv.paidAmount > 0) {
+                    if (paidAmountEl) paidAmountEl.textContent = formatCurrency(inv.paidAmount);
+                    if (paidRow) paidRow.classList.remove('hidden');
+                } else {
+                    if (paidRow) paidRow.classList.add('hidden');
+                }
+
+                const methodRow = document.getElementById('tdPaymentMethodRow');
+                const methodEl = document.getElementById('tdPaymentMethod');
+                if (inv.paymentMethod) {
+                    if (methodEl) methodEl.textContent = inv.paymentMethod === 'transfer' ? 'تحويل بنكي' : 'كاش / نقدي';
+                    if (methodRow) methodRow.classList.remove('hidden');
+                } else {
+                    if (methodRow) methodRow.classList.add('hidden');
+                }
+
+                const notesRow = document.getElementById('tdAdditionalNotesRow');
+                const notesEl = document.getElementById('tdAdditionalNotes');
+                if (inv.notes && inv.notes.trim()) {
+                    if (notesEl) notesEl.textContent = inv.notes;
+                    if (notesRow) notesRow.classList.remove('hidden');
+                } else {
+                    if (notesRow) notesRow.classList.add('hidden');
+                }
+
+                const exportBtn = document.getElementById('tdExportReceiptBtn');
+                if (exportBtn) {
+                    exportBtn.href = `/api/export/invoice/${inv._id || inv.id}/image`;
+                }
 
                 // Render items breakdown if available
                 const itemsContainer = document.getElementById('tdItemsBreakdownContainer');
@@ -1185,6 +1286,14 @@
                 if (invoiceAmountInput) {
                     invoiceAmountInput.value = grandTotal;
                 }
+
+                const paidInput = document.getElementById('paidAmount');
+                const paidVal = paidInput ? parseFloat(paidInput.value) || 0 : 0;
+                const remainingAfterPaid = Math.round((Math.max(0, grandTotal - paidVal) + Number.EPSILON) * 100) / 100;
+                const remainingEl = document.getElementById('itemsRemainingAfterPaidText');
+                if (remainingEl) {
+                    remainingEl.textContent = formatCurrency(remainingAfterPaid);
+                }
             }
 
             function closeModal() {
@@ -1200,6 +1309,10 @@
                 document.getElementById('clientSummaryCard').classList.remove('flex');
                 document.getElementById('clientDropdown').classList.add('hidden');
                 document.getElementById('endClientDropdown').classList.add('hidden');
+                const paidInput = document.getElementById('paidAmount');
+                if (paidInput) paidInput.value = '';
+                const notesInput = document.getElementById('invoiceNotes');
+                if (notesInput) notesInput.value = '';
             }
 
             document.getElementById('invoiceModal').addEventListener('click', function (e) {
@@ -1456,7 +1569,24 @@
                     discountValue = discountValInput ? parseFloat(discountValInput.value) || 0 : 0;
                 }
 
+                const submitBtn = document.getElementById('submitBtn');
+                const submitBtnIcon = document.getElementById('submitBtnIcon');
+                const submitBtnSpinner = document.getElementById('submitBtnSpinner');
+                const submitBtnText = document.getElementById('submitButtonText');
+                const originalText = submitBtnText ? submitBtnText.textContent : 'حفظ الفاتورة';
+
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                    if (submitBtnIcon) submitBtnIcon.classList.add('hidden');
+                    if (submitBtnSpinner) submitBtnSpinner.classList.remove('hidden');
+                    if (submitBtnText) submitBtnText.textContent = 'جاري الحفظ...';
+                }
+
                 try {
+                    const paidAmountVal = document.getElementById('paidAmount') ? parseFloat(document.getElementById('paidAmount').value) || 0 : 0;
+                    const paymentMethodVal = document.querySelector('input[name="paymentMethod"]:checked') ? document.querySelector('input[name="paymentMethod"]:checked').value : 'cash';
+                    const notesVal = document.getElementById('invoiceNotes') ? document.getElementById('invoiceNotes').value.trim() : '';
+
                     // Prepare data object
                     const payload = {
                         clientName: name,
@@ -1465,7 +1595,10 @@
                         date: date || undefined,
                         amount: parseFloat(amount) || 0,
                         details: details || '-',
-                        address: address || '-'
+                        address: address || '-',
+                        paidAmount: paidAmountVal,
+                        paymentMethod: paymentMethodVal,
+                        notes: notesVal
                     };
 
                     // If updating, send PATCH; if creating, send POST
@@ -1517,6 +1650,13 @@
                 } catch (err) {
                     const errorMsg = err.message ? `خطأ أثناء الاتصال: ${err.message}` : (invoiceId ? 'فشل في تحديث الفاتورة — تأكد من تشغيل السيرفر' : 'فشل في حفظ الفاتورة — تأكد من تشغيل السيرفر');
                     showToast(errorMsg, 'error');
+                } finally {
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                        if (submitBtnIcon) submitBtnIcon.classList.remove('hidden');
+                        if (submitBtnSpinner) submitBtnSpinner.classList.add('hidden');
+                        if (submitBtnText) submitBtnText.textContent = originalText;
+                    }
                 }
             });
 

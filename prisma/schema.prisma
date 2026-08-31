@@ -68,6 +68,9 @@ model Invoice {
   balanceEffect     String        @default("increase")
   amount            Float
   discountAmount    Float         @default(0)
+  paidAmount        Float         @default(0)
+  paymentMethod     String        @default("cash") // 'cash' or 'transfer'
+  notes             String        @default("")
   details           String
   address           String
   date              DateTime      @default(now())

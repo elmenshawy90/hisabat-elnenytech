@@ -226,16 +226,29 @@ router.post('/', async (req, res) => {
       }
     }
 
+    const paidAmount = data.paidAmount !== undefined && data.paidAmount !== null && !isNaN(parseFloat(data.paidAmount)) 
+      ? Math.round((parseFloat(data.paidAmount) + Number.EPSILON) * 100) / 100 
+      : 0;
+    const paymentMethod = data.paymentMethod === 'transfer' ? 'transfer' : 'cash';
+    const invoiceNotes = data.notes ? String(data.notes).trim() : '';
+
+    const d = data.date ? new Date(data.date) : new Date();
+    const targetDate = isNaN(d.getTime()) ? new Date() : d;
+    const yy = String(targetDate.getFullYear()).slice(-2);
+    const mm = String(targetDate.getMonth() + 1).padStart(2, '0');
+    const yearMonth = `${yy}${mm}`;
+    const counterId = `invoice-${yearMonth}`;
+
     const newNotes = data.details || (data.type === 'purchase' ? 'عملية شراء' : 'دفعة');
 
-    // Use transaction to increment counter, create invoice with invoiceCode, items, stock logs and update client notes
-    const { invoice, updatedClient } = await prisma.$transaction(async (tx) => {
+    // Use transaction to increment monthly counter, create invoice with invoiceCode, items, stock logs, auto-payment and update client notes
+    const { invoice, autoPaymentInvoice, updatedClient } = await prisma.$transaction(async (tx) => {
       const counter = await tx.counter.upsert({
-        where: { id: 'invoice' },
-        create: { id: 'invoice', value: 1 },
+        where: { id: counterId },
+        create: { id: counterId, value: 1 },
         update: { value: { increment: 1 } }
       });
-      const invoiceCode = `Nen${counter.value}`;
+      const invoiceCode = `${yearMonth}-${counter.value}`;
 
       const balanceEffect = data.balanceEffect || (data.type === 'payment' ? 'decrease' : 'increase');
 
@@ -251,10 +264,13 @@ router.post('/', async (req, res) => {
           balanceEffect,
           amount: finalAmount,
           discountAmount: discountAmount || 0,
+          paidAmount: paidAmount,
+          paymentMethod: paymentMethod,
+          notes: invoiceNotes,
           details: data.details || '-',
           address: data.address || '-',
           status: data.status || 'pending',
-          date: data.date ? new Date(data.date) : new Date(),
+          date: targetDate,
           items: hasItems ? {
             create: processedItems.map(pi => ({
               itemId: pi.itemId,
@@ -284,6 +300,39 @@ router.post('/', async (req, res) => {
         }
       }
 
+      // If this is a purchase invoice and paidAmount > 0, create an automatic payment invoice
+      let createdAutoPayment = null;
+      if (data.type === 'purchase' && paidAmount > 0) {
+        const payCounter = await tx.counter.upsert({
+          where: { id: counterId },
+          create: { id: counterId, value: 1 },
+          update: { value: { increment: 1 } }
+        });
+        const payInvoiceCode = `${yearMonth}-${payCounter.value}`;
+
+        createdAutoPayment = await tx.invoice.create({
+          data: {
+            invoiceCode: payInvoiceCode,
+            clientId,
+            clientName,
+            clientPhone: clientPhone || '-',
+            endClientId: endClientId || null,
+            endClientName: endClientName || '',
+            type: 'payment',
+            balanceEffect: 'decrease',
+            amount: paidAmount,
+            discountAmount: 0,
+            paidAmount: paidAmount,
+            paymentMethod: paymentMethod,
+            details: `دفعة مسجلة مع فاتورة رقم ${invoiceCode}`,
+            notes: invoiceNotes || `سداد تلقائي مرتبط بالفاتورة ${invoiceCode}`,
+            address: data.address || '-',
+            status: 'paid',
+            date: targetDate
+          }
+        });
+      }
+
       const updated = await tx.client.update({
         where: { id: clientId },
         data: {
@@ -291,7 +340,10 @@ router.post('/', async (req, res) => {
         }
       });
 
-      return { invoice: createdInvoice, updatedClient: updated };
+      return { invoice: createdInvoice, autoPaymentInvoice: createdAutoPayment, updatedClient: updated };
+    }, {
+      timeout: 20000,
+      maxWait: 10000
     });
 
     // Compute live balance
@@ -305,7 +357,11 @@ router.post('/', async (req, res) => {
       endClientId: invoice.endClientId,
       endClientName: invoice.endClientName,
       currentBalance,
-      stockWarnings: stockWarnings.length > 0 ? stockWarnings : undefined
+      stockWarnings: stockWarnings.length > 0 ? stockWarnings : undefined,
+      autoPaymentInvoice: autoPaymentInvoice ? {
+        ...autoPaymentInvoice,
+        _id: autoPaymentInvoice.id
+      } : undefined
     });
   } catch (err) {
     console.error('Error creating invoice:', err);

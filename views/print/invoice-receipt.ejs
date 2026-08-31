@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+    <meta charset="utf-8">
+    <title>إيصال فاتورة - <%= invoice.invoiceCode || invoice.id %></title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, 'Arial', 'Cairo', 'Tajawal', sans-serif;
+            background: #ffffff;
+            color: #141b2b;
+            direction: rtl;
+            text-align: right;
+            padding: 20px;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+        .container {
+            max-width: 750px;
+            margin: 0 auto;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #006840;
+            padding-bottom: 16px;
+            margin-bottom: 20px;
+        }
+        .brand-title {
+            font-size: 24px;
+            font-weight: 800;
+            color: #006840;
+            letter-spacing: -0.5px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .brand-subtitle {
+            font-size: 12px;
+            color: #585f6c;
+            margin-top: 2px;
+        }
+        .doc-meta {
+            text-align: left;
+        }
+        .invoice-badge {
+            background: #006840;
+            color: #ffffff;
+            font-size: 15px;
+            font-weight: 800;
+            padding: 6px 16px;
+            border-radius: 20px;
+            display: inline-block;
+            margin-bottom: 6px;
+            letter-spacing: 0.5px;
+            font-family: monospace;
+        }
+        .doc-meta-date {
+            font-size: 12px;
+            color: #585f6c;
+        }
+        .doc-meta-date strong {
+            color: #141b2b;
+        }
+
+        /* Client & Details Grid */
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        .info-box {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 12px 16px;
+        }
+        .info-box h3 {
+            font-size: 13px;
+            font-weight: 700;
+            color: #006840;
+            margin-bottom: 6px;
+            border-bottom: 1px dashed #cbd5e1;
+            padding-bottom: 4px;
+        }
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 4px;
+            font-size: 12px;
+        }
+        .info-label {
+            color: #64748b;
+        }
+        .info-value {
+            font-weight: 600;
+            color: #0f172a;
+        }
+
+        /* Table */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 18px;
+            font-size: 12px;
+        }
+        thead th {
+            background-color: #006840;
+            color: #ffffff;
+            font-weight: 700;
+            padding: 10px 12px;
+            text-align: right;
+            border: 1px solid #005a37;
+        }
+        tbody td {
+            padding: 10px 12px;
+            border: 1px solid #e2e8f0;
+            text-align: right;
+            vertical-align: middle;
+        }
+        tbody tr:nth-child(even) {
+            background-color: #f8fafc;
+        }
+        .text-center { text-align: center; }
+        .text-left { text-align: left; }
+        .dir-ltr { direction: ltr; display: inline-block; }
+
+        /* Totals & Payment Summary */
+        .summary-container {
+            display: flex;
+            justify-content: space-between;
+            gap: 16px;
+            margin-top: 10px;
+            margin-bottom: 20px;
+        }
+        .notes-box {
+            flex: 1;
+            background: #fffbeb;
+            border: 1px solid #fef3c7;
+            border-radius: 8px;
+            padding: 12px 14px;
+            font-size: 12px;
+            color: #92400e;
+        }
+        .notes-box strong {
+            display: block;
+            margin-bottom: 4px;
+            color: #78350f;
+        }
+        .totals-box {
+            width: 300px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 12px 16px;
+            font-size: 12px;
+        }
+        .total-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 6px;
+            padding-bottom: 4px;
+            border-bottom: 1px dashed #e2e8f0;
+        }
+        .total-row.grand-total {
+            border-top: 2px solid #006840;
+            border-bottom: none;
+            padding-top: 8px;
+            margin-top: 6px;
+            font-size: 15px;
+            font-weight: 800;
+            color: #006840;
+        }
+        .total-row.paid {
+            color: #166534;
+            font-weight: 700;
+        }
+        .total-row.remaining {
+            color: #991b1b;
+            font-weight: 700;
+        }
+
+        /* Footer */
+        .footer {
+            margin-top: 24px;
+            padding-top: 14px;
+            border-top: 1px solid #e2e8f0;
+            text-align: center;
+            font-size: 11px;
+            color: #94a3b8;
+        }
+
+        @media print {
+            body {
+                padding: 0;
+            }
+            .container {
+                border: none;
+                box-shadow: none;
+                padding: 10px;
+                max-width: 100%;
+            }
+            .no-print {
+                display: none !important;
+            }
+            @page {
+                size: A4;
+                margin: 10mm;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Action Toolbar for Web Viewing -->
+        <div class="no-print" style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; background: #f8fafc; padding: 10px 16px; border-radius: 10px; border: 1px solid #cbd5e1;">
+            <div style="font-weight: 700; color: #0f172a; display: flex; align-items: center; gap: 8px; font-size: 13px;">
+                <span style="display: inline-block; width: 10px; height: 10px; background: #006840; border-radius: 50%;"></span>
+                <span>إيصال فاتورة - نظام حسابات</span>
+            </div>
+            <div style="display: flex; gap: 8px;">
+                <button onclick="window.print()" style="background: #006840; color: white; border: none; padding: 6px 16px; border-radius: 6px; font-weight: bold; cursor: pointer; font-family: inherit; font-size: 12px; display: flex; align-items: center; gap: 4px;">
+                    🖨️ طباعة
+                </button>
+                <button onclick="window.close()" style="background: #e2e8f0; color: #334155; border: none; padding: 6px 12px; border-radius: 6px; font-weight: 600; cursor: pointer; font-family: inherit; font-size: 12px;">
+                    إغلاق
+                </button>
+            </div>
+        </div>
+
+        <!-- Header -->
+        <div class="header">
+            <div>
+                <div class="brand-title">
+                    <span>حسابات</span>
+                </div>
+                <div class="brand-subtitle">سجل الحسابات والمبيعات والمخزون</div>
+            </div>
+            <div class="doc-meta">
+                <div>
+                    <span class="invoice-badge">فاتورة: <%= invoice.invoiceCode || ('#' + invoice.id) %></span>
+                </div>
+                <div class="doc-meta-date">التاريخ: <strong><%= formatDate(invoice.date) %></strong></div>
+            </div>
+        </div>
+
+        <!-- Info Grid -->
+        <div class="info-grid">
+            <div class="info-box">
+                <h3>بيانات العميل</h3>
+                <div class="info-row">
+                    <span class="info-label">اسم العميل:</span>
+                    <span class="info-value"><%= invoice.clientName %></span>
+                </div>
+                <% if (invoice.clientPhone && invoice.clientPhone !== '-' && invoice.clientPhone !== 'لا يوجد هاتف') { %>
+                <div class="info-row">
+                    <span class="info-label">رقم الهاتف:</span>
+                    <span class="info-value dir-ltr"><%= invoice.clientPhone %></span>
+                </div>
+                <% } %>
+                <% if (invoice.address && invoice.address !== '-') { %>
+                <div class="info-row">
+                    <span class="info-label">عنوان التوصيل:</span>
+                    <span class="info-value"><%= invoice.address %></span>
+                </div>
+                <% } %>
+            </div>
+
+            <div class="info-box">
+                <h3>بيانات المعاملة</h3>
+                <div class="info-row">
+                    <span class="info-label">نوع المعاملة:</span>
+                    <span class="info-value">
+                        <% if (invoice.type === 'purchase') { %>فاتورة شراء<% } else if (invoice.type === 'payment') { %>سداد دفعة<% } else { %>رصيد افتتاحي<% } %>
+                    </span>
+                </div>
+                <% if (invoice.endClientName && invoice.endClientName.trim() && invoice.endClientName !== '-') { %>
+                <div class="info-row">
+                    <span class="info-label">العميل النهائي:</span>
+                    <span class="info-value"><%= invoice.endClientName %></span>
+                </div>
+                <% } %>
+                <div class="info-row">
+                    <span class="info-label">طريقة الدفع:</span>
+                    <span class="info-value"><%= invoice.paymentMethod === 'transfer' ? 'تحويل بنكي' : 'كاش / نقدي' %></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Items Table or Details Table -->
+        <% if (invoice.items && invoice.items.length > 0) { %>
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 5%;">#</th>
+                    <th style="width: 45%;">الصنف</th>
+                    <th class="text-center" style="width: 15%;">الكمية والوحدة</th>
+                    <th class="text-left" style="width: 15%;">سعر الوحدة</th>
+                    <th class="text-left" style="width: 20%;">الإجمالي</th>
+                </tr>
+            </thead>
+            <tbody>
+                <% 
+                let subtotal = 0;
+                invoice.items.forEach((it, idx) => { 
+                    subtotal += it.lineTotal;
+                %>
+                <tr>
+                    <td class="text-center"><%= idx + 1 %></td>
+                    <td><strong><%= it.item ? it.item.name : 'صنف' %></strong></td>
+                    <td class="text-center"><%= it.quantity %> <%= it.itemUnit ? it.itemUnit.name : '' %></td>
+                    <td class="text-left dir-ltr"><%= formatCurrency(it.unitPrice) %></td>
+                    <td class="text-left font-bold dir-ltr"><%= formatCurrency(it.lineTotal) %></td>
+                </tr>
+                <% }); %>
+            </tbody>
+        </table>
+        <% } else { %>
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 70%;">البيان / التفاصيل</th>
+                    <th class="text-left" style="width: 30%;">المبلغ</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><%= invoice.details || (invoice.type === 'payment' ? 'سداد دفعة نقدية' : 'عملية شراء') %></td>
+                    <td class="text-left font-bold dir-ltr"><%= formatCurrency(invoice.amount) %></td>
+                </tr>
+            </tbody>
+        </table>
+        <% } %>
+
+        <!-- Summary & Totals -->
+        <div class="summary-container">
+            <div class="notes-box" style="<%= (!invoice.notes && !invoice.details) ? 'visibility: hidden;' : '' %>">
+                <strong>ملاحظات:</strong>
+                <p><%= invoice.notes || invoice.details || 'لا توجد ملاحظات إضافية' %></p>
+            </div>
+
+            <div class="totals-box">
+                <% if (invoice.items && invoice.items.length > 0 && invoice.discountAmount > 0) { 
+                    let itemsSum = invoice.items.reduce((s, it) => s + it.lineTotal, 0);
+                %>
+                <div class="total-row">
+                    <span class="info-label">مجموع البنود:</span>
+                    <span class="dir-ltr"><%= formatCurrency(itemsSum) %></span>
+                </div>
+                <div class="total-row" style="color: #b45309;">
+                    <span class="info-label">الخصم المطبق:</span>
+                    <span class="dir-ltr">-<%= formatCurrency(invoice.discountAmount) %></span>
+                </div>
+                <% } %>
+
+                <div class="total-row grand-total">
+                    <span>الإجمالي المستحق:</span>
+                    <span class="dir-ltr"><%= formatCurrency(invoice.amount) %></span>
+                </div>
+
+                <% if (invoice.paidAmount > 0) { %>
+                <div class="total-row paid">
+                    <span>المبلغ المدفوع:</span>
+                    <span class="dir-ltr"><%= formatCurrency(invoice.paidAmount) %></span>
+                </div>
+                <div class="total-row remaining">
+                    <span>المتبقي:</span>
+                    <span class="dir-ltr"><%= formatCurrency(Math.max(0, invoice.amount - invoice.paidAmount)) %></span>
+                </div>
+                <% } %>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            تم إنشاء هذا الإيصال تلقائيًا بواسطة نظام حسابات
+        </div>
+    </div>
+</body>
+</html>

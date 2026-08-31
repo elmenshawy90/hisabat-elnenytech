@@ -17,6 +17,44 @@ async function getPuppeteerAndChromium() {
   return { puppeteer, chromium };
 }
 
+async function getChromiumExecutablePath(chromium) {
+  if (process.platform === 'darwin') {
+    const macPaths = [
+      '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+      '/Applications/Chromium.app/Contents/MacOS/Chromium',
+      '/Applications/Brave Browser.app/Contents/MacOS/Brave Browser',
+      '/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge'
+    ];
+    for (const p of macPaths) {
+      if (fs.existsSync(p)) return p;
+    }
+  } else if (process.platform === 'win32') {
+    const winPaths = [
+      'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+      'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
+      'C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe'
+    ];
+    for (const p of winPaths) {
+      if (fs.existsSync(p)) return p;
+    }
+  }
+  return await chromium.executablePath();
+}
+
+async function launchPuppeteerBrowser(puppeteer, chromium, defaultViewport = null) {
+  const isLocal = process.platform === 'darwin' || process.platform === 'win32';
+  const executablePath = await getChromiumExecutablePath(chromium);
+  const args = isLocal ? ['--no-sandbox', '--disable-setuid-sandbox'] : chromium.args;
+  const headless = isLocal ? true : chromium.headless;
+
+  return await puppeteer.launch({
+    args,
+    defaultViewport: defaultViewport || chromium.defaultViewport,
+    executablePath,
+    headless
+  });
+}
+
 
 
 // Apply auth middleware
@@ -114,15 +152,7 @@ router.get('/clients/pdf', async (req, res) => {
       formatDate
     });
 
-    let executablePath;
-    try { executablePath = await chromium.executablePath(); } catch (e) {}
-
-    browser = await puppeteer.launch({
-      args: chromium.args,
-      defaultViewport: chromium.defaultViewport,
-      executablePath: executablePath || await chromium.executablePath(),
-      headless: chromium.headless
-    });
+    browser = await launchPuppeteerBrowser(puppeteer, chromium);
 
     const page = await browser.newPage();
     await page.setContent(html, { waitUntil: 'networkidle0' });
@@ -174,15 +204,7 @@ router.get('/clients/image', async (req, res) => {
       formatDate
     });
 
-    let executablePath;
-    try { executablePath = await chromium.executablePath(); } catch (e) {}
-
-    browser = await puppeteer.launch({
-      args: chromium.args,
-      defaultViewport: { width: 950, height: 1200, deviceScaleFactor: 2 },
-      executablePath: executablePath || await chromium.executablePath(),
-      headless: chromium.headless
-    });
+    browser = await launchPuppeteerBrowser(puppeteer, chromium, { width: 950, height: 1200, deviceScaleFactor: 2 });
 
     const page = await browser.newPage();
     await page.setContent(html, { waitUntil: 'networkidle0' });
@@ -275,15 +297,7 @@ router.get('/invoices/pdf', async (req, res) => {
       formatDate
     });
 
-    let executablePath;
-    try { executablePath = await chromium.executablePath(); } catch (e) {}
-
-    browser = await puppeteer.launch({
-      args: chromium.args,
-      defaultViewport: chromium.defaultViewport,
-      executablePath: executablePath || await chromium.executablePath(),
-      headless: chromium.headless
-    });
+    browser = await launchPuppeteerBrowser(puppeteer, chromium);
 
     const page = await browser.newPage();
     await page.setContent(html, { waitUntil: 'networkidle0' });
@@ -334,15 +348,7 @@ router.get('/invoices/image', async (req, res) => {
       formatDate
     });
 
-    let executablePath;
-    try { executablePath = await chromium.executablePath(); } catch (e) {}
-
-    browser = await puppeteer.launch({
-      args: chromium.args,
-      defaultViewport: { width: 950, height: 1200, deviceScaleFactor: 2 },
-      executablePath: executablePath || await chromium.executablePath(),
-      headless: chromium.headless
-    });
+    browser = await launchPuppeteerBrowser(puppeteer, chromium, { width: 950, height: 1200, deviceScaleFactor: 2 });
 
     const page = await browser.newPage();
     await page.setContent(html, { waitUntil: 'networkidle0' });
@@ -798,19 +804,7 @@ router.get('/client/:id/image', async (req, res) => {
       formatDate
     });
 
-    let executablePath;
-    try {
-      executablePath = await chromium.executablePath();
-    } catch (e) {
-      console.warn('Chromium executable path warning:', e);
-    }
-
-    browser = await puppeteer.launch({
-      args: chromium.args,
-      defaultViewport: { width: 900, height: 1200, deviceScaleFactor: 2 },
-      executablePath: executablePath || await chromium.executablePath(),
-      headless: chromium.headless
-    });
+    browser = await launchPuppeteerBrowser(puppeteer, chromium, { width: 900, height: 1200, deviceScaleFactor: 2 });
 
     const page = await browser.newPage();
     await page.setContent(html, { waitUntil: 'networkidle0' });
@@ -847,5 +841,72 @@ router.get('/client/:id/image', async (req, res) => {
   }
 });
 
+// GET /api/export/invoice/:id/image - Export single invoice receipt as PNG Image
+router.get('/invoice/:id/image', async (req, res) => {
+  let browser = null;
+  try {
+    const { puppeteer, chromium } = await getPuppeteerAndChromium();
+
+    const invoiceId = parseInt(req.params.id);
+    if (isNaN(invoiceId)) {
+      return res.status(400).send('معرف الفاتورة غير صالح');
+    }
+
+    const invoice = await prisma.invoice.findUnique({
+      where: { id: invoiceId },
+      include: {
+        client: true,
+        endClient: true,
+        items: {
+          include: {
+            item: true,
+            itemUnit: true
+          }
+        }
+      }
+    });
+
+    if (!invoice) {
+      return res.status(404).send('الفاتورة غير موجودة');
+    }
+
+    const templatePath = path.join(__dirname, '..', 'views', 'print', 'invoice-receipt.ejs');
+    const html = await ejs.renderFile(templatePath, {
+      invoice,
+      formatCurrency,
+      formatDate
+    });
+
+    browser = await launchPuppeteerBrowser(puppeteer, chromium, { width: 800, height: 1000, deviceScaleFactor: 2 });
+
+    const page = await browser.newPage();
+    await page.setContent(html, { waitUntil: 'networkidle0' });
+
+    // Hide web action toolbar (.no-print) so image only contains receipt card
+    await page.addStyleTag({ content: '.no-print { display: none !important; } body { padding: 16px !important; }' });
+
+    const screenshotBuffer = await page.screenshot({
+      fullPage: true,
+      type: 'png'
+    });
+
+    const code = (invoice.invoiceCode || `inv-${invoice.id}`).replace(/[\\/:*?"<>|\s]/g, '_');
+    const filename = `invoice-${code}.png`;
+
+    res.setHeader('Content-Type', 'image/png');
+    res.setHeader('Content-Disposition', `inline; filename="invoice-${code}.png"; filename*=UTF-8''${encodeURIComponent(filename)}`);
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+    res.status(200).send(screenshotBuffer);
+  } catch (err) {
+    console.error('Invoice image export error:', err);
+    res.status(500).send('فشل في تصدير إيصال الفاتورة كصورة: ' + (err.message || ''));
+  } finally {
+    if (browser) {
+      await browser.close();
+    }
+  }
+});
+
 module.exports = router;
+
 
