@@ -185,6 +185,7 @@
                                 const d = new Date(isoStr);
                                 if (isNaN(d.getTime())) return isoStr;
                                 return d.toLocaleString('ar-EG', {
+                                    timeZone: 'Africa/Cairo',
                                     year: 'numeric',
                                     month: 'long',
                                     day: 'numeric',

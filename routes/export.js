@@ -73,7 +73,7 @@ const formatDate = (d) => {
   if (!d) return '-';
   const date = new Date(d);
   if (isNaN(date.getTime())) return '-';
-  return date.toLocaleDateString('ar-EG');
+  return date.toLocaleDateString('ar-EG', { timeZone: 'Africa/Cairo' });
 };
 
 // GET /api/export/clients/excel - Export all clients

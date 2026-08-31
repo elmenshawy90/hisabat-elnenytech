@@ -194,6 +194,7 @@ function formatDate(dateStr) {
   if (!dateStr) return '-';
   const d = new Date(dateStr);
   return d.toLocaleDateString('ar-EG', {
+    timeZone: 'Africa/Cairo',
     year: 'numeric',
     month: 'long',
     day: 'numeric'
