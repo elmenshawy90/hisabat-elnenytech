@@ -370,8 +370,11 @@ async function loadItems() {
                 if (u.isBaseUnit) {
                     return `<span class="bg-primary/10 text-primary px-2 py-0.5 rounded-full font-bold text-[11px]">${u.name} (أساسية)</span>`;
                 }
-                const formattedRate = Number(u.conversionRate) < 1 ? u.conversionRate.toFixed(4) : u.conversionRate;
-                return `<span class="bg-surface-container text-secondary px-2 py-0.5 rounded-full font-bold text-[11px]">${u.name} (${formattedRate} ${baseUnitName})</span>`;
+                const rate = Number(u.conversionRate);
+                // Show inverted: "1 base = X this unit"
+                const invertedRate = rate > 0 ? (1 / rate) : 0;
+                const formattedInverted = Number(invertedRate.toFixed(4));
+                return `<span class="bg-surface-container text-secondary px-2 py-0.5 rounded-full font-bold text-[11px]">${u.name} (1 ${baseUnitName} = ${formattedInverted})</span>`;
             }).join(' ');
 
             const stockNum = Number(item.currentStock) || 0;
@@ -457,14 +460,17 @@ function renderUnitsBuilder(units = [], isProtected = false) {
     container.innerHTML = '';
 
     if (!units || units.length === 0) {
-        // Default initial 2 rows for fresh creation: Row 0 ("كيلو"), Row 1 ("شكارة")
         units = [
             { name: '', isBaseUnit: true, conversionRate: 1.0 },
-            { name: '', isBaseUnit: false, conversionRate: 50.0 }
+            { name: '', isBaseUnit: false, conversionRate: 1.0 }
         ];
     }
 
-    units.forEach((u, idx) => {
+    // Sort: base unit always first visually
+    const sorted = [...units];
+    sorted.sort((a, b) => (b.isBaseUnit ? 1 : 0) - (a.isBaseUnit ? 1 : 0));
+
+    sorted.forEach((u, idx) => {
         appendUnitRowToDOM(u, idx, isProtected);
     });
 
@@ -509,8 +515,8 @@ function appendUnitRowToDOM(unitObj = {}, idx, isProtected = false) {
                 </div>
 
                 <div class="w-28">
-                    <label class="block text-[11px] font-bold text-secondary mb-1">الكمية</label>
-                    <input type="number" step="any" min="0.000001" value="${unitObj.relativeQuantity || unitObj.conversionRate || ''}" ${isRowProtected ? 'readonly' : ''} class="unit-qty-input w-full h-9 px-sm rounded-md bg-surface-container-low border border-outline-variant text-xs font-bold text-center dir-ltr focus:border-primary outline-none" placeholder="مثال: 50" oninput="onUnitFormChanged()" />
+                    <label class="unit-qty-label block text-[11px] font-bold text-secondary mb-1">الكمية</label>
+                    <input type="number" step="any" min="0.000001" value="${unitObj._displayQty || ''}" ${isRowProtected ? 'readonly' : ''} class="unit-qty-input w-full h-9 px-sm rounded-md bg-surface-container-low border border-outline-variant text-xs font-bold text-center dir-ltr focus:border-primary outline-none" placeholder="مثال: 20" oninput="onUnitFormChanged()" />
                 </div>
             </div>
 
@@ -531,7 +537,7 @@ function appendUnitRowToDOM(unitObj = {}, idx, isProtected = false) {
             </div>
         </div>
 
-        <!-- Live Calculation Preview -->
+        <!-- Live Calculation Preview (hidden for base unit) -->
         <div class="unit-preview-text text-[11px] font-medium text-primary bg-primary/5 px-sm py-1 rounded-md border border-primary/10">
             جاري حساب معامل التحويل...
         </div>
@@ -565,7 +571,8 @@ function onUnitFormChanged() {
 }
 
 function updateAllRelativeDropdownsAndPreviews() {
-    const rows = Array.from(document.querySelectorAll('#unitsRowsContainer .unit-row'));
+    const container = document.getElementById('unitsRowsContainer');
+    const rows = Array.from(container.querySelectorAll('.unit-row'));
     if (rows.length === 0) return;
 
     // Find index of row selected via baseUnitRadio
@@ -580,25 +587,47 @@ function updateAllRelativeDropdownsAndPreviews() {
         if (firstRadio) firstRadio.checked = true;
     }
 
-    // Step 1: Calculate raw reference value for each row
-    const rawRefMap = new Map();
+    // Re-sort DOM: move base unit row to top visually
+    const baseRow = rows[baseRowIndex];
+    if (baseRow && baseRow !== container.firstElementChild) {
+        container.insertBefore(baseRow, container.firstElementChild);
+        // Re-read rows after DOM reorder
+        return updateAllRelativeDropdownsAndPreviews();
+    }
+
     const N = rows.length;
 
-    rows.forEach((row, idx) => {
+    // Collect unit names for all rows
+    const unitNames = rows.map((row, idx) => {
         const nameInput = row.querySelector('.unit-name-input');
-        const unitName = nameInput ? nameInput.value.trim() || `وحدة ${idx + 1}` : `وحدة ${idx + 1}`;
+        return nameInput ? nameInput.value.trim() : '';
+    });
 
-        if (idx === 0) {
-            rawRefMap.set(0, { name: unitName, ref: 1.0 });
+    // Step 1: Calculate raw reference value for each row
+    // NEW LOGIC: User enters "1 [reference] = X [current unit]" (inverted)
+    // So rawRef = (1/X) * targetData.ref  (because current unit is SMALLER)
+    const rawRefMap = new Map();
+
+    rows.forEach((row, idx) => {
+        const unitName = unitNames[idx] || `وحدة ${idx + 1}`;
+
+        if (idx === baseRowIndex) {
+            rawRefMap.set(idx, { name: unitName, ref: 1.0 });
         } else {
             const select = row.querySelector('.unit-relative-select');
             const qtyInput = row.querySelector('.unit-qty-input');
-            const targetIdx = select ? parseInt(select.value) || 0 : 0;
-            const targetData = rawRefMap.get(targetIdx) || { name: 'الوحدة 1', ref: 1.0 };
+            const targetIdx = select ? parseInt(select.value) : -1;
+            const targetData = (targetIdx >= 0 && rawRefMap.has(targetIdx)) ? rawRefMap.get(targetIdx) : null;
             const qty = qtyInput ? parseFloat(qtyInput.value) || 0 : 0;
 
-            const rawRef = qty * targetData.ref;
-            rawRefMap.set(idx, { name: unitName, ref: rawRef });
+            if (qty > 0 && targetData) {
+                // User entered: "1 [reference] = qty [current unit]"
+                // So 1 current unit = (1/qty) reference units
+                const rawRef = (1 / qty) * targetData.ref;
+                rawRefMap.set(idx, { name: unitName, ref: rawRef });
+            } else {
+                rawRefMap.set(idx, { name: unitName, ref: 0 });
+            }
         }
     });
 
@@ -614,41 +643,53 @@ function updateAllRelativeDropdownsAndPreviews() {
         const relativeControlsContainer = row.querySelector('.relative-controls-container');
         const select = row.querySelector('.unit-relative-select');
         const previewEl = row.querySelector('.unit-preview-text');
+        const qtyLabel = row.querySelector('.unit-qty-label');
 
         if (isBase) {
             if (baseBadgeContainer) baseBadgeContainer.classList.remove('hidden');
             if (relativeControlsContainer) relativeControlsContainer.classList.add('hidden');
-            if (previewEl) {
-                previewEl.innerHTML = `<span class="text-primary font-bold">⭐ الوحدة المرجعية الأساسية لتتبع المخزون (1.0)</span>`;
-            }
+            // Hide preview box completely for base unit (Problem 2 fix)
+            if (previewEl) previewEl.classList.add('hidden');
         } else {
             if (baseBadgeContainer) baseBadgeContainer.classList.add('hidden');
             if (relativeControlsContainer) relativeControlsContainer.classList.remove('hidden');
+            if (previewEl) previewEl.classList.remove('hidden');
 
             const currentSelectedVal = select ? select.value : '';
 
-            // Re-populate relativeTo dropdown with all other unit options in the form (except itself)
+            // Re-populate relativeTo dropdown: only show units with actual names (non-empty), excluding self
             if (select) {
                 let optionsHTML = '';
                 for (let otherIdx = 0; otherIdx < N; otherIdx++) {
                     if (otherIdx === idx) continue; // Skip self
-                    const otherData = rawRefMap.get(otherIdx);
-                    const otherName = otherData ? otherData.name : `وحدة ${otherIdx + 1}`;
-                    optionsHTML += `<option value="${otherIdx}" ${String(otherIdx) === String(currentSelectedVal) ? 'selected' : ''}>${otherName}</option>`;
+                    const otherName = unitNames[otherIdx];
+                    if (!otherName) continue; // Skip units without a name
+                    const displayName = otherName || `وحدة ${otherIdx + 1}`;
+                    optionsHTML += `<option value="${otherIdx}" ${String(otherIdx) === String(currentSelectedVal) ? 'selected' : ''}>${displayName}</option>`;
                 }
                 select.innerHTML = optionsHTML;
+            }
+
+            // Update quantity label dynamically: "كام [current] في كل 1 [reference]؟"
+            const currentUnitName = unitNames[idx] || 'الوحدة الحالية';
+            const selectedRefIdx = select ? parseInt(select.value) : -1;
+            const selectedRefName = (selectedRefIdx >= 0 && unitNames[selectedRefIdx]) ? unitNames[selectedRefIdx] : 'المرجع';
+            if (qtyLabel) {
+                qtyLabel.textContent = `كام ${currentUnitName} في 1 ${selectedRefName}؟`;
             }
 
             const currentRawRef = rawRefMap.get(idx)?.ref || 0;
             const conversionRate = currentRawRef / baseRawRef;
             const unitName = rawRefMap.get(idx)?.name || `وحدة ${idx + 1}`;
+            const qtyInput = row.querySelector('.unit-qty-input');
+            const userQty = qtyInput ? parseFloat(qtyInput.value) || 0 : 0;
 
             if (previewEl) {
-                if (currentRawRef > 0 && baseRawRef > 0) {
-                    const formattedRate = Number(conversionRate) < 1 ? Number(conversionRate.toFixed(4)) : conversionRate;
-                    previewEl.innerHTML = `يعني 1 <strong>${unitName}</strong> = <strong class="text-primary underline dir-ltr inline-block">${formattedRate}</strong> ${baseUnitName}`;
+                if (userQty > 0 && currentRawRef > 0 && baseRawRef > 0) {
+                    // Show "1 [reference] = X [current unit]" (natural direction)
+                    previewEl.innerHTML = `✓ 1 <strong>${selectedRefName}</strong> = <strong class="text-primary underline dir-ltr inline-block">${userQty}</strong> ${unitName} — (معامل التحويل للأساسية: <span class="dir-ltr inline-block">${Number(conversionRate.toFixed(6))}</span>)`;
                 } else {
-                    previewEl.innerHTML = `أدخل الكمية لربط هذه الوحدة بالتعبير النسبة`;
+                    previewEl.innerHTML = `أدخل الكمية لربط هذه الوحدة`;
                 }
             }
         }
@@ -759,7 +800,12 @@ async function submitItemForm(e) {
             const targetIdx = select ? parseInt(select.value) || 0 : 0;
             const targetRow = rows[targetIdx];
             const targetName = targetRow ? targetRow.querySelector('.unit-name-input').value.trim() : baseUnitName;
-            const relQty = parseFloat(qtyInput.value) || 0;
+            const userQty = parseFloat(qtyInput.value) || 0;
+
+            // User entered: "1 [reference] = userQty [current unit]"
+            // Backend expects relativeQuantity as the OLD meaning (fraction of reference)
+            // So we invert: relativeQuantity = 1 / userQty
+            const relQty = userQty > 0 ? (1 / userQty) : 0;
 
             unitsPayload.push({
                 id: uId,
@@ -811,8 +857,9 @@ function openRestockModal(itemId) {
 
     const select = document.getElementById('restockUnitSelect');
     select.innerHTML = (item.units || []).map(u => {
-        const formattedRate = Number(u.conversionRate) < 1 ? u.conversionRate.toFixed(4) : u.conversionRate;
-        return `<option value="${u.id}">${u.name} ${u.isBaseUnit ? '(الوحدة الأساسية)' : `(${formattedRate} ${item.baseUnit?.name || ''})`}</option>`;
+        const rate = Number(u.conversionRate);
+        const invertedRate = rate > 0 ? Number((1 / rate).toFixed(4)) : 0;
+        return `<option value="${u.id}">${u.name} ${u.isBaseUnit ? '(الوحدة الأساسية)' : `(1 ${item.baseUnit?.name || ''} = ${invertedRate})`}</option>`;
     }).join('');
 
     document.getElementById('restockForm').reset();

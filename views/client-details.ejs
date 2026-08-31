@@ -762,13 +762,15 @@ async function exportClientImage(e) {
 
 
 // Load client data from API
-async function loadClientDetails() {
-    const user = await checkAuth();
-    if (!user) return;
-    
-    // Update user display names
-    document.querySelectorAll('.user-display-name').forEach(el => el.textContent = user.displayName || user.username);
-    document.querySelectorAll('.user-role-name').forEach(el => el.textContent = user.role === 'admin' ? 'المدير' : 'مستخدم');
+async function loadClientDetails(skipAuth = false) {
+    if (!skipAuth) {
+        const user = await checkAuth();
+        if (!user) return;
+        
+        // Update user display names
+        document.querySelectorAll('.user-display-name').forEach(el => el.textContent = user.displayName || user.username);
+        document.querySelectorAll('.user-role-name').forEach(el => el.textContent = user.role === 'admin' ? 'المدير' : 'مستخدم');
+    }
 
     const clientId = getClientId();
     if (!clientId) {
@@ -1908,14 +1910,25 @@ document.getElementById('invoiceForm').addEventListener('submit', async function
         }
     }
     
+    const submitBtn = document.getElementById('submitBtn');
+    const originalBtnContent = submitBtn ? submitBtn.innerHTML : '';
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="material-symbols-outlined text-sm animate-spin">progress_activity</span> <span>جاري الحفظ...</span>';
+    }
+
     try {
+        const clientPhoneVal = (currentClientData && currentClientData.phone && currentClientData.phone !== '-' && currentClientData.phone !== 'لا يوجد هاتف') 
+            ? currentClientData.phone 
+            : undefined;
+
         const res = await fetch('/api/invoices', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 client: getClientId(),
-                clientName: document.getElementById('clientName').textContent,
-                clientPhone: document.getElementById('clientPhone').textContent,
+                clientName: (currentClientData && currentClientData.name) ? currentClientData.name : document.getElementById('clientName').textContent,
+                clientPhone: clientPhoneVal,
                 endClientId: endClientId || undefined,
                 endClientName: endName || undefined,
                 date: date || undefined,
@@ -1929,23 +1942,29 @@ document.getElementById('invoiceForm').addEventListener('submit', async function
             })
         });
 
-        const jsonRes = await res.json();
+        const jsonRes = await res.json().catch(() => ({}));
 
         if (res.ok) {
             closeInvoiceModal();
-            loadClientDetails();
+            await loadClientDetails(true);
 
             if (Array.isArray(jsonRes.stockWarnings) && jsonRes.stockWarnings.length > 0) {
                 const warnNames = jsonRes.stockWarnings.map(w => w.itemName).join('، ');
                 showToast(`تم حفظ الفاتورة بنجاح ✓ لكن تم تجاوز المخزون المتاح في: [${warnNames}]`, 'warning');
             } else {
-                showToast('تم إضافة المعاملة بنجاح ✓', 'success');
+                showToast(currentTransactionType === 'payment' ? 'تم تسجيل الدفعة بنجاح ✓' : 'تم إضافة الفاتورة بنجاح ✓', 'success');
             }
         } else {
-            showToast(jsonRes.error || 'فشل في حفظ المعاملة', 'error');
+            const serverError = jsonRes.error || jsonRes.message || 'فشل في حفظ المعاملة';
+            showToast(`خطأ في حفظ المعاملة: ${serverError}`, 'error');
         }
     } catch (err) {
-        showToast('حدث خطأ في الاتصال بالخادم', 'error');
+        showToast(err.message ? `خطأ في الاتصال بالخادم: ${err.message}` : 'حدث خطأ في الاتصال بالخادم', 'error');
+    } finally {
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalBtnContent;
+        }
     }
 });
 

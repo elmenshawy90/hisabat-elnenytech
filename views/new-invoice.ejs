@@ -1402,6 +1402,8 @@
                 const date = document.getElementById('invoiceDate').value;
                 const amount = document.getElementById('invoiceAmount').value;
                 const address = document.getElementById('deliveryAddress') ? document.getElementById('deliveryAddress').value.trim() : '';
+                const detailsEl = document.getElementById('invoiceDetails');
+                const details = detailsEl ? detailsEl.value.trim() : '';
                 const invoiceId = document.getElementById('invoiceId').value;
 
                 if (!name) {
@@ -1493,7 +1495,7 @@
                         });
                     }
 
-                    const jsonRes = await res.json();
+                    const jsonRes = await res.json().catch(() => ({}));
 
                     if (res.ok) {
                         closeModal();
@@ -1509,10 +1511,11 @@
                             showToast(successMsg, 'success');
                         }
                     } else {
-                        showToast(jsonRes.error || (invoiceId ? 'فشل في تحديث الفاتورة' : 'فشل في حفظ الفاتورة'), 'error');
+                        const serverError = jsonRes.error || jsonRes.message || (invoiceId ? 'فشل في تحديث الفاتورة' : 'فشل في حفظ الفاتورة');
+                        showToast(`خطأ في حفظ الفاتورة: ${serverError}`, 'error');
                     }
                 } catch (err) {
-                    const errorMsg = invoiceId ? 'فشل في تحديث الفاتورة — تأكد من تشغيل السيرفر' : 'فشل في حفظ الفاتورة — تأكد من تشغيل السيرفر';
+                    const errorMsg = err.message ? `خطأ أثناء الاتصال: ${err.message}` : (invoiceId ? 'فشل في تحديث الفاتورة — تأكد من تشغيل السيرفر' : 'فشل في حفظ الفاتورة — تأكد من تشغيل السيرفر');
                     showToast(errorMsg, 'error');
                 }
             });

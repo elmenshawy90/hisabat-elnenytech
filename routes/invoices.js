@@ -154,6 +154,7 @@ router.post('/', async (req, res) => {
     let finalAmount = 0;
     let processedItems = [];
     let stockWarnings = [];
+    let discountAmount = 0;
 
     if (hasItems) {
       for (let i = 0; i < data.items.length; i++) {
@@ -205,7 +206,6 @@ router.post('/', async (req, res) => {
       finalAmount = Math.round((finalAmount + Number.EPSILON) * 100) / 100;
 
       // Calculate discount amount if provided
-      let discountAmount = 0;
       const discountType = data.discountType; // 'percentage' or 'fixed'
       const discountVal = Number(data.discountValue);
       if (!isNaN(discountVal) && discountVal > 0) {
@@ -308,8 +308,8 @@ router.post('/', async (req, res) => {
       stockWarnings: stockWarnings.length > 0 ? stockWarnings : undefined
     });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'فشل في إنشاء الفاتورة' });
+    console.error('Error creating invoice:', err);
+    res.status(500).json({ error: err.message || 'فشل في إنشاء الفاتورة' });
   }
 });
 
