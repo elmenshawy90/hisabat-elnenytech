@@ -992,14 +992,20 @@ async function openStockLogModal(itemId) {
             return;
         }
 
+        const stockChangeTypeLabels = {
+            'restock': 'توريد (شراء)',
+            'sale': 'خصم بسبب بيع',
+            'adjustment': 'تصحيح يدوي'
+        };
+
         tableBody.innerHTML = logs.map(log => {
             let typeBadge = '';
             if (log.changeType === 'restock') {
-                typeBadge = '<span class="px-2 py-0.5 rounded-full bg-green-100 text-green-700 font-bold text-[11px]">توريد +</span>';
+                typeBadge = `<span class="px-2 py-0.5 rounded-full bg-green-100 text-green-700 font-bold text-[11px]">${stockChangeTypeLabels['restock']}</span>`;
             } else if (log.changeType === 'sale') {
-                typeBadge = '<span class="px-2 py-0.5 rounded-full bg-tertiary-fixed text-on-tertiary-fixed font-bold text-[11px]">خصم مبيعات -</span>';
+                typeBadge = `<span class="px-2 py-0.5 rounded-full bg-tertiary-fixed text-on-tertiary-fixed font-bold text-[11px]">${stockChangeTypeLabels['sale']}</span>`;
             } else {
-                typeBadge = '<span class="px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 font-bold text-[11px]">تصحيح</span>';
+                typeBadge = `<span class="px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 font-bold text-[11px]">${stockChangeTypeLabels[log.changeType] || 'تصحيح يدوي'}</span>`;
             }
 
             const qtyVal = Number(log.quantityBase) || 0;

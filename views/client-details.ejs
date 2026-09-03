@@ -84,6 +84,10 @@
 </div>
 </div>
 
+<a href="#" onclick="event.preventDefault(); openAdjustmentModal();" class="px-md py-sm bg-slate-700 hover:bg-slate-800 text-white rounded-full font-bold text-sm transition-all flex items-center justify-center gap-xs shadow-sm active:scale-95" title="تسجيل تصحيح أو تسوية يدوية للرصيد">
+<span class="material-symbols-outlined text-xl">tune</span>
+<span>تسوية رصيد</span>
+</a>
 <a href="#" onclick="event.preventDefault(); openInvoiceModal('payment');" class="px-md py-sm bg-green-600 hover:bg-green-700 text-white rounded-full font-bold text-sm transition-all flex items-center justify-center gap-xs shadow-sm active:scale-95">
 <span class="material-symbols-outlined text-xl">payments</span>
 <span>تسديد دفعة</span>
@@ -288,6 +292,66 @@
 </main>
 <!-- Mobile Bottom Navigation -->
 <%- include('partials/bottom-nav', { active: 'clients' }) %>
+
+<!-- Adjustment Modal -->
+<div class="fixed inset-0 z-[100] hidden items-center justify-center bg-black/50 p-4" id="adjustmentModal">
+    <div class="bg-surface rounded-2xl shadow-2xl w-full max-w-md p-md md:p-xl border border-outline-variant/60">
+        <div class="flex flex-row justify-between items-center mb-md border-b border-outline-variant pb-sm">
+            <div class="flex items-center gap-xs text-slate-800">
+                <div class="w-10 h-10 rounded-full bg-purple-50 flex items-center justify-center text-purple-800">
+                    <span class="material-symbols-outlined text-2xl">tune</span>
+                </div>
+                <div>
+                    <h2 class="font-headline-sm font-bold text-on-surface">تسوية رصيد العميل</h2>
+                    <p class="text-[11px] text-secondary">تسجيل تعديل يدوي للرصيد مع توثيق السبب الإجباري</p>
+                </div>
+            </div>
+            <button class="text-secondary hover:text-on-surface" onclick="closeAdjustmentModal()" type="button">
+                <span class="material-symbols-outlined">close</span>
+            </button>
+        </div>
+        <form class="space-y-md" id="adjustmentForm" novalidate onsubmit="submitAdjustmentForm(event)">
+            <!-- Amount -->
+            <div class="space-y-xs">
+                <label class="block text-xs font-bold text-on-surface-variant">المبلغ (ج.م) <span class="text-error">*</span></label>
+                <div class="relative">
+                    <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline">payments</span>
+                    <input class="w-full h-12 pr-10 pl-md rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary outline-none transition-all text-right font-bold text-primary text-base dir-ltr" id="adjAmount" placeholder="0.00" type="number" step="any" min="0.01" required />
+                </div>
+            </div>
+
+            <!-- Balance Effect -->
+            <div class="space-y-xs">
+                <label class="block text-xs font-bold text-on-surface-variant">أثر التسوية على الحساب <span class="text-error">*</span></label>
+                <div class="grid grid-cols-2 gap-xs">
+                    <label class="flex items-center justify-center gap-xs p-2.5 rounded-xl border border-outline-variant cursor-pointer hover:bg-surface-container-low transition-colors select-none">
+                        <input type="radio" name="adjBalanceEffect" value="increase" checked class="accent-slate-700" />
+                        <span class="text-xs font-bold text-tertiary">زيادة الدين على العميل (+)</span>
+                    </label>
+                    <label class="flex items-center justify-center gap-xs p-2.5 rounded-xl border border-outline-variant cursor-pointer hover:bg-surface-container-low transition-colors select-none">
+                        <input type="radio" name="adjBalanceEffect" value="decrease" class="accent-green-700" />
+                        <span class="text-xs font-bold text-green-700">تخفيض الدين عن العميل (-)</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Reason (Required) -->
+            <div class="space-y-xs">
+                <label class="block text-xs font-bold text-on-surface-variant">السبب <span class="text-error">*</span></label>
+                <textarea id="adjReason" rows="3" required placeholder="اكتب سبب التسوية بالتفصيل (إجباري: مثال: تصحيح خطأ إدخال سابق، تنازل جزئي متفق عليه...)" class="w-full p-sm rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary outline-none transition-all text-right text-xs leading-relaxed text-on-surface"></textarea>
+                <p id="adjReasonError" class="hidden text-error text-[11px] font-bold">سبب التسوية إجباري، لا يمكن إجراء تسوية رصيد بدون توثيق السبب</p>
+            </div>
+
+            <div class="flex flex-col md:flex-row items-center justify-end gap-sm pt-md border-t border-outline-variant">
+                <button type="button" onclick="closeAdjustmentModal()" class="w-full md:w-auto px-lg py-sm rounded-full border border-outline-variant text-on-surface font-label-md hover:bg-surface-container-low transition-all">إلغاء</button>
+                <button id="adjSubmitBtn" class="w-full md:w-auto bg-slate-800 hover:bg-slate-900 text-white h-11 px-xl rounded-full font-label-md transition-all flex items-center justify-center gap-xs font-bold shadow-sm active:scale-95" type="submit">
+                    <span class="material-symbols-outlined text-sm">check</span>
+                    <span>حفظ التسوية</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
 
 <!-- Invoice Modal -->
 <div class="fixed inset-0 z-[100] hidden items-center justify-center bg-black/50 p-4" id="invoiceModal">
@@ -1319,12 +1383,15 @@ function renderTransactions(invoices, resetPage = false) {
 
     tbody.innerHTML = pagedInvoices.map(inv => {
         const isOpening = inv.type === 'opening_balance';
+        const isAdjustment = inv.type === 'adjustment';
         const isPurchase = inv.type === 'purchase';
         const isIncrease = inv.balanceEffect === 'increase' || (!inv.balanceEffect && isPurchase);
 
         let typeBadge = '';
         if (isOpening) {
             typeBadge = '<span class="px-sm py-1 rounded-full bg-blue-100 text-blue-800 font-label-sm text-label-sm font-bold">رصيد افتتاحي</span>';
+        } else if (isAdjustment) {
+            typeBadge = '<span class="px-sm py-1 rounded-full bg-purple-100 text-purple-900 border border-purple-200 font-label-sm text-label-sm font-bold">تسوية رصيد</span>';
         } else if (isPurchase) {
             typeBadge = '<span class="px-sm py-1 rounded-full bg-primary-fixed text-on-primary-fixed font-label-sm text-label-sm">شراء</span>';
         } else {
@@ -1514,11 +1581,14 @@ function openTransactionDetails(id) {
 
     const isOpening = inv.type === 'opening_balance';
     const isPayment = inv.type === 'payment';
+    const isAdjustment = inv.type === 'adjustment';
     const isIncrease = inv.balanceEffect === 'increase' || (!inv.balanceEffect && inv.type === 'purchase');
 
     const typeEl = document.getElementById('tdType');
     if (isOpening) {
         typeEl.innerHTML = '<span class="px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 font-bold text-xs">رصيد افتتاحي</span>';
+    } else if (isAdjustment) {
+        typeEl.innerHTML = '<span class="px-2 py-0.5 rounded-full bg-purple-100 text-purple-900 font-bold text-xs border border-purple-200">تسوية رصيد</span>';
     } else if (isPayment) {
         typeEl.textContent = 'دفعة';
     } else {
@@ -1607,6 +1677,98 @@ function closeTransactionDetails() {
 document.getElementById('transactionDetailsModal').addEventListener('click', function(e) {
     if (e.target === this) closeTransactionDetails();
 });
+
+// Adjustment Modal Logic
+function openAdjustmentModal() {
+    const modal = document.getElementById('adjustmentModal');
+    if (!modal) return;
+    document.getElementById('adjustmentForm').reset();
+    const reasonErr = document.getElementById('adjReasonError');
+    if (reasonErr) reasonErr.classList.add('hidden');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    document.body.style.overflow = 'hidden';
+    setTimeout(() => document.getElementById('adjAmount')?.focus(), 50);
+}
+
+function closeAdjustmentModal() {
+    const modal = document.getElementById('adjustmentModal');
+    if (!modal) return;
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+    document.body.style.overflow = '';
+}
+
+document.getElementById('adjustmentModal')?.addEventListener('click', function(e) {
+    if (e.target === this) closeAdjustmentModal();
+});
+
+async function submitAdjustmentForm(e) {
+    e.preventDefault();
+    const amountInput = document.getElementById('adjAmount');
+    const reasonInput = document.getElementById('adjReason');
+    const reasonErr = document.getElementById('adjReasonError');
+    const submitBtn = document.getElementById('adjSubmitBtn');
+
+    const amount = parseFloat(amountInput.value);
+    if (isNaN(amount) || amount <= 0) {
+        showToast('يرجى إدخال مبلغ تسوية صالح أكبر من الصفر', 'warning');
+        amountInput.focus();
+        return;
+    }
+
+    const reason = reasonInput.value.trim();
+    if (!reason) {
+        if (reasonErr) reasonErr.classList.remove('hidden');
+        showToast('سبب التسوية إجباري، لا يمكن إجراء تسوية رصيد بدون توثيق السبب', 'error');
+        reasonInput.focus();
+        return;
+    }
+    if (reasonErr) reasonErr.classList.add('hidden');
+
+    const effectEl = document.querySelector('input[name="adjBalanceEffect"]:checked');
+    const balanceEffect = effectEl ? effectEl.value : 'increase';
+
+    const origBtnHtml = submitBtn ? submitBtn.innerHTML : 'حفظ التسوية';
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="material-symbols-outlined text-sm animate-spin">progress_activity</span> <span>جاري حفظ التسوية...</span>';
+    }
+
+    try {
+        const res = await fetch('/api/invoices', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                client: getClientId(),
+                clientName: (currentClientData && currentClientData.name) ? currentClientData.name : document.getElementById('clientName').textContent,
+                type: 'adjustment',
+                balanceEffect,
+                amount,
+                details: reason,
+                address: '-'
+            })
+        });
+
+        const jsonRes = await res.json().catch(() => ({}));
+
+        if (!res.ok) {
+            throw new Error(jsonRes.error || 'فشل في حفظ تسوية الرصيد');
+        }
+
+        closeAdjustmentModal();
+        showToast('تم تسجيل تسوية الرصيد بنجاح ✓', 'success');
+        await loadClientDetails(true);
+    } catch (err) {
+        console.error(err);
+        showToast(err.message || 'فشل في حفظ تسوية الرصيد', 'error');
+    } finally {
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = origBtnHtml;
+        }
+    }
+}
 
 let currentTransactionType = 'purchase';
 

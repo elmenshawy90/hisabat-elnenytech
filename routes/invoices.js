@@ -225,7 +225,17 @@ router.post('/', async (req, res) => {
         return res.status(400).json({ error: 'المبلغ لا يمكن أن يكون سالباً' });
       }
 
-      if (data.type === 'payment') {
+      if (data.type === 'adjustment') {
+        const reason = data.details ? String(data.details).trim() : '';
+        if (!reason) {
+          return res.status(400).json({ error: 'سبب التسوية إجباري، لا يمكن إجراء تسوية رصيد بدون توثيق السبب' });
+        }
+        if (baseAmount <= 0) {
+          return res.status(400).json({ error: 'مبلغ التسوية يجب أن يكون أكبر من الصفر' });
+        }
+        discountAmount = 0;
+        finalAmount = baseAmount;
+      } else if (data.type === 'payment') {
         const discountType = data.discountType; // 'percentage' or 'fixed'
         const discountVal = Number(data.discountValue);
         if (!isNaN(discountVal) && discountVal > 0) {
@@ -256,7 +266,7 @@ router.post('/', async (req, res) => {
     const yearMonth = `${yy}${mm}`;
     const counterId = `invoice-${yearMonth}`;
 
-    const newNotes = data.details || (data.type === 'purchase' ? 'عملية شراء' : 'دفعة');
+    const newNotes = data.details || (data.type === 'purchase' ? 'عملية شراء' : (data.type === 'adjustment' ? 'تسوية رصيد' : 'دفعة'));
 
     // Use transaction to increment monthly counter, create invoice with invoiceCode, items, stock logs, auto-payment and update client notes
     const { invoice, autoPaymentInvoice, updatedClient } = await prisma.$transaction(async (tx) => {
@@ -267,7 +277,7 @@ router.post('/', async (req, res) => {
       });
       const invoiceCode = `${yearMonth}-${counter.value}`;
 
-      const balanceEffect = data.balanceEffect || (data.type === 'payment' ? 'decrease' : 'increase');
+      const balanceEffect = data.balanceEffect === 'decrease' ? 'decrease' : (data.type === 'payment' ? 'decrease' : 'increase');
 
       const createdInvoice = await tx.invoice.create({
         data: {
@@ -421,8 +431,12 @@ router.patch('/:id', async (req, res) => {
     const updateData = {};
 
     // Validate and prepare updatable fields
-    if (data.type && ['purchase', 'payment'].includes(data.type)) {
+    if (data.type && ['purchase', 'payment', 'adjustment'].includes(data.type)) {
       updateData.type = data.type;
+    }
+
+    if (data.balanceEffect && ['increase', 'decrease'].includes(data.balanceEffect)) {
+      updateData.balanceEffect = data.balanceEffect;
     }
 
     if (data.amount !== undefined) {

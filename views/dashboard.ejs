@@ -133,6 +133,55 @@
         </div>
     </div>
 </div>
+
+<!-- Overdue Clients Alert Section -->
+<div class="grid grid-cols-1 gap-lg">
+    <div class="space-y-md">
+        <div class="bg-white rounded-lg border border-error/30 shadow-sm overflow-hidden">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-sm px-md py-sm border-b border-outline-variant bg-error/5">
+                <div class="flex items-center gap-sm">
+                    <div class="w-8 h-8 rounded-full bg-error-container/20 text-error flex items-center justify-center">
+                        <span class="material-symbols-outlined text-lg">timer_off</span>
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-on-surface flex items-center gap-2">
+                            <span>عملاء متأخرون</span>
+                            <span id="overdueClientsBadge" class="bg-error text-white text-[11px] px-2 py-0.5 rounded-full font-bold">0</span>
+                        </h4>
+                        <p class="text-[11px] text-secondary">عملاء عليهم دين قائم ولم تسجل لهم أي حركة منذ فترة التنبيه</p>
+                    </div>
+                </div>
+                
+                <!-- Threshold Setting Control -->
+                <form id="overdueThresholdForm" onsubmit="updateOverdueThreshold(event)" class="flex items-center gap-xs bg-white px-sm py-1 rounded-lg border border-outline-variant text-xs shadow-2xs">
+                    <label for="thresholdDaysInput" class="text-secondary font-medium whitespace-nowrap">فترة التأخير:</label>
+                    <input type="number" id="thresholdDaysInput" min="1" max="365" required class="w-14 h-8 px-1 text-center font-bold border border-outline-variant rounded bg-surface-container-low focus:border-primary outline-none text-xs" />
+                    <span class="text-secondary font-medium">يوم</span>
+                    <button type="submit" id="saveThresholdBtn" class="px-sm py-1 bg-slate-800 hover:bg-slate-900 text-white rounded font-bold text-xs transition-all flex items-center gap-1 cursor-pointer active:scale-95">
+                        <span>حفظ</span>
+                    </button>
+                </form>
+            </div>
+
+            <div class="overflow-x-auto w-full">
+                <table class="w-full text-right border-collapse whitespace-nowrap">
+                    <thead class="bg-surface-container-low text-secondary text-[12px] uppercase">
+                        <tr>
+                            <th class="px-md py-sm font-medium">العميل</th>
+                            <th class="px-md py-sm font-medium text-left">الرصيد المستحق (الدين)</th>
+                            <th class="px-md py-sm font-medium">تاريخ آخر حركة</th>
+                            <th class="px-md py-sm font-medium">فترة الانقطاع</th>
+                            <th class="px-md py-sm font-medium text-center">الإجراء</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-outline-variant/30 text-xs" id="overdueClientsTable">
+                        <tr><td colspan="5" class="p-xl text-center text-secondary">جاري التحميل...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
 </div>
 </main>
 <%- include('partials/bottom-nav', { active: 'dashboard' }) %>
@@ -165,6 +214,21 @@ async function loadDashboard() {
         document.getElementById('statOutstanding').textContent = formatCurrency(data.outstandingBalance);
         document.getElementById('statLateClients').textContent = data.lateClients;
         document.getElementById('statTodayTx').textContent = data.todayTransactions;
+
+        // Render overdue threshold input
+        const thresholdInput = document.getElementById('thresholdDaysInput');
+        if (thresholdInput && data.overdueThresholdDays) {
+            thresholdInput.value = data.overdueThresholdDays;
+        }
+
+        // Render overdue count badge
+        const overdueBadge = document.getElementById('overdueClientsBadge');
+        if (overdueBadge) {
+            overdueBadge.textContent = data.lateClients || 0;
+        }
+
+        // Render overdue clients table
+        renderOverdueClients(data.overdueClients);
 
         // Render recent transactions
         renderRecentTransactions(data.recentTransactions);
@@ -306,6 +370,85 @@ function renderTopDebtors(debtors) {
             </a>
         `;
     }).join('');
+}
+
+function renderOverdueClients(clients) {
+    const tbody = document.getElementById('overdueClientsTable');
+    if (!tbody) return;
+
+    if (!clients || clients.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="p-xl text-center text-green-700 font-medium">لا يوجد عملاء متأخرون حالياً ✓</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = clients.map(client => {
+        const initials = (client.name || '').split(' ').slice(0, 2).map(w => w[0]).join(' ');
+        const days = client.daysInactive || 0;
+
+        return `
+            <tr class="hover:bg-error/5 transition-colors">
+                <td class="px-md py-md">
+                    <div class="flex items-center gap-sm">
+                        <div class="w-8 h-8 rounded-full bg-error-container/20 text-error flex items-center justify-center text-[12px] font-bold">${initials}</div>
+                        <a href="/client-details?id=${client._id || client.id}" class="text-on-surface font-bold text-sm hover:text-primary hover:underline">${client.name}</a>
+                    </div>
+                </td>
+                <td class="px-md py-md text-sm font-bold text-left text-error">${formatCurrency(client.balance)}</td>
+                <td class="px-md py-md text-sm text-secondary">${formatDate(client.lastTransactionDate)}</td>
+                <td class="px-md py-md text-sm">
+                    <span class="inline-flex items-center gap-1 bg-error/10 text-error px-2 py-0.5 rounded-full text-xs font-bold">
+                        <span>منذ ${days} ${days === 1 ? 'يوم' : (days === 2 ? 'يومين' : (days <= 10 ? 'أيام' : 'يوم'))}</span>
+                    </span>
+                </td>
+                <td class="px-md py-md text-center">
+                    <a href="/client-details?id=${client._id || client.id}" class="px-md py-1 bg-surface-container-high hover:bg-primary hover:text-white border border-outline-variant rounded-full text-xs font-bold transition-all inline-flex items-center gap-1">
+                        <span>عرض الحساب</span>
+                        <span class="material-symbols-outlined text-[14px]">arrow_back</span>
+                    </a>
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+async function updateOverdueThreshold(e) {
+    e.preventDefault();
+    const input = document.getElementById('thresholdDaysInput');
+    const saveBtn = document.getElementById('saveThresholdBtn');
+    const days = parseInt(input.value);
+
+    if (isNaN(days) || days < 1) {
+        showToast('يرجى إدخال عدد أيام صحيح أكبر من أو يساوي 1', 'warning');
+        return;
+    }
+
+    const origBtnHtml = saveBtn ? saveBtn.innerHTML : 'حفظ';
+    if (saveBtn) {
+        saveBtn.disabled = true;
+        saveBtn.innerHTML = '<span class="material-symbols-outlined text-xs animate-spin">progress_activity</span>';
+    }
+
+    try {
+        const res = await fetch('/api/dashboard/settings', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ overdueThresholdDays: days })
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'فشل في تحديث الإعدادات');
+
+        showToast(data.message || 'تم تحديث فترة التأخير بنجاح ✓', 'success');
+        await loadDashboard();
+    } catch (err) {
+        console.error(err);
+        showToast(err.message || 'فشل في تحديث فترة التأخير', 'error');
+    } finally {
+        if (saveBtn) {
+            saveBtn.disabled = false;
+            saveBtn.innerHTML = origBtnHtml;
+        }
+    }
 }
 
 // Initialize

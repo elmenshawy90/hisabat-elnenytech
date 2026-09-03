@@ -62,7 +62,7 @@ model Invoice {
   endClientId       Int?
   endClient         EndClient?    @relation(fields: [endClientId], references: [id])
   endClientName     String?       @default("")
-  // Allowed values: 'purchase', 'payment', 'opening_balance'
+  // Allowed values: 'purchase', 'payment', 'opening_balance', 'adjustment'
   type              String
   // 'increase' (عليه / مدين / يزود الدين) or 'decrease' (له / دائن / يقلل الدين)
   balanceEffect     String        @default("increase")
@@ -155,4 +155,9 @@ model InvoiceItem {
 
   @@index([invoiceId])
   @@index([itemId])
+}
+
+model Setting {
+  key   String @id
+  value String
 }
