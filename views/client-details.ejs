@@ -608,10 +608,16 @@
             </div>
         </div>
         <div class="pt-md mt-lg flex items-center justify-between gap-sm">
-            <a id="tdExportReceiptBtn" href="#" target="_blank" class="px-md py-sm bg-primary/10 hover:bg-primary text-primary hover:text-white rounded-full font-bold text-xs transition-all inline-flex items-center gap-1">
-                <span class="material-symbols-outlined text-sm">receipt_long</span>
-                <span>تصدير إيصال كصورة</span>
-            </a>
+            <div class="flex items-center gap-xs">
+                <a id="tdExportReceiptBtn" href="#" target="_blank" class="px-md py-sm bg-primary/10 hover:bg-primary text-primary hover:text-white rounded-full font-bold text-xs transition-all inline-flex items-center gap-1">
+                    <span class="material-symbols-outlined text-sm">receipt_long</span>
+                    <span>تصدير إيصال كصورة</span>
+                </a>
+                <button id="tdEditInvoiceBtn" type="button" onclick="editCurrentInvoiceFromDetails()" class="hidden px-md py-sm bg-primary hover:bg-primary-container text-white rounded-full font-bold text-xs transition-all inline-flex items-center gap-1 shadow-sm active:scale-95 cursor-pointer">
+                    <span class="material-symbols-outlined text-sm">edit</span>
+                    <span>تعديل الفاتورة</span>
+                </button>
+            </div>
             <button class="bg-surface-container-low text-on-surface px-xl rounded-full py-sm font-label-md hover:bg-surface-container transition-colors" onclick="closeTransactionDetails()" type="button">إغلاق</button>
         </div>
     </div>
@@ -764,6 +770,11 @@
 </div>
 <script src="/js/shared-ui.js"></script>
 <script>
+// Maximum allowed age for editing invoices (in days)
+const MAX_INVOICE_EDIT_DAYS = 30;
+let editingInvoiceId = null;
+let currentTransactionDetailsInvoice = null;
+
 // Add spinner animation
 const style = document.createElement('style');
 style.textContent = `@keyframes spin { to { transform: rotate(360deg); } } @keyframes fadeInRow { to { opacity: 1; transform: translateY(0); } }`;
@@ -1420,9 +1431,16 @@ function renderTransactions(invoices, resetPage = false) {
                 <td class="px-md py-md font-body-md text-body-md ${amountClass}">${amountPrefix}${formatCurrency(inv.amount)}</td>
                 <td class="px-md py-md font-body-md text-body-md">${balanceBadge}</td>
                 <td class="px-md py-md text-center" onclick="event.stopPropagation()">
-                    <a href="/api/export/invoice/${inv._id || inv.id}/image" target="_blank" class="p-1.5 rounded-lg hover:bg-primary/10 text-secondary hover:text-primary transition-all inline-flex items-center justify-center cursor-pointer" title="تصدير إيصال الفاتورة كصورة">
-                        <span class="material-symbols-outlined text-lg">receipt_long</span>
-                    </a>
+                    <div class="flex items-center justify-center gap-1">
+                        ${(inv.type === 'purchase' && (Math.floor((Date.now() - new Date(inv.date || inv.createdAt).getTime()) / (1000 * 60 * 60 * 24)) <= MAX_INVOICE_EDIT_DAYS)) ? `
+                            <button type="button" onclick="openEditInvoiceModal(${inv._id || inv.id})" class="p-1.5 rounded-lg hover:bg-primary/10 text-secondary hover:text-primary transition-all inline-flex items-center justify-center cursor-pointer" title="تعديل الفاتورة">
+                                <span class="material-symbols-outlined text-lg">edit_note</span>
+                            </button>
+                        ` : ''}
+                        <a href="/api/export/invoice/${inv._id || inv.id}/image" target="_blank" class="p-1.5 rounded-lg hover:bg-primary/10 text-secondary hover:text-primary transition-all inline-flex items-center justify-center cursor-pointer" title="تصدير إيصال الفاتورة كصورة">
+                            <span class="material-symbols-outlined text-lg">receipt_long</span>
+                        </a>
+                    </div>
                 </td>
             </tr>
         `;
@@ -1644,6 +1662,31 @@ function openTransactionDetails(id) {
         exportBtn.href = `/api/export/invoice/${inv._id || inv.id}/image`;
     }
 
+    currentTransactionDetailsInvoice = inv;
+    const editBtn = document.getElementById('tdEditInvoiceBtn');
+    if (editBtn) {
+        const invDate = new Date(inv.date || inv.createdAt);
+        const diffMs = Date.now() - invDate.getTime();
+        const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+        const isPurchase = inv.type === 'purchase';
+        const isUnder30Days = diffDays <= MAX_INVOICE_EDIT_DAYS;
+
+        if (isPurchase) {
+            editBtn.classList.remove('hidden');
+            if (isUnder30Days) {
+                editBtn.disabled = false;
+                editBtn.classList.remove('opacity-40', 'cursor-not-allowed');
+                editBtn.title = 'تعديل الفاتورة وبنودها';
+            } else {
+                editBtn.disabled = true;
+                editBtn.classList.add('opacity-40', 'cursor-not-allowed');
+                editBtn.title = `لا يمكن تعديل فاتورة مضى عليها أكثر من ${MAX_INVOICE_EDIT_DAYS} يومًا لحماية السجل المحاسبي`;
+            }
+        } else {
+            editBtn.classList.add('hidden');
+        }
+    }
+
     // Render items breakdown if available
     const itemsContainer = document.getElementById('tdItemsBreakdownContainer');
     const itemsBody = document.getElementById('tdItemsBreakdownBody');
@@ -1672,6 +1715,21 @@ function closeTransactionDetails() {
     modal.classList.add('hidden');
     modal.classList.remove('flex');
     document.body.style.overflow = '';
+    currentTransactionDetailsInvoice = null;
+}
+
+function editCurrentInvoiceFromDetails() {
+    if (!currentTransactionDetailsInvoice) return;
+    const inv = currentTransactionDetailsInvoice;
+    const invDate = new Date(inv.date || inv.createdAt);
+    const diffMs = Date.now() - invDate.getTime();
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    if (diffDays > MAX_INVOICE_EDIT_DAYS) {
+        showToast(`لا يمكن تعديل فاتورة مضى عليها أكثر من ${MAX_INVOICE_EDIT_DAYS} يومًا لحماية السجل المحاسبي`, 'warning');
+        return;
+    }
+    closeTransactionDetails();
+    openEditInvoiceModal(inv.id || inv._id);
 }
 
 document.getElementById('transactionDetailsModal').addEventListener('click', function(e) {
@@ -1772,9 +1830,13 @@ async function submitAdjustmentForm(e) {
 
 let currentTransactionType = 'purchase';
 
-function openInvoiceModal(type = 'purchase') {
+function openInvoiceModal(type = 'purchase', isEdit = false) {
     currentTransactionType = type;
     const modal = document.getElementById('invoiceModal');
+
+    if (!isEdit) {
+        editingInvoiceId = null;
+    }
     
     // Update labels
     const title = document.getElementById('modalTitle');
@@ -1789,11 +1851,13 @@ function openInvoiceModal(type = 'purchase') {
     const detailsInputContainer = document.getElementById('invoiceDetails') ? document.getElementById('invoiceDetails').closest('.flex.flex-col') : null;
     const submitBtn = document.getElementById('submitBtn');
     
-    document.getElementById('invoiceForm').reset();
-    document.getElementById('endClientId').value = '';
-    document.getElementById('endClientName').value = '';
-    document.getElementById('endClientDropdown').classList.add('hidden');
-    if (paymentDiscountValInput) paymentDiscountValInput.value = '';
+    if (!isEdit) {
+        document.getElementById('invoiceForm').reset();
+        document.getElementById('endClientId').value = '';
+        document.getElementById('endClientName').value = '';
+        document.getElementById('endClientDropdown').classList.add('hidden');
+        if (paymentDiscountValInput) paymentDiscountValInput.value = '';
+    }
 
     if (type === 'payment') {
         title.textContent = 'تسديد دفعة';
@@ -1811,7 +1875,10 @@ function openInvoiceModal(type = 'purchase') {
         detailsLabel.textContent = 'تفاصيل السداد';
         submitBtn.textContent = 'حفظ السداد';
     } else {
-        title.textContent = 'إضافة فاتورة جديدة';
+        if (!isEdit) {
+            title.textContent = 'إضافة فاتورة جديدة';
+            submitBtn.textContent = 'حفظ الفاتورة';
+        }
         if (amountLabel) amountLabel.innerHTML = 'المبلغ المستحق <span class="text-error">*</span>';
         if (paymentDiscountSection) paymentDiscountSection.classList.add('hidden');
         amountContainer.classList.add('hidden');
@@ -1820,9 +1887,10 @@ function openInvoiceModal(type = 'purchase') {
         purchaseItemsContainer.classList.remove('hidden');
         addressLabel.textContent = 'عنوان التوصيل';
         if (detailsInputContainer) detailsInputContainer.classList.add('hidden');
-        submitBtn.textContent = 'حفظ الفاتورة';
 
-        renderInvoiceLineRows();
+        if (!isEdit) {
+            renderInvoiceLineRows();
+        }
         fetchActiveItemsCatalog();
     }
 
@@ -1835,10 +1903,184 @@ function openInvoiceModal(type = 'purchase') {
     // Initialize Flatpickr calendar
     flatpickr("#invoiceDate", {
         locale: "ar",
-        defaultDate: "today",
+        defaultDate: isEdit ? undefined : "today",
         dateFormat: "Y-m-d",
         disableMobile: true
     });
+}
+
+async function openEditInvoiceModal(id) {
+    const inv = clientInvoices.find(i => String(i._id || i.id) === String(id));
+    if (!inv) return;
+
+    if (inv.type !== 'purchase') {
+        showToast('تعديل الفواتير متاح فقط لفواتير الشراء التي تحتوي على بنود', 'warning');
+        return;
+    }
+
+    const invDate = new Date(inv.date || inv.createdAt);
+    const diffMs = Date.now() - invDate.getTime();
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    if (diffDays > MAX_INVOICE_EDIT_DAYS) {
+        showToast(`لا يمكن تعديل فاتورة مضى عليها أكثر من ${MAX_INVOICE_EDIT_DAYS} يومًا لحماية السجل المحاسبي`, 'warning');
+        return;
+    }
+
+    editingInvoiceId = inv.id || inv._id;
+
+    // Open purchase invoice modal in edit mode
+    openInvoiceModal('purchase', true);
+
+    // Set modal title & submit button text
+    const title = document.getElementById('modalTitle');
+    if (title) {
+        title.textContent = `تعديل الفاتورة ${inv.invoiceCode ? `[${inv.invoiceCode}]` : `[#${inv.id}]`}`;
+    }
+    const submitBtn = document.getElementById('submitBtn');
+    if (submitBtn) {
+        submitBtn.innerHTML = '<span class="material-symbols-outlined text-sm">check</span> <span>حفظ التعديلات</span>';
+    }
+
+    // Set date
+    const dateInput = document.getElementById('invoiceDate');
+    if (dateInput) {
+        const dObj = new Date(inv.date);
+        const yyyy = dObj.getFullYear();
+        const mm = String(dObj.getMonth() + 1).padStart(2, '0');
+        const dd = String(dObj.getDate()).padStart(2, '0');
+        const formattedDateStr = `${yyyy}-${mm}-${dd}`;
+        if (dateInput._flatpickr) {
+            dateInput._flatpickr.setDate(formattedDateStr);
+        } else {
+            dateInput.value = formattedDateStr;
+        }
+    }
+
+    // Set end client
+    const ecIdInput = document.getElementById('endClientId');
+    const ecNameInput = document.getElementById('endClientName');
+    if (ecIdInput) ecIdInput.value = inv.endClientId || '';
+    if (ecNameInput) ecNameInput.value = inv.endClientName || '';
+
+    // Set address, details, notes
+    const addrInput = document.getElementById('deliveryAddress');
+    if (addrInput) addrInput.value = (inv.address && inv.address !== '-') ? inv.address : '';
+
+    const detailsInput = document.getElementById('invoiceDetails');
+    if (detailsInput) detailsInput.value = (inv.details && inv.details !== 'عملية شراء') ? inv.details : '';
+
+    const notesInput = document.getElementById('invoiceNotes');
+    if (notesInput) notesInput.value = inv.notes || '';
+
+    // Set paid amount & payment method
+    const paidInput = document.getElementById('paidAmount');
+    if (paidInput) paidInput.value = inv.paidAmount > 0 ? inv.paidAmount : '';
+
+    const methodRadio = document.querySelector(`input[name="paymentMethod"][value="${inv.paymentMethod || 'cash'}"]`);
+    if (methodRadio) methodRadio.checked = true;
+
+    // Set discount (using fixed discount to preserve exact amount)
+    const fixedDiscountRadio = document.querySelector('input[name="discountType"][value="fixed"]');
+    if (fixedDiscountRadio) fixedDiscountRadio.checked = true;
+    const discountValInput = document.getElementById('discountValue');
+    if (discountValInput) discountValInput.value = inv.discountAmount > 0 ? inv.discountAmount : '';
+
+    // Preload line items
+    await fetchActiveItemsCatalog();
+    const rowsContainer = document.getElementById('invoiceLineRowsContainer');
+    if (rowsContainer) {
+        rowsContainer.innerHTML = '';
+        if (inv.items && inv.items.length > 0) {
+            inv.items.forEach(it => {
+                addPreloadedInvoiceLineRow(it);
+            });
+        } else {
+            addInvoiceLineRow();
+        }
+    }
+
+    updateAllLineTotalsAndGrandTotal();
+}
+
+function addPreloadedInvoiceLineRow(itemData) {
+    const container = document.getElementById('invoiceLineRowsContainer');
+    if (!container) return;
+
+    const rowId = `line_row_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
+    const row = document.createElement('div');
+    row.className = 'invoice-line-row space-y-xs bg-surface p-xs rounded-xl border border-outline-variant/60';
+    row.id = rowId;
+
+    const qty = itemData.quantity !== undefined ? itemData.quantity : 1;
+    const price = itemData.unitPrice !== undefined ? itemData.unitPrice : 0;
+    const total = itemData.lineTotal !== undefined ? itemData.lineTotal : (qty * price);
+
+    row.innerHTML = `
+        <div class="flex items-center gap-xs flex-wrap sm:flex-nowrap">
+            <div class="w-24">
+                <label class="block text-[11px] font-bold text-secondary mb-1">الكمية <span class="text-error">*</span></label>
+                <input type="number" step="any" min="0.001" value="${qty}" class="line-qty-input w-full h-9 px-xs rounded-md bg-surface-container-low border border-outline-variant text-xs font-bold text-center dir-ltr focus:border-primary outline-none" placeholder="0" oninput="onLineInputsCalculated('${rowId}')" />
+            </div>
+            <div class="w-28">
+                <label class="block text-[11px] font-bold text-secondary mb-1">الوحدة <span class="text-error">*</span></label>
+                <select class="line-unit-select w-full h-9 px-xs rounded-md bg-surface-container-low border border-outline-variant text-xs font-bold text-right outline-none cursor-pointer" onchange="onLineInputsCalculated('${rowId}')">
+                    <option value="">-- اختر الوحدة --</option>
+                </select>
+                <span class="unit-hint-text text-[10px] text-secondary/70 hidden mt-0.5">اختر الصنف أولاً</span>
+            </div>
+            <div class="flex-1 min-w-[140px]">
+                <label class="block text-[11px] font-bold text-secondary mb-1">الصنف <span class="text-error">*</span></label>
+                <select class="line-item-select w-full h-9 px-xs rounded-md bg-surface-container-low border border-outline-variant text-xs font-bold text-right outline-none cursor-pointer" onchange="onLineItemChanged('${rowId}')">
+                    <option value="">-- اختر الصنف --</option>
+                </select>
+            </div>
+            <div class="w-28">
+                <label class="block text-[11px] font-bold text-secondary mb-1">السعر (ج.م) <span class="text-error">*</span></label>
+                <input type="number" step="any" min="0" value="${price}" class="line-price-input w-full h-9 px-xs rounded-md bg-surface-container-low border border-outline-variant text-xs font-bold text-center dir-ltr focus:border-primary outline-none" placeholder="0.00" oninput="onLineInputsCalculated('${rowId}')" />
+            </div>
+            <div class="w-24 text-left">
+                <label class="block text-[11px] font-bold text-secondary mb-1">الإجمالي</label>
+                <span class="line-total-text text-xs font-bold text-primary dir-ltr block pt-1">${formatCurrency(total)}</span>
+            </div>
+            <div class="w-8 shrink-0 pt-4">
+                <button type="button" onclick="removeInvoiceLineRow('${rowId}')" class="w-8 h-8 flex items-center justify-center text-error hover:bg-error/10 rounded-md transition-colors cursor-pointer" title="حذف البند">
+                    <span class="material-symbols-outlined text-base">delete</span>
+                </button>
+            </div>
+        </div>
+        <div class="line-stock-info hidden text-[11px] font-medium px-sm py-1 rounded-md border"></div>
+    `;
+
+    container.appendChild(row);
+
+    // Populate item select
+    const itemSelect = row.querySelector('.line-item-select');
+    const unitSelect = row.querySelector('.line-unit-select');
+
+    const targetItemId = itemData.itemId;
+    let catalogWithItem = [...cachedActiveItems];
+    if (targetItemId && !catalogWithItem.some(i => String(i.id || i._id) === String(targetItemId)) && itemData.item) {
+        catalogWithItem.push(itemData.item);
+    }
+
+    itemSelect.innerHTML = '<option value="">-- اختر الصنف --</option>' + catalogWithItem.map(item => {
+        const idStr = String(item.id || item._id);
+        const isSel = idStr === String(targetItemId) ? 'selected' : '';
+        return `<option value="${idStr}" ${isSel}>${item.name}</option>`;
+    }).join('');
+
+    // Populate unit select
+    const selectedItem = catalogWithItem.find(i => String(i.id || i._id) === String(targetItemId));
+    if (selectedItem && Array.isArray(selectedItem.units)) {
+        unitSelect.innerHTML = selectedItem.units.map(u => {
+            const isSel = String(u.id) === String(itemData.itemUnitId) ? 'selected' : '';
+            return `<option value="${u.id}" data-rate="${u.conversionRate}" ${isSel}>${u.name}${u.isBaseUnit ? ' (أساسية)' : ''}</option>`;
+        }).join('');
+        unitSelect.disabled = false;
+    } else if (itemData.itemUnit) {
+        unitSelect.innerHTML = `<option value="${itemData.itemUnit.id}" selected>${itemData.itemUnit.name}</option>`;
+        unitSelect.disabled = false;
+    }
 }
 
 function renderInvoiceLineRows() {
@@ -2120,6 +2362,11 @@ function closeInvoiceModal() {
     if (paidInput) paidInput.value = '';
     const notesInput = document.getElementById('invoiceNotes');
     if (notesInput) notesInput.value = '';
+    editingInvoiceId = null;
+    const modalTitle = document.getElementById('modalTitle');
+    if (modalTitle) modalTitle.textContent = 'إضافة فاتورة جديدة';
+    const submitBtn = document.getElementById('submitBtn');
+    if (submitBtn) submitBtn.textContent = 'حفظ الفاتورة';
 }
 
 document.getElementById('invoiceModal').addEventListener('click', function (e) {
@@ -2258,7 +2505,8 @@ document.getElementById('invoiceForm').addEventListener('submit', async function
     const originalBtnContent = submitBtn ? submitBtn.innerHTML : '';
     if (submitBtn) {
         submitBtn.disabled = true;
-        submitBtn.innerHTML = '<span class="material-symbols-outlined text-sm animate-spin">progress_activity</span> <span>جاري الحفظ...</span>';
+        const loadingText = editingInvoiceId ? 'جاري حفظ التعديلات...' : (currentTransactionType === 'payment' ? 'جاري حفظ السداد...' : 'جاري حفظ الفاتورة...');
+        submitBtn.innerHTML = `<span class="material-symbols-outlined text-sm animate-spin">progress_activity</span> <span>${loadingText}</span>`;
     }
 
     try {
@@ -2270,8 +2518,11 @@ document.getElementById('invoiceForm').addEventListener('submit', async function
         const paymentMethodVal = document.querySelector('input[name="paymentMethod"]:checked') ? document.querySelector('input[name="paymentMethod"]:checked').value : 'cash';
         const notesVal = document.getElementById('invoiceNotes') ? document.getElementById('invoiceNotes').value.trim() : '';
 
-        const res = await fetch('/api/invoices', {
-            method: 'POST',
+        const url = editingInvoiceId ? `/api/invoices/${editingInvoiceId}` : '/api/invoices';
+        const method = editingInvoiceId ? 'PUT' : 'POST';
+
+        const res = await fetch(url, {
+            method,
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 client: getClientId(),
@@ -2296,14 +2547,15 @@ document.getElementById('invoiceForm').addEventListener('submit', async function
         const jsonRes = await res.json().catch(() => ({}));
 
         if (res.ok) {
+            const isEdit = Boolean(editingInvoiceId);
             closeInvoiceModal();
             await loadClientDetails(true);
 
             if (Array.isArray(jsonRes.stockWarnings) && jsonRes.stockWarnings.length > 0) {
                 const warnNames = jsonRes.stockWarnings.map(w => w.itemName).join('، ');
-                showToast(`تم حفظ الفاتورة بنجاح ✓ لكن تم تجاوز المخزون المتاح في: [${warnNames}]`, 'warning');
+                showToast(`تم ${isEdit ? 'تعديل' : 'حفظ'} الفاتورة بنجاح ✓ لكن تم تجاوز المخزون المتاح في: [${warnNames}]`, 'warning');
             } else {
-                showToast(currentTransactionType === 'payment' ? 'تم تسجيل الدفعة بنجاح ✓' : 'تم إضافة الفاتورة بنجاح ✓', 'success');
+                showToast(isEdit ? 'تم تحديث بيانات الفاتورة بنجاح ✓' : (currentTransactionType === 'payment' ? 'تم تسجيل الدفعة بنجاح ✓' : 'تم إضافة الفاتورة بنجاح ✓'), 'success');
             }
         } else {
             const serverError = jsonRes.error || jsonRes.message || 'فشل في حفظ المعاملة';

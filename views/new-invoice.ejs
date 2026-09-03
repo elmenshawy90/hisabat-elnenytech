@@ -594,11 +594,18 @@
                 </div>
             </div>
             <div class="pt-md mt-lg flex items-center justify-between gap-sm">
-                <a id="tdExportReceiptBtn" href="#" target="_blank"
-                    class="px-md py-sm bg-primary/10 hover:bg-primary text-primary hover:text-white rounded-full font-bold text-xs transition-all inline-flex items-center gap-1">
-                    <span class="material-symbols-outlined text-sm">receipt_long</span>
-                    <span>تصدير إيصال كصورة</span>
-                </a>
+                <div class="flex items-center gap-xs">
+                    <a id="tdExportReceiptBtn" href="#" target="_blank"
+                        class="px-md py-sm bg-primary/10 hover:bg-primary text-primary hover:text-white rounded-full font-bold text-xs transition-all inline-flex items-center gap-1">
+                        <span class="material-symbols-outlined text-sm">receipt_long</span>
+                        <span>تصدير إيصال كصورة</span>
+                    </a>
+                    <button id="tdEditInvoiceBtn" type="button" onclick="editCurrentInvoiceFromDetails()"
+                        class="hidden px-md py-sm bg-primary hover:bg-primary-container text-white rounded-full font-bold text-xs transition-all inline-flex items-center gap-1 shadow-sm active:scale-95 cursor-pointer">
+                        <span class="material-symbols-outlined text-sm">edit</span>
+                        <span>تعديل الفاتورة</span>
+                    </button>
+                </div>
                 <button
                     class="bg-surface-container-low text-on-surface px-xl rounded-full py-sm font-label-md hover:bg-surface-container transition-colors"
                     onclick="closeTransactionDetails()" type="button">
@@ -611,6 +618,8 @@
 
     <script src="/js/shared-ui.js"></script>
     <script>
+        const MAX_INVOICE_EDIT_DAYS = 30;
+        let currentTransactionDetailsInvoice = null;
         let allInvoices = [];
         let allClientsList = [];
         let allEndClientsList = [];
@@ -881,10 +890,12 @@
                     <a href="/api/export/invoice/${inv._id || inv.id}/image" target="_blank" onclick="event.stopPropagation()" class="p-sm rounded-lg hover:bg-primary/20 text-secondary hover:text-primary transition-all active:scale-90 inline-flex items-center" title="تصدير إيصال الفاتورة كصورة">
                         <span class="material-symbols-outlined text-[20px]">receipt_long</span>
                     </a>
-                    <button onclick="event.stopPropagation(); editInvoice(${inv._id})" class="p-sm rounded-lg hover:bg-primary/20 text-primary transition-all active:scale-90" title="تعديل">
-                        <span class="material-symbols-outlined text-[20px]">edit</span>
-                    </button>
-                    <button onclick="event.stopPropagation(); deleteInvoice(${inv._id})" class="p-sm rounded-lg hover:bg-error-container/20 text-error transition-all active:scale-90" title="حذف">
+                    ${(inv.type === 'purchase' && (Math.floor((Date.now() - new Date(inv.date || inv.createdAt).getTime()) / (1000 * 60 * 60 * 24)) <= MAX_INVOICE_EDIT_DAYS)) ? `
+                        <button onclick="event.stopPropagation(); editInvoice(${inv._id || inv.id})" class="p-sm rounded-lg hover:bg-primary/20 text-primary transition-all active:scale-90" title="تعديل">
+                            <span class="material-symbols-outlined text-[20px]">edit</span>
+                        </button>
+                    ` : ''}
+                    <button onclick="event.stopPropagation(); deleteInvoice(${inv._id || inv.id})" class="p-sm rounded-lg hover:bg-error-container/20 text-error transition-all active:scale-90" title="حذف">
                         <span class="material-symbols-outlined text-[20px]">delete</span>
                     </button>
                 </div>
@@ -956,58 +967,222 @@
         }
 
         // Edit invoice
-        function editInvoice(id) {
-            const inv = allInvoices.find(i => String(i._id) === String(id));
+        async function editInvoice(id) {
+            const inv = allInvoices.find(i => String(i._id || i.id) === String(id));
             if (!inv) {
-                showToast('لم تجد الفاتورة', 'error');
+                showToast('لم يتم العثور على الفاتورة', 'error');
                 return;
             }
 
+            if (inv.type !== 'purchase') {
+                showToast('تعديل الفواتير متاح فقط لفواتير الشراء التي تحتوي على بنود', 'warning');
+                return;
+            }
+
+            const invDate = new Date(inv.date || inv.createdAt);
+            const diffMs = Date.now() - invDate.getTime();
+            const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+            if (diffDays > MAX_INVOICE_EDIT_DAYS) {
+                showToast(`لا يمكن تعديل فاتورة مضى عليها أكثر من ${MAX_INVOICE_EDIT_DAYS} يومًا لحماية السجل المحاسبي`, 'warning');
+                return;
+            }
+
+            let fullInv = inv;
+            try {
+                const res = await fetch(`/api/invoices/${id}`);
+                if (res.ok) {
+                    fullInv = await res.json();
+                }
+            } catch (e) {
+                console.error('Failed to fetch full invoice:', e);
+            }
+
             // Set the mode to edit
-            document.getElementById('invoiceId').value = id;
-            document.getElementById('modalTitle').textContent = 'تعديل الفاتورة';
-            document.getElementById('submitButtonText').textContent = 'حفظ التغييرات';
+            const invIdInput = document.getElementById('invoiceId');
+            if (invIdInput) invIdInput.value = id;
+
+            const modalTitle = document.getElementById('modalTitle');
+            if (modalTitle) {
+                modalTitle.textContent = `تعديل الفاتورة ${fullInv.invoiceCode ? `[${fullInv.invoiceCode}]` : `[#${id}]`}`;
+            }
+
+            const submitBtnText = document.getElementById('submitButtonText');
+            if (submitBtnText) submitBtnText.textContent = 'حفظ التعديلات';
 
             // Populate form with invoice data
-            document.getElementById('clientName').value = inv.clientName || '';
-            document.getElementById('clientId').value = inv.clientId || '';
-            document.getElementById('endClientName').value = inv.endClientName || '';
-            document.getElementById('endClientId').value = inv.endClientId || '';
-            document.getElementById('mobileNumber').value = inv.clientPhone && inv.clientPhone !== '-' ? inv.clientPhone : '';
-            document.getElementById('invoiceDetails').value = inv.details || '-';
-            document.getElementById('deliveryAddress').value = inv.address || '-';
+            const clientNameInput = document.getElementById('clientName');
+            if (clientNameInput) clientNameInput.value = fullInv.clientName || '';
+
+            const clientIdInput = document.getElementById('clientId');
+            if (clientIdInput) clientIdInput.value = fullInv.clientId || '';
+
+            const endClientNameInput = document.getElementById('endClientName');
+            if (endClientNameInput) endClientNameInput.value = fullInv.endClientName || '';
+
+            const endClientIdInput = document.getElementById('endClientId');
+            if (endClientIdInput) endClientIdInput.value = fullInv.endClientId || '';
+
+            const mobileNumberInput = document.getElementById('mobileNumber');
+            if (mobileNumberInput) mobileNumberInput.value = fullInv.clientPhone && fullInv.clientPhone !== '-' ? fullInv.clientPhone : '';
+
+            const deliveryAddressInput = document.getElementById('deliveryAddress');
+            if (deliveryAddressInput) deliveryAddressInput.value = (fullInv.address && fullInv.address !== '-') ? fullInv.address : '';
+
+            const notesInput = document.getElementById('invoiceNotes');
+            if (notesInput) notesInput.value = fullInv.notes || '';
 
             // Format date for input
-            const dateObj = new Date(inv.date);
+            const dateObj = new Date(fullInv.date);
             const year = dateObj.getFullYear();
             const month = String(dateObj.getMonth() + 1).padStart(2, '0');
             const day = String(dateObj.getDate()).padStart(2, '0');
-            document.getElementById('invoiceDate').value = `${year}-${month}-${day}`;
+            const dateInput = document.getElementById('invoiceDate');
+            if (dateInput) {
+                if (dateInput._flatpickr) {
+                    dateInput._flatpickr.setDate(`${year}-${month}-${day}`);
+                } else {
+                    dateInput.value = `${year}-${month}-${day}`;
+                }
+            }
 
-            document.getElementById('invoiceAmount').value = inv.amount;
+            // Paid amount & payment method
+            const paidInput = document.getElementById('paidAmount');
+            if (paidInput) paidInput.value = fullInv.paidAmount > 0 ? fullInv.paidAmount : '';
+
+            const methodRadio = document.querySelector(`input[name="paymentMethod"][value="${fullInv.paymentMethod || 'cash'}"]`);
+            if (methodRadio) methodRadio.checked = true;
+
+            // Discount
+            const fixedDiscountRadio = document.querySelector('input[name="discountType"][value="fixed"]');
+            if (fixedDiscountRadio) fixedDiscountRadio.checked = true;
+            const discountValInput = document.getElementById('discountValue');
+            if (discountValInput) discountValInput.value = fullInv.discountAmount > 0 ? fullInv.discountAmount : '';
 
             // Show client summary
-            if (inv.clientId) {
-                const client = allClientsList.find(c => c.id === inv.clientId);
+            if (fullInv.clientId) {
+                const client = allClientsList.find(c => c.id === fullInv.clientId);
                 if (client) {
                     const balanceEl = document.getElementById('summaryBalance');
-                    balanceEl.textContent = formatCurrency(client.balance || 0);
-                    balanceEl.className = `font-bold dir-ltr inline-block ${(client.balance || 0) > 0 ? 'text-tertiary' : ((client.balance || 0) < 0 ? 'text-error' : 'text-primary')}`;
-                    document.getElementById('summaryLastTransaction').textContent = client.updatedAt ? formatDate(client.updatedAt) : '--';
-                    document.getElementById('summaryProfileLink').href = `/client-details?id=${client.id}`;
-                    document.getElementById('clientSummaryCard').classList.remove('hidden');
-                    document.getElementById('clientSummaryCard').classList.add('flex');
+                    if (balanceEl) {
+                        balanceEl.textContent = formatCurrency(client.balance || 0);
+                        balanceEl.className = `font-bold dir-ltr inline-block ${(client.balance || 0) > 0 ? 'text-tertiary' : ((client.balance || 0) < 0 ? 'text-error' : 'text-primary')}`;
+                    }
+                    const lastTx = document.getElementById('summaryLastTransaction');
+                    if (lastTx) lastTx.textContent = client.updatedAt ? formatDate(client.updatedAt) : '--';
+                    const profLink = document.getElementById('summaryProfileLink');
+                    if (profLink) profLink.href = `/client-details?id=${client.id}`;
+                    const summaryCard = document.getElementById('clientSummaryCard');
+                    if (summaryCard) {
+                        summaryCard.classList.remove('hidden');
+                        summaryCard.classList.add('flex');
+                    }
                 }
             }
 
             // Open modal
             const modal = document.getElementById('invoiceModal');
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
-            document.body.style.overflow = 'hidden';
+            if (modal) {
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+                document.body.style.overflow = 'hidden';
+            }
 
-            renderInvoiceLineRows();
-            fetchActiveItemsCatalog();
+            // Preload line items
+            await fetchActiveItemsCatalog();
+            const rowsContainer = document.getElementById('invoiceLineRowsContainer');
+            if (rowsContainer) {
+                rowsContainer.innerHTML = '';
+                if (fullInv.items && fullInv.items.length > 0) {
+                    fullInv.items.forEach(it => {
+                        addPreloadedInvoiceLineRow(it);
+                    });
+                } else {
+                    addInvoiceLineRow();
+                }
+            }
+
+            updateAllLineTotalsAndGrandTotal();
+        }
+
+        function addPreloadedInvoiceLineRow(itemData) {
+            const container = document.getElementById('invoiceLineRowsContainer');
+            if (!container) return;
+
+            const rowId = `line_row_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
+            const row = document.createElement('div');
+            row.className = 'invoice-line-row space-y-xs bg-surface p-xs rounded-xl border border-outline-variant/60';
+            row.id = rowId;
+
+            const qty = itemData.quantity !== undefined ? itemData.quantity : 1;
+            const price = itemData.unitPrice !== undefined ? itemData.unitPrice : 0;
+            const total = itemData.lineTotal !== undefined ? itemData.lineTotal : (qty * price);
+
+            row.innerHTML = `
+                <div class="flex items-center gap-xs flex-wrap sm:flex-nowrap">
+                    <div class="w-24">
+                        <label class="block text-[11px] font-bold text-secondary mb-1">الكمية <span class="text-error">*</span></label>
+                        <input type="number" step="any" min="0.001" value="${qty}" class="line-qty-input w-full h-9 px-xs rounded-md bg-surface-container-low border border-outline-variant text-xs font-bold text-center dir-ltr focus:border-primary outline-none" placeholder="0" oninput="onLineInputsCalculated('${rowId}')" />
+                    </div>
+                    <div class="w-28">
+                        <label class="block text-[11px] font-bold text-secondary mb-1">الوحدة <span class="text-error">*</span></label>
+                        <select class="line-unit-select w-full h-9 px-xs rounded-md bg-surface-container-low border border-outline-variant text-xs font-bold text-right outline-none cursor-pointer" onchange="onLineInputsCalculated('${rowId}')">
+                            <option value="">-- اختر الوحدة --</option>
+                        </select>
+                        <span class="unit-hint-text text-[10px] text-secondary/70 hidden mt-0.5">اختر الصنف أولاً</span>
+                    </div>
+                    <div class="flex-1 min-w-[140px]">
+                        <label class="block text-[11px] font-bold text-secondary mb-1">الصنف <span class="text-error">*</span></label>
+                        <select class="line-item-select w-full h-9 px-xs rounded-md bg-surface-container-low border border-outline-variant text-xs font-bold text-right outline-none cursor-pointer" onchange="onLineItemChanged('${rowId}')">
+                            <option value="">-- اختر الصنف --</option>
+                        </select>
+                    </div>
+                    <div class="w-28">
+                        <label class="block text-[11px] font-bold text-secondary mb-1">السعر (ج.م) <span class="text-error">*</span></label>
+                        <input type="number" step="any" min="0" value="${price}" class="line-price-input w-full h-9 px-xs rounded-md bg-surface-container-low border border-outline-variant text-xs font-bold text-center dir-ltr focus:border-primary outline-none" placeholder="0.00" oninput="onLineInputsCalculated('${rowId}')" />
+                    </div>
+                    <div class="w-24 text-left">
+                        <label class="block text-[11px] font-bold text-secondary mb-1">الإجمالي</label>
+                        <span class="line-total-text text-xs font-bold text-primary dir-ltr block pt-1">${formatCurrency(total)}</span>
+                    </div>
+                    <div class="w-8 shrink-0 pt-4">
+                        <button type="button" onclick="removeInvoiceLineRow('${rowId}')" class="w-8 h-8 flex items-center justify-center text-error hover:bg-error/10 rounded-md transition-colors cursor-pointer" title="حذف البند">
+                            <span class="material-symbols-outlined text-base">delete</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="line-stock-info hidden text-[11px] font-medium px-sm py-1 rounded-md border"></div>
+            `;
+
+            container.appendChild(row);
+
+            // Populate item select
+            const itemSelect = row.querySelector('.line-item-select');
+            const unitSelect = row.querySelector('.line-unit-select');
+
+            const targetItemId = itemData.itemId;
+            let catalogWithItem = [...cachedActiveItems];
+            if (targetItemId && !catalogWithItem.some(i => String(i.id || i._id) === String(targetItemId)) && itemData.item) {
+                catalogWithItem.push(itemData.item);
+            }
+
+            itemSelect.innerHTML = '<option value="">-- اختر الصنف --</option>' + catalogWithItem.map(item => {
+                const idStr = String(item.id || item._id);
+                const isSel = idStr === String(targetItemId) ? 'selected' : '';
+                return `<option value="${idStr}" ${isSel}>${item.name}</option>`;
+            }).join('');
+
+            // Populate unit select
+            const selectedItem = catalogWithItem.find(i => String(i.id || i._id) === String(targetItemId));
+            if (selectedItem && Array.isArray(selectedItem.units)) {
+                unitSelect.innerHTML = selectedItem.units.map(u => {
+                    const isSel = String(u.id) === String(itemData.itemUnitId) ? 'selected' : '';
+                    return `<option value="${u.id}" data-rate="${u.conversionRate}" ${isSel}>${u.name}${u.isBaseUnit ? ' (أساسية)' : ''}</option>`;
+                }).join('');
+                unitSelect.disabled = false;
+            } else if (itemData.itemUnit) {
+                unitSelect.innerHTML = `<option value="${itemData.itemUnit.id}" selected>${itemData.itemUnit.name}</option>`;
+                unitSelect.disabled = false;
+            }
         }
 
         let cachedActiveItems = [];
@@ -1127,6 +1302,31 @@
                 exportBtn.href = `/api/export/invoice/${inv._id || inv.id}/image`;
             }
 
+            currentTransactionDetailsInvoice = inv;
+            const editBtn = document.getElementById('tdEditInvoiceBtn');
+            if (editBtn) {
+                const invDate = new Date(inv.date || inv.createdAt);
+                const diffMs = Date.now() - invDate.getTime();
+                const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+                const isPurchase = inv.type === 'purchase';
+                const isUnder30Days = diffDays <= MAX_INVOICE_EDIT_DAYS;
+
+                if (isPurchase) {
+                    editBtn.classList.remove('hidden');
+                    if (isUnder30Days) {
+                        editBtn.disabled = false;
+                        editBtn.classList.remove('opacity-40', 'cursor-not-allowed');
+                        editBtn.title = 'تعديل الفاتورة وبنودها';
+                    } else {
+                        editBtn.disabled = true;
+                        editBtn.classList.add('opacity-40', 'cursor-not-allowed');
+                        editBtn.title = `لا يمكن تعديل فاتورة مضى عليها أكثر من ${MAX_INVOICE_EDIT_DAYS} يومًا لحماية السجل المحاسبي`;
+                    }
+                } else {
+                    editBtn.classList.add('hidden');
+                }
+            }
+
             // Render items breakdown if available
             const itemsContainer = document.getElementById('tdItemsBreakdownContainer');
             const itemsBody = document.getElementById('tdItemsBreakdownBody');
@@ -1155,6 +1355,14 @@
             modal.classList.add('hidden');
             modal.classList.remove('flex');
             document.body.style.overflow = '';
+            currentTransactionDetailsInvoice = null;
+        }
+
+        function editCurrentInvoiceFromDetails() {
+            if (!currentTransactionDetailsInvoice) return;
+            const inv = currentTransactionDetailsInvoice;
+            closeTransactionDetails();
+            editInvoice(inv._id || inv.id);
         }
 
         document.getElementById('transactionDetailsModal').addEventListener('click', function (e) {
@@ -1448,6 +1656,10 @@
             if (paidInput) paidInput.value = '';
             const notesInput = document.getElementById('invoiceNotes');
             if (notesInput) notesInput.value = '';
+            const modalTitle = document.getElementById('modalTitle');
+            if (modalTitle) modalTitle.textContent = 'إضافة فاتورة جديدة';
+            const submitBtnText = document.getElementById('submitButtonText');
+            if (submitBtnText) submitBtnText.textContent = 'حفظ الفاتورة';
         }
 
         document.getElementById('invoiceModal').addEventListener('click', function (e) {
@@ -1666,43 +1878,41 @@
             let discountType = undefined;
             let discountValue = undefined;
 
-            if (!invoiceId) {
-                const rows = Array.from(document.querySelectorAll('#invoiceLineRowsContainer .invoice-line-row'));
+            const rows = Array.from(document.querySelectorAll('#invoiceLineRowsContainer .invoice-line-row'));
 
-                itemsPayload = [];
-                for (let i = 0; i < rows.length; i++) {
-                    const row = rows[i];
-                    const itemSelect = row.querySelector('.line-item-select');
-                    const unitSelect = row.querySelector('.line-unit-select');
-                    const qtyInput = row.querySelector('.line-qty-input');
-                    const priceInput = row.querySelector('.line-price-input');
+            itemsPayload = [];
+            for (let i = 0; i < rows.length; i++) {
+                const row = rows[i];
+                const itemSelect = row.querySelector('.line-item-select');
+                const unitSelect = row.querySelector('.line-unit-select');
+                const qtyInput = row.querySelector('.line-qty-input');
+                const priceInput = row.querySelector('.line-price-input');
 
-                    const itemId = itemSelect ? parseInt(itemSelect.value) : 0;
-                    const itemUnitId = unitSelect ? parseInt(unitSelect.value) : 0;
-                    const quantity = qtyInput ? parseFloat(qtyInput.value) || 0 : 0;
-                    const unitPrice = priceInput ? parseFloat(priceInput.value) || 0 : 0;
+                const itemId = itemSelect ? parseInt(itemSelect.value) : 0;
+                const itemUnitId = unitSelect ? parseInt(unitSelect.value) : 0;
+                const quantity = qtyInput ? parseFloat(qtyInput.value) || 0 : 0;
+                const unitPrice = priceInput ? parseFloat(priceInput.value) || 0 : 0;
 
-                    // Skip empty rows (where no item is selected)
-                    if (!itemId) continue;
+                // Skip empty rows (where no item is selected)
+                if (!itemId) continue;
 
-                    if (!itemUnitId || quantity <= 0) {
-                        showToast(`الرجاء استكمال بيانات الوحدة والكمية للبند رقم ${i + 1}`, 'warning');
-                        return;
-                    }
-
-                    itemsPayload.push({ itemId, itemUnitId, quantity, unitPrice });
-                }
-
-                if (itemsPayload.length === 0) {
-                    showToast('يجب إدخال بند واحد على الأقل بفاتورة الشراء', 'warning');
+                if (!itemUnitId || quantity <= 0) {
+                    showToast(`الرجاء استكمال بيانات الوحدة والكمية للبند رقم ${i + 1}`, 'warning');
                     return;
                 }
 
-                const discountTypeRadio = document.querySelector('input[name="discountType"]:checked');
-                discountType = discountTypeRadio ? discountTypeRadio.value : 'percentage';
-                const discountValInput = document.getElementById('discountValue');
-                discountValue = discountValInput ? parseFloat(discountValInput.value) || 0 : 0;
+                itemsPayload.push({ itemId, itemUnitId, quantity, unitPrice });
             }
+
+            if (itemsPayload.length === 0) {
+                showToast('يجب إدخال بند واحد على الأقل بفاتورة الشراء', 'warning');
+                return;
+            }
+
+            const discountTypeRadio = document.querySelector('input[name="discountType"]:checked');
+            discountType = discountTypeRadio ? discountTypeRadio.value : 'percentage';
+            const discountValInput = document.getElementById('discountValue');
+            discountValue = discountValInput ? parseFloat(discountValInput.value) || 0 : 0;
 
             const submitBtn = document.getElementById('submitBtn');
             const submitBtnIcon = document.getElementById('submitBtnIcon');
@@ -1714,7 +1924,7 @@
                 submitBtn.disabled = true;
                 if (submitBtnIcon) submitBtnIcon.classList.add('hidden');
                 if (submitBtnSpinner) submitBtnSpinner.classList.remove('hidden');
-                if (submitBtnText) submitBtnText.textContent = 'جاري الحفظ...';
+                if (submitBtnText) submitBtnText.textContent = invoiceId ? 'جاري حفظ التعديلات...' : 'جاري الحفظ...';
             }
 
             try {
@@ -1722,33 +1932,40 @@
                 const paymentMethodVal = document.querySelector('input[name="paymentMethod"]:checked') ? document.querySelector('input[name="paymentMethod"]:checked').value : 'cash';
                 const notesVal = document.getElementById('invoiceNotes') ? document.getElementById('invoiceNotes').value.trim() : '';
 
-                // Prepare data object
-                const payload = {
-                    clientName: name,
-                    endClientName: endName || undefined,
-                    clientPhone: mobile || undefined,
-                    date: date || undefined,
-                    amount: parseFloat(amount) || 0,
-                    details: details || '-',
-                    address: address || '-',
-                    paidAmount: paidAmountVal,
-                    paymentMethod: paymentMethodVal,
-                    notes: notesVal
-                };
-
-                // If updating, send PATCH; if creating, send POST
+                // If updating, send PUT; if creating, send POST
                 let res;
                 if (invoiceId) {
-                    // Update existing invoice
+                    const updatePayload = {
+                        client: clientId || undefined,
+                        endClientId: endClientId || undefined,
+                        endClientName: endName || undefined,
+                        date: date || undefined,
+                        amount: parseFloat(amount) || 0,
+                        address: address || '-',
+                        items: itemsPayload,
+                        discountType,
+                        discountValue,
+                        paidAmount: paidAmountVal,
+                        paymentMethod: paymentMethodVal,
+                        notes: notesVal
+                    };
                     res = await fetch(`/api/invoices/${invoiceId}`, {
-                        method: 'PATCH',
+                        method: 'PUT',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload)
+                        body: JSON.stringify(updatePayload)
                     });
                 } else {
-                    // Create new invoice
                     const createPayload = {
-                        ...payload,
+                        clientName: name,
+                        endClientName: endName || undefined,
+                        clientPhone: mobile || undefined,
+                        date: date || undefined,
+                        amount: parseFloat(amount) || 0,
+                        details: details || '-',
+                        address: address || '-',
+                        paidAmount: paidAmountVal,
+                        paymentMethod: paymentMethodVal,
+                        notes: notesVal,
                         client: clientId || undefined,
                         endClientId: endClientId || undefined,
                         type: 'purchase',
