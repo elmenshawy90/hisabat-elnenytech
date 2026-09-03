@@ -61,8 +61,8 @@
 
 
 </div>
-<!-- Stats Row (Interactive Filter Cards) -->
-<div class="grid grid-cols-1 md:grid-cols-2 gap-md mb-xl">
+<!-- Stats Row (Interactive Filter Cards + Net Status Card) -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-md mb-xl">
     <!-- Card 1: Credit Clients (عملاء لهم فلوس) -->
     <div id="cardFilterCredit" onclick="toggleBalanceFilter('credit')" class="bg-surface-container-lowest border border-outline-variant rounded-xl p-md flex items-center justify-between shadow-sm cursor-pointer hover:border-green-600/60 transition-all select-none group">
         <div class="flex flex-col gap-xs">
@@ -94,6 +94,23 @@
         </div>
         <div id="iconDebtCard" class="w-12 h-12 rounded-xl bg-tertiary-fixed text-on-tertiary-fixed flex items-center justify-center group-hover:scale-105 transition-transform shrink-0">
             <span class="material-symbols-outlined text-2xl">payments</span>
+        </div>
+    </div>
+
+    <!-- Card 3: Net Clients Status (إجمالي وضع العملاء - للعرض فقط) -->
+    <div id="cardNetStatus" class="bg-surface-container-lowest border border-outline-variant rounded-xl p-md flex items-center justify-between shadow-sm select-none">
+        <div class="flex flex-col gap-xs">
+            <div class="flex items-center gap-xs">
+                <span class="font-label-md text-label-md text-secondary font-bold">إجمالي وضع العملاء</span>
+                <span id="statNetBadge" class="text-[10px] bg-surface-container font-bold px-2 py-0.5 rounded-full text-secondary">صافي الفرق</span>
+            </div>
+            <div class="flex items-baseline gap-sm">
+                <span class="font-headline-md text-headline-md font-bold text-primary" id="statNetTotal">0.00 ج.م</span>
+            </div>
+            <span class="text-xs font-bold" id="statNetDirection">جاري الحساب...</span>
+        </div>
+        <div id="iconNetCard" class="w-12 h-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+            <span class="material-symbols-outlined text-2xl">balance</span>
         </div>
     </div>
 </div>
@@ -152,6 +169,13 @@
                     </span>
                     <span class="material-symbols-outlined text-primary text-base font-bold sort-check hidden" id="check-balance">check</span>
                 </button>
+                <button type="button" onclick="selectSortOption('updatedAt', 'آخر تعديل')" class="sort-option w-full px-md py-2.5 flex items-center justify-between text-xs hover:bg-primary/10 transition-colors text-right font-medium text-on-surface" data-value="updatedAt">
+                    <span class="flex items-center gap-xs">
+                        <span class="material-symbols-outlined text-base text-secondary">update</span>
+                        آخر تعديل
+                    </span>
+                    <span class="material-symbols-outlined text-primary text-base font-bold sort-check hidden" id="check-updatedAt">check</span>
+                </button>
             </div>
         </div>
 
@@ -198,11 +222,17 @@
         <span class="material-symbols-outlined text-sm font-bold text-primary" id="sortHeaderIcon_createdAt">arrow_downward</span>
     </div>
 </th>
+<th onclick="toggleHeaderSort('updatedAt')" class="px-lg py-md font-label-md text-label-md text-secondary cursor-pointer hover:bg-surface-container-high transition-colors">
+    <div class="flex items-center justify-between gap-xs">
+        <span>آخر تعديل</span>
+        <span class="material-symbols-outlined text-sm font-bold text-outline opacity-60" id="sortHeaderIcon_updatedAt">unfold_more</span>
+    </div>
+</th>
 <th class="px-lg py-md font-label-md text-label-md text-secondary text-center">الإجراءات</th>
 </tr>
 </thead>
 <tbody class="divide-y divide-outline-variant" id="clientsTableBody">
-<tr><td colspan="7" class="p-xl text-center text-secondary">جاري التحميل...</td></tr>
+<tr><td colspan="8" class="p-xl text-center text-secondary">جاري التحميل...</td></tr>
 
 </tbody>
 </table>
@@ -269,7 +299,7 @@
 
 <!-- Add Client Modal -->
 <div class="fixed inset-0 z-[100] hidden items-center justify-center bg-black/50 p-4" id="addClientModal">
-<div class="bg-white rounded-xl shadow-lg w-full max-w-md p-md md:p-xl">
+<div class="bg-white rounded-xl shadow-lg w-full max-w-md p-md md:p-xl max-h-[90vh] overflow-y-auto custom-scrollbar">
 <div class="flex flex-row justify-between items-center mb-lg border-b border-outline-variant pb-sm">
 <h2 class="font-headline-md text-headline-md font-bold text-on-surface">إضافة عميل جديد</h2>
 <button class="text-secondary hover:text-on-surface" onclick="closeAddClientModal()" type="button">
@@ -424,9 +454,13 @@ function sortClientsList(clients) {
             const balA = Number(a.balance) || 0;
             const balB = Number(b.balance) || 0;
             cmp = balA - balB;
+        } else if (currentSortField === 'updatedAt') {
+            const timeA = new Date(a.updatedAt || 0).getTime() || 0;
+            const timeB = new Date(b.updatedAt || 0).getTime() || 0;
+            cmp = timeA - timeB;
         } else {
-            const timeA = new Date(a.createdAt || a.updatedAt || 0).getTime() || (Number(a.id) || 0);
-            const timeB = new Date(b.createdAt || b.updatedAt || 0).getTime() || (Number(b.id) || 0);
+            const timeA = new Date(a.createdAt || 0).getTime() || (Number(a.id) || 0);
+            const timeB = new Date(b.createdAt || 0).getTime() || (Number(b.id) || 0);
             cmp = timeA - timeB;
         }
         return currentSortOrder === 'asc' ? cmp : -cmp;
@@ -474,6 +508,53 @@ function updateStats(responseData) {
     if (debtTotalEl) debtTotalEl.textContent = formatCurrency(debtTotal);
     const debtCountEl = document.getElementById('statDebtCount');
     if (debtCountEl) debtCountEl.textContent = `(${debtCount} عميل)`;
+
+    // Card 3: Net Clients Status
+    const netDiff = stats.netDifference !== undefined ? stats.netDifference : (debtTotal - creditTotal);
+    const absDiff = Math.abs(netDiff);
+    const statNetTotalEl = document.getElementById('statNetTotal');
+    const statNetBadgeEl = document.getElementById('statNetBadge');
+    const statNetDirectionEl = document.getElementById('statNetDirection');
+    const iconNetCardEl = document.getElementById('iconNetCard');
+
+    if (statNetTotalEl) statNetTotalEl.textContent = formatCurrency(absDiff);
+
+    if (netDiff > 0) {
+        // Debts on clients are higher -> Net owed to system
+        if (statNetTotalEl) statNetTotalEl.className = "font-headline-md text-headline-md font-bold text-tertiary";
+        if (statNetBadgeEl) {
+            statNetBadgeEl.className = "text-[10px] bg-tertiary/10 text-tertiary font-bold px-2 py-0.5 rounded-full";
+            statNetBadgeEl.textContent = "الديون أكبر";
+        }
+        if (statNetDirectionEl) {
+            statNetDirectionEl.className = "text-xs font-bold text-tertiary";
+            statNetDirectionEl.textContent = `صافي مستحق للنظام: ${formatCurrency(absDiff)}`;
+        }
+        if (iconNetCardEl) iconNetCardEl.className = "w-12 h-12 rounded-xl bg-tertiary-fixed text-on-tertiary-fixed flex items-center justify-center shrink-0";
+    } else if (netDiff < 0) {
+        // Credits to clients are higher -> Net owed to clients
+        if (statNetTotalEl) statNetTotalEl.className = "font-headline-md text-headline-md font-bold text-green-700";
+        if (statNetBadgeEl) {
+            statNetBadgeEl.className = "text-[10px] bg-green-100 text-green-800 font-bold px-2 py-0.5 rounded-full";
+            statNetBadgeEl.textContent = "المستحق للعملاء أكبر";
+        }
+        if (statNetDirectionEl) {
+            statNetDirectionEl.className = "text-xs font-bold text-green-700";
+            statNetDirectionEl.textContent = `صافي مستحق للعملاء: ${formatCurrency(absDiff)}`;
+        }
+        if (iconNetCardEl) iconNetCardEl.className = "w-12 h-12 rounded-xl bg-green-100 text-green-700 flex items-center justify-center shrink-0";
+    } else {
+        if (statNetTotalEl) statNetTotalEl.className = "font-headline-md text-headline-md font-bold text-secondary";
+        if (statNetBadgeEl) {
+            statNetBadgeEl.className = "text-[10px] bg-surface-container font-bold px-2 py-0.5 rounded-full text-secondary";
+            statNetBadgeEl.textContent = "متوازن";
+        }
+        if (statNetDirectionEl) {
+            statNetDirectionEl.className = "text-xs font-bold text-secondary";
+            statNetDirectionEl.textContent = "الرصيد متوازن (0.00 ج.م)";
+        }
+        if (iconNetCardEl) iconNetCardEl.className = "w-12 h-12 rounded-xl bg-surface-container text-secondary flex items-center justify-center shrink-0";
+    }
 }
 
 function toggleBalanceFilter(type) {
@@ -515,6 +596,7 @@ function toggleHeaderSort(field) {
 
     const labelMap = {
         'createdAt': 'تاريخ الإضافة',
+        'updatedAt': 'آخر تعديل',
         'name': 'الاسم',
         'phone': 'رقم الهاتف',
         'pageNumber': 'رقم الصفحة',
@@ -530,7 +612,7 @@ function toggleHeaderSort(field) {
 }
 
 function updateHeaderSortIcons() {
-    ['name', 'phone', 'pageNumber', 'balance', 'createdAt'].forEach(field => {
+    ['name', 'phone', 'pageNumber', 'balance', 'createdAt', 'updatedAt'].forEach(field => {
         const icon = document.getElementById(`sortHeaderIcon_${field}`);
         if (!icon) return;
         if (currentSortField === field) {
@@ -629,7 +711,7 @@ function renderClients(clients, resetPage = false) {
     const totalRecords = clients.length;
 
     if (totalRecords === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" class="p-xl text-center text-secondary">لا يوجد عملاء مسجلين</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="8" class="p-xl text-center text-secondary">لا يوجد عملاء مسجلين</td></tr>';
         renderPaginationControls({
             containerId: 'clientsPaginationControls',
             infoId: 'clientsPaginationInfo',
@@ -680,11 +762,11 @@ function renderClients(clients, resetPage = false) {
                 <td class="px-lg py-md">
                     <span class="font-headline-sm text-headline-sm ${balanceColor}">${formatCurrency(clientBalance)}</span>
                 </td>
-                <td class="px-lg py-md">
-                    <div class="flex flex-col">
-                        <span class="font-body-md text-body-md text-on-surface">${formatDate(client.lastTransaction)}</span>
-                        <span class="font-label-sm text-label-sm text-outline">${client.lastTransactionNote || client.notes || ''}</span>
-                    </div>
+                <td class="px-lg py-md font-body-md text-body-md text-secondary">
+                    ${formatDate(client.createdAt)}
+                </td>
+                <td class="px-lg py-md font-body-md text-body-md text-secondary">
+                    ${formatDate(client.updatedAt)}
                 </td>
                 <td class="px-lg py-md">
                     <div class="flex items-center justify-center gap-sm">
@@ -747,7 +829,7 @@ function selectSortOption(field, label) {
     document.getElementById('sortSelectedLabel').textContent = label;
     
     // Update checkmarks
-    ['createdAt', 'name', 'phone', 'balance'].forEach(f => {
+    ['createdAt', 'updatedAt', 'name', 'phone', 'pageNumber', 'balance'].forEach(f => {
         const chk = document.getElementById(`check-${f}`);
         if (chk) chk.classList.toggle('hidden', f !== field);
     });
@@ -1018,6 +1100,15 @@ newClientNameInput.addEventListener('focus', (e) => {
 });
 newClientNameInput.addEventListener('blur', validateClientNameDuplicate);
 
+// Task 5: Tab closes autocomplete dropdown while allowing natural focus to next element
+newClientNameInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Tab') {
+        if (newClientNameDropdown) {
+            newClientNameDropdown.classList.add('hidden');
+        }
+    }
+});
+
 document.addEventListener('click', (e) => {
     if (newClientNameDropdown && !newClientNameInput.contains(e.target) && !newClientNameDropdown.contains(e.target)) {
         newClientNameDropdown.classList.add('hidden');
@@ -1070,21 +1161,6 @@ function closeAddClientModal() {
     modal.classList.remove('flex');
     document.body.style.overflow = '';
     document.getElementById('addClientForm').reset();
-    
-    const obSection = document.getElementById('openingBalanceSection');
-    const obArrow = document.getElementById('openingBalanceArrow');
-    if (obSection) obSection.classList.add('hidden');
-    if (obArrow) obArrow.classList.remove('rotate-180');
-    const obErr = document.getElementById('openingBalanceTypeError');
-    if (obErr) obErr.classList.add('hidden');
-}
-
-function closeAddClientModal() {
-    const modal = document.getElementById('addClientModal');
-    modal.classList.add('hidden');
-    modal.classList.remove('flex');
-    document.body.style.overflow = '';
-    document.getElementById('addClientForm').reset();
     newClientNameError.classList.add('hidden');
     newClientNameInput.classList.remove('border-error');
     newClientPhoneError.classList.add('hidden');
@@ -1092,6 +1168,14 @@ function closeAddClientModal() {
     newClientPhoneInput.classList.remove('border-error');
     submitBtn.disabled = false;
     submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+    submitBtn.innerHTML = 'حفظ العميل';
+
+    const obSection = document.getElementById('openingBalanceSection');
+    const obArrow = document.getElementById('openingBalanceArrow');
+    if (obSection) obSection.classList.add('hidden');
+    if (obArrow) obArrow.classList.remove('rotate-180');
+    const obErr = document.getElementById('openingBalanceTypeError');
+    if (obErr) obErr.classList.add('hidden');
 }
 
 const editClientNameInput = document.getElementById('editClientName');
@@ -1175,6 +1259,13 @@ async function submitEditClientForm(e) {
         return;
     }
 
+    const editSubmitBtn = document.querySelector('#editClientForm button[type="submit"]');
+    const originalEditBtnHtml = editSubmitBtn ? editSubmitBtn.innerHTML : 'حفظ التعديلات';
+    if (editSubmitBtn) {
+        editSubmitBtn.disabled = true;
+        editSubmitBtn.innerHTML = '<span class="material-symbols-outlined text-sm animate-spin">progress_activity</span> <span>جاري الحفظ...</span>';
+    }
+
     try {
         const res = await fetch(`/api/clients/${clientId}`, {
             method: 'PUT',
@@ -1214,6 +1305,11 @@ async function submitEditClientForm(e) {
     } catch (err) {
         console.error(err);
         showToast(err.message || 'فشل في تحديث العميل', 'error');
+    } finally {
+        if (editSubmitBtn) {
+            editSubmitBtn.disabled = false;
+            editSubmitBtn.innerHTML = originalEditBtnHtml;
+        }
     }
 }
 
@@ -1257,8 +1353,14 @@ document.getElementById('addClientForm').addEventListener('submit', async (e) =>
         return;
     }
     
-    try {
+    const submitBtn = document.querySelector('#addClientForm button[type="submit"]');
+    const originalBtnContent = submitBtn ? submitBtn.innerHTML : 'حفظ العميل';
+    if (submitBtn) {
         submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="material-symbols-outlined text-sm animate-spin">progress_activity</span> <span>جاري الحفظ...</span>';
+    }
+    
+    try {
         const pageNumber = document.getElementById('newClientPageNumber').value.trim();
         const payload = {
             name,
@@ -1294,7 +1396,10 @@ document.getElementById('addClientForm').addEventListener('submit', async (e) =>
     } catch (err) {
         showToast('فشل في إضافة العميل', 'error');
     } finally {
-        submitBtn.disabled = false;
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalBtnContent;
+        }
     }
 });
 

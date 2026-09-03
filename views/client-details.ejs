@@ -322,7 +322,33 @@
                 <label id="invoiceAmountLabel" class="font-label-md text-label-md text-on-surface-variant mb-xs">المبلغ المستحق <span class="text-error">*</span></label>
                 <div class="relative">
                     <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline">payments</span>
-                    <input class="w-full h-12 pr-10 pl-md rounded-xl bg-surface-container-low border border-outline-variant form-input-focus transition-all text-right font-bold text-primary" id="invoiceAmount" placeholder="0.00" type="number" step="any" required />
+                    <input class="w-full h-12 pr-10 pl-md rounded-xl bg-surface-container-low border border-outline-variant form-input-focus transition-all text-right font-bold text-primary" id="invoiceAmount" placeholder="0.00" type="number" step="any" oninput="if(currentTransactionType === 'payment') updatePaymentCalculations();" required />
+                </div>
+            </div>
+
+            <!-- Payment Discount Section (Shown only for payment) -->
+            <div id="paymentDiscountSection" class="hidden bg-surface-container-lowest border border-outline-variant rounded-xl p-sm space-y-xs">
+                <div class="flex items-center justify-between gap-sm">
+                    <div class="flex items-center gap-xs">
+                        <span class="text-xs font-bold text-on-surface-variant">الخصم:</span>
+                        <div class="flex items-center gap-xs bg-surface-container-low p-1 rounded-lg border border-outline-variant">
+                            <label class="flex items-center gap-1 text-[11px] font-bold cursor-pointer px-1.5 py-0.5 rounded select-none">
+                                <input type="radio" name="paymentDiscountType" value="percentage" onchange="updatePaymentCalculations()" class="accent-primary" />
+                                <span>نسبة %</span>
+                            </label>
+                            <label class="flex items-center gap-1 text-[11px] font-bold cursor-pointer px-1.5 py-0.5 rounded select-none">
+                                <input type="radio" name="paymentDiscountType" value="fixed" checked onchange="updatePaymentCalculations()" class="accent-primary" />
+                                <span>مبلغ ثابت</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="w-28">
+                        <input type="number" step="any" min="0" id="paymentDiscountValue" placeholder="0" class="w-full h-8 px-xs rounded-md bg-surface-container-low border border-outline-variant text-xs font-bold text-center dir-ltr focus:border-primary outline-none" oninput="updatePaymentCalculations()" />
+                    </div>
+                </div>
+                <div class="flex items-center justify-between pt-xs font-bold text-xs border-t border-outline-variant/40">
+                    <span class="text-on-surface-variant">المبلغ الصافي المسدد:</span>
+                    <span id="paymentNetTotalText" class="text-primary text-sm font-bold dir-ltr">0.00 ج.م</span>
                 </div>
             </div>
 
@@ -560,7 +586,7 @@
                 </div>
             </div>
             <div class="flex flex-col md:flex-row items-center gap-md pt-md border-t border-outline-variant">
-                <button class="w-full md:w-auto bg-primary text-on-primary h-12 px-xl rounded-full font-label-md text-label-md hover:opacity-90 active:scale-95 transition-all" type="submit">حفظ التعديلات</button>
+                <button id="editClientSubmitBtn" class="w-full md:w-auto bg-primary text-on-primary h-12 px-xl rounded-full font-label-md text-label-md hover:opacity-90 active:scale-95 transition-all flex items-center justify-center gap-xs font-bold" type="submit">حفظ التعديلات</button>
                 <button class="w-full md:w-auto border border-outline-variant text-on-surface h-12 px-xl rounded-full font-label-md text-label-md hover:bg-surface-container-low transition-all" type="button" onclick="closeEditClientModal()">إلغاء</button>
             </div>
         </form>
@@ -1590,8 +1616,11 @@ function openInvoiceModal(type = 'purchase') {
     
     // Update labels
     const title = document.getElementById('modalTitle');
+    const amountLabel = document.getElementById('invoiceAmountLabel');
     const amountContainer = document.getElementById('invoiceAmountContainer');
     const amountInput = document.getElementById('invoiceAmount');
+    const paymentDiscountSection = document.getElementById('paymentDiscountSection');
+    const paymentDiscountValInput = document.getElementById('paymentDiscountValue');
     const purchaseItemsContainer = document.getElementById('purchaseItemsContainer');
     const addressLabel = document.getElementById('addressLabel');
     const detailsLabel = document.getElementById('detailsLabel');
@@ -1602,12 +1631,18 @@ function openInvoiceModal(type = 'purchase') {
     document.getElementById('endClientId').value = '';
     document.getElementById('endClientName').value = '';
     document.getElementById('endClientDropdown').classList.add('hidden');
+    if (paymentDiscountValInput) paymentDiscountValInput.value = '';
 
     if (type === 'payment') {
         title.textContent = 'تسديد دفعة';
+        if (amountLabel) amountLabel.innerHTML = 'المبلغ المدفوع <span class="text-error">*</span>';
+        if (paymentDiscountSection) paymentDiscountSection.classList.remove('hidden');
+        const payDiscountFixedRadio = document.querySelector('input[name="paymentDiscountType"][value="fixed"]');
+        if (payDiscountFixedRadio) payDiscountFixedRadio.checked = true;
         amountContainer.classList.remove('hidden');
         amountInput.readOnly = false;
         amountInput.required = true;
+        updatePaymentCalculations();
         purchaseItemsContainer.classList.add('hidden');
         addressLabel.textContent = 'المستلم / ملاحظات';
         if (detailsInputContainer) detailsInputContainer.classList.remove('hidden');
@@ -1615,6 +1650,8 @@ function openInvoiceModal(type = 'purchase') {
         submitBtn.textContent = 'حفظ السداد';
     } else {
         title.textContent = 'إضافة فاتورة جديدة';
+        if (amountLabel) amountLabel.innerHTML = 'المبلغ المستحق <span class="text-error">*</span>';
+        if (paymentDiscountSection) paymentDiscountSection.classList.add('hidden');
         amountContainer.classList.add('hidden');
         amountInput.readOnly = true;
         amountInput.required = false;
@@ -1675,6 +1712,7 @@ function addInvoiceLineRow() {
                 <select class="line-unit-select w-full h-9 px-xs rounded-md bg-surface-container-low border border-outline-variant text-xs font-bold text-right outline-none cursor-pointer" disabled onchange="onLineInputsCalculated('${rowId}')">
                     <option value="">-- اختر الوحدة --</option>
                 </select>
+                <span class="unit-hint-text text-[10px] text-secondary/70 block mt-0.5">اختر الصنف أولاً</span>
             </div>
 
             <!-- 3. Item Select -->
@@ -1758,11 +1796,13 @@ function onLineItemChanged(rowId) {
 
     const itemSelect = row.querySelector('.line-item-select');
     const unitSelect = row.querySelector('.line-unit-select');
+    const unitHint = row.querySelector('.unit-hint-text');
     const itemId = itemSelect ? parseInt(itemSelect.value) : null;
 
     if (!itemId) {
         unitSelect.innerHTML = '<option value="">-- اختر الوحدة --</option>';
         unitSelect.disabled = true;
+        if (unitHint) unitHint.classList.remove('hidden');
         onLineInputsCalculated(rowId);
         return;
     }
@@ -1771,9 +1811,11 @@ function onLineItemChanged(rowId) {
     if (selectedItem && Array.isArray(selectedItem.units)) {
         unitSelect.innerHTML = selectedItem.units.map(u => `<option value="${u.id}" data-rate="${u.conversionRate}">${u.name}${u.isBaseUnit ? ' (أساسية)' : ''}</option>`).join('');
         unitSelect.disabled = false;
+        if (unitHint) unitHint.classList.add('hidden');
     } else {
         unitSelect.innerHTML = '<option value="">-- اختر الوحدة --</option>';
         unitSelect.disabled = true;
+        if (unitHint) unitHint.classList.remove('hidden');
     }
 
     tryAutoFillDefaultPrice(rowId);
@@ -1877,6 +1919,30 @@ function updateAllLineTotalsAndGrandTotal() {
     if (remainingEl) {
         remainingEl.textContent = formatCurrency(remainingAfterPaid);
     }
+}
+
+function updatePaymentCalculations() {
+    const amountInput = document.getElementById('invoiceAmount');
+    const rawAmount = amountInput ? parseFloat(amountInput.value) || 0 : 0;
+    const discountTypeRadio = document.querySelector('input[name="paymentDiscountType"]:checked');
+    const discountType = discountTypeRadio ? discountTypeRadio.value : 'percentage';
+    const discountValInput = document.getElementById('paymentDiscountValue');
+    const discountVal = discountValInput ? parseFloat(discountValInput.value) || 0 : 0;
+
+    let discountAmount = 0;
+    if (discountVal > 0) {
+        if (discountType === 'percentage') {
+            const pct = Math.min(Math.max(discountVal, 0), 100);
+            discountAmount = Math.round((rawAmount * (pct / 100) + Number.EPSILON) * 100) / 100;
+        } else if (discountType === 'fixed') {
+            discountAmount = Math.round((discountVal + Number.EPSILON) * 100) / 100;
+        }
+    }
+    discountAmount = Math.min(discountAmount, rawAmount);
+    const netTotal = Math.round((rawAmount - discountAmount + Number.EPSILON) * 100) / 100;
+
+    const netTotalEl = document.getElementById('paymentNetTotalText');
+    if (netTotalEl) netTotalEl.textContent = formatCurrency(netTotal);
 }
 
 function closeInvoiceModal() {
@@ -2020,6 +2086,10 @@ document.getElementById('invoiceForm').addEventListener('submit', async function
             showToast('الرجاء إكمال الحقول الإجبارية', 'warning');
             return;
         }
+        const payDiscountTypeRadio = document.querySelector('input[name="paymentDiscountType"]:checked');
+        discountType = payDiscountTypeRadio ? payDiscountTypeRadio.value : 'percentage';
+        const payDiscountValInput = document.getElementById('paymentDiscountValue');
+        discountValue = payDiscountValInput ? parseFloat(payDiscountValInput.value) || 0 : 0;
     }
     
     const submitBtn = document.getElementById('submitBtn');
@@ -2140,6 +2210,13 @@ document.getElementById('editClientForm').addEventListener('submit', async funct
         return;
     }
 
+    const editSubmitBtn = document.getElementById('editClientSubmitBtn') || document.querySelector('#editClientForm button[type="submit"]');
+    const originalEditBtnHtml = editSubmitBtn ? editSubmitBtn.innerHTML : 'حفظ التعديلات';
+    if (editSubmitBtn) {
+        editSubmitBtn.disabled = true;
+        editSubmitBtn.innerHTML = '<span class="material-symbols-outlined text-sm animate-spin">progress_activity</span> <span>جاري الحفظ...</span>';
+    }
+
     try {
         const res = await fetch(`/api/clients/${clientId}`, {
             method: 'PUT',
@@ -2183,6 +2260,11 @@ document.getElementById('editClientForm').addEventListener('submit', async funct
     } catch (err) {
         console.error(err);
         showToast(err.message || 'فشل في تحديث بيانات العميل', 'error');
+    } finally {
+        if (editSubmitBtn) {
+            editSubmitBtn.disabled = false;
+            editSubmitBtn.innerHTML = originalEditBtnHtml;
+        }
     }
 });
 

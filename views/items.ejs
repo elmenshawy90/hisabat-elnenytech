@@ -37,33 +37,39 @@
     </div>
 </div>
 
-<!-- Stats Row -->
-<div class="grid grid-cols-1 md:grid-cols-3 gap-md mb-xl">
-    <div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-md flex items-center justify-between shadow-sm">
-        <div class="flex flex-col">
-            <span class="font-label-md text-label-md text-secondary">إجمالي الأصناف</span>
-            <span class="font-headline-md text-headline-md text-primary font-bold" id="statTotalItems">--</span>
+<!-- Stats Row (Interactive Filter Cards) -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-md mb-xl">
+    <!-- Card 1: Total Active Items (إجمالي الأصناف) -->
+    <div id="cardFilterAllItems" onclick="toggleItemsFilter('all')" class="bg-surface-container-lowest border border-outline-variant rounded-xl p-md flex items-center justify-between shadow-sm cursor-pointer hover:border-primary/60 transition-all select-none group">
+        <div class="flex flex-col gap-xs">
+            <div class="flex items-center gap-xs">
+                <span class="font-label-md text-label-md text-secondary font-bold">إجمالي الأصناف</span>
+                <span class="text-[10px] bg-primary/10 text-primary font-bold px-2 py-0.5 rounded-full">(نشطة)</span>
+            </div>
+            <div class="flex items-baseline gap-sm">
+                <span class="font-headline-md text-headline-md text-primary font-bold" id="statTotalItems">--</span>
+                <span class="text-xs text-secondary font-bold" id="statTotalItemsLabel">صنف</span>
+            </div>
         </div>
-        <div class="w-12 h-12 rounded-lg bg-primary-fixed flex items-center justify-center text-on-primary-fixed">
-            <span class="material-symbols-outlined">inventory_2</span>
-        </div>
-    </div>
-    <div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-md flex items-center justify-between shadow-sm">
-        <div class="flex flex-col">
-            <span class="font-label-md text-label-md text-secondary">أصناف بالمخزون</span>
-            <span class="font-headline-md text-headline-md text-green-600 font-bold" id="statInStock">--</span>
-        </div>
-        <div class="w-12 h-12 rounded-lg bg-green-100 flex items-center justify-center text-green-700">
-            <span class="material-symbols-outlined">warehouse</span>
+        <div id="iconAllItemsCard" class="w-12 h-12 rounded-xl bg-primary-fixed flex items-center justify-center text-on-primary-fixed group-hover:scale-105 transition-transform shrink-0">
+            <span class="material-symbols-outlined text-2xl">inventory_2</span>
         </div>
     </div>
-    <div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-md flex items-center justify-between shadow-sm">
-        <div class="flex flex-col">
-            <span class="font-label-md text-label-md text-secondary">أصناف بها عجز/صفر</span>
-            <span class="font-headline-md text-headline-md text-tertiary font-bold" id="statZeroStock">--</span>
+
+    <!-- Card 2: Low Stock Items (أصناف قاربت على النفاد) -->
+    <div id="cardFilterLowStock" onclick="toggleItemsFilter('lowStock')" class="bg-surface-container-lowest border border-outline-variant rounded-xl p-md flex items-center justify-between shadow-sm cursor-pointer hover:border-tertiary/60 transition-all select-none group">
+        <div class="flex flex-col gap-xs">
+            <div class="flex items-center gap-xs">
+                <span class="font-label-md text-label-md text-secondary font-bold">أصناف قاربت على النفاد</span>
+                <span class="text-[10px] bg-tertiary/10 text-tertiary font-bold px-2 py-0.5 rounded-full">(أقل من 10 وحدات)</span>
+            </div>
+            <div class="flex items-baseline gap-sm">
+                <span class="font-headline-md text-headline-md text-tertiary font-bold" id="statLowStock">--</span>
+                <span class="text-xs text-secondary font-bold" id="statLowStockLabel">صنف بحاجة لتوريد</span>
+            </div>
         </div>
-        <div class="w-12 h-12 rounded-lg bg-tertiary-fixed flex items-center justify-center text-on-tertiary-fixed">
-            <span class="material-symbols-outlined">warning</span>
+        <div id="iconLowStockCard" class="w-12 h-12 rounded-xl bg-tertiary-fixed text-on-tertiary-fixed flex items-center justify-center group-hover:scale-105 transition-transform shrink-0">
+            <span class="material-symbols-outlined text-2xl">warning</span>
         </div>
     </div>
 </div>
@@ -330,15 +336,42 @@ function debounceSearch() {
     }, 300);
 }
 
+const LOW_STOCK_THRESHOLD = 10;
+let activeItemFilter = null; // null, 'all', or 'lowStock'
+
+function toggleItemsFilter(filterType) {
+    if (activeItemFilter === filterType) {
+        activeItemFilter = null;
+    } else {
+        activeItemFilter = filterType;
+    }
+    updateItemsFilterUI();
+    renderItemsTable();
+}
+
+function updateItemsFilterUI() {
+    const cardAll = document.getElementById('cardFilterAllItems');
+    const cardLow = document.getElementById('cardFilterLowStock');
+    if (!cardAll || !cardLow) return;
+
+    if (activeItemFilter === 'all') {
+        cardAll.className = "bg-primary/5 border-2 border-primary rounded-xl p-md flex items-center justify-between shadow-md cursor-pointer transition-all select-none group ring-2 ring-primary/20";
+        cardLow.className = "bg-surface-container-lowest border border-outline-variant rounded-xl p-md flex items-center justify-between shadow-sm cursor-pointer hover:border-tertiary/60 opacity-60 transition-all select-none group";
+    } else if (activeItemFilter === 'lowStock') {
+        cardAll.className = "bg-surface-container-lowest border border-outline-variant rounded-xl p-md flex items-center justify-between shadow-sm cursor-pointer hover:border-primary/60 opacity-60 transition-all select-none group";
+        cardLow.className = "bg-tertiary-fixed/20 border-2 border-tertiary rounded-xl p-md flex items-center justify-between shadow-md cursor-pointer transition-all select-none group ring-2 ring-tertiary/20";
+    } else {
+        cardAll.className = "bg-surface-container-lowest border border-outline-variant rounded-xl p-md flex items-center justify-between shadow-sm cursor-pointer hover:border-primary/60 transition-all select-none group";
+        cardLow.className = "bg-surface-container-lowest border border-outline-variant rounded-xl p-md flex items-center justify-between shadow-sm cursor-pointer hover:border-tertiary/60 transition-all select-none group";
+    }
+}
+
 async function loadItems() {
-    const tableBody = document.getElementById('itemsTableBody');
     const loadingEl = document.getElementById('itemsLoading');
-    const emptyEl = document.getElementById('itemsEmpty');
     const searchVal = document.getElementById('searchInput').value.trim();
     const showInactive = document.getElementById('showInactiveToggle').checked;
 
     loadingEl.classList.remove('hidden');
-    emptyEl.classList.add('hidden');
 
     try {
         let url = `/api/items?includeInactive=${showInactive}`;
@@ -354,90 +387,7 @@ async function loadItems() {
         allItemsData = json.data || [];
 
         updateStats(allItemsData);
-
-        if (allItemsData.length === 0) {
-            tableBody.innerHTML = '';
-            loadingEl.classList.add('hidden');
-            emptyEl.classList.remove('hidden');
-            return;
-        }
-
-        tableBody.innerHTML = allItemsData.map(item => {
-            const baseUnitName = item.baseUnit ? item.baseUnit.name : 'غير محددة';
-            const isActive = item.isActive !== false;
-            
-            const unitsBadges = (item.units || []).map(u => {
-                if (u.isBaseUnit) {
-                    return `<span class="bg-primary/10 text-primary px-2 py-0.5 rounded-full font-bold text-[11px]">${u.name} (أساسية)</span>`;
-                }
-                const rate = Number(u.conversionRate);
-                // Show inverted: "1 base = X this unit"
-                const invertedRate = rate > 0 ? (1 / rate) : 0;
-                const formattedInverted = Number(invertedRate.toFixed(4));
-                return `<span class="bg-surface-container text-secondary px-2 py-0.5 rounded-full font-bold text-[11px]">${u.name} (1 ${baseUnitName} = ${formattedInverted})</span>`;
-            }).join(' ');
-
-            const stockNum = Number(item.currentStock) || 0;
-            const stockColorClass = stockNum > 0 ? 'text-green-600 font-bold' : (stockNum < 0 ? 'text-error font-bold' : 'text-secondary font-bold');
-            
-            const rowClass = isActive 
-                ? 'hover:bg-primary/5 transition-colors' 
-                : 'bg-surface-container-low/60 opacity-70 hover:opacity-100 transition-opacity';
-
-            return `
-                <tr class="${rowClass}">
-                    <td class="px-md py-md">
-                        <div class="flex flex-col">
-                            <div class="flex items-center gap-2">
-                                <span class="font-bold text-on-surface text-base">${item.name}</span>
-                                ${!isActive ? `<span class="bg-slate-200 text-slate-700 font-bold px-2 py-0.5 rounded-full text-[10px]">معطّل</span>` : ''}
-                            </div>
-                            ${item.notes ? `<span class="text-xs text-secondary">${item.notes}</span>` : ''}
-                        </div>
-                    </td>
-                    <td class="px-md py-md">
-                        <span class="px-2 py-1 bg-primary-container text-on-primary-container rounded-lg font-bold text-xs">${baseUnitName}</span>
-                    </td>
-                    <td class="px-md py-md">
-                        <div class="flex flex-wrap gap-1">
-                            ${unitsBadges}
-                        </div>
-                    </td>
-                    <td class="px-md py-md">
-                        <span class="text-base dir-ltr inline-block ${stockColorClass}">${formatCurrency(stockNum).replace(' ج.م', '')} ${baseUnitName}</span>
-                    </td>
-                    <td class="px-md py-md">
-                        <div class="flex items-center justify-center gap-1 flex-wrap">
-                            ${isActive ? `
-                                <button type="button" onclick="openRestockModal(${item.id})" class="px-2.5 py-1 bg-green-700 hover:bg-green-800 text-white rounded-lg text-xs font-bold transition-all flex items-center gap-1 shadow-xs cursor-pointer" title="توريد مخزون">
-                                    <span class="material-symbols-outlined text-sm">warehouse</span>
-                                    <span>توريد</span>
-                                </button>
-                            ` : ''}
-                            <button type="button" onclick="openStockLogModal(${item.id})" class="px-2.5 py-1 bg-surface-container hover:bg-primary/10 text-secondary hover:text-primary rounded-lg text-xs font-bold transition-all flex items-center gap-1 cursor-pointer" title="عرض السجل">
-                                <span class="material-symbols-outlined text-sm">history</span>
-                                <span>السجل</span>
-                            </button>
-                            <button type="button" onclick="openEditItemModal(${item.id})" class="px-2.5 py-1 border border-outline-variant hover:bg-surface-container text-secondary rounded-lg text-xs font-bold transition-all cursor-pointer" title="تعديل">
-                                <span class="material-symbols-outlined text-sm">edit</span>
-                            </button>
-                            ${isActive ? `
-                                <button type="button" onclick="promptToggleActive(${item.id}, true)" class="px-2.5 py-1 border border-amber-500/40 text-amber-700 hover:bg-amber-500/10 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1" title="تعطيل الصنف">
-                                    <span class="material-symbols-outlined text-sm">block</span>
-                                    <span>تعطيل</span>
-                                </button>
-                            ` : `
-                                <button type="button" onclick="promptToggleActive(${item.id}, false)" class="px-2.5 py-1 bg-green-600 hover:bg-green-700 text-white rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1" title="إعادة تفعيل الصنف">
-                                    <span class="material-symbols-outlined text-sm">restore</span>
-                                    <span>تفعيل</span>
-                                </button>
-                            `}
-                        </div>
-                    </td>
-                </tr>
-            `;
-        }).join('');
-
+        renderItemsTable();
         loadingEl.classList.add('hidden');
     } catch (err) {
         console.error(err);
@@ -446,12 +396,111 @@ async function loadItems() {
     }
 }
 
+function renderItemsTable() {
+    const tableBody = document.getElementById('itemsTableBody');
+    const emptyEl = document.getElementById('itemsEmpty');
+    if (!tableBody) return;
+
+    let itemsToRender = [...allItemsData];
+    if (activeItemFilter === 'all') {
+        itemsToRender = itemsToRender.filter(item => item.isActive !== false);
+    } else if (activeItemFilter === 'lowStock') {
+        itemsToRender = itemsToRender.filter(item => (Number(item.currentStock) || 0) < LOW_STOCK_THRESHOLD);
+    }
+
+    if (itemsToRender.length === 0) {
+        tableBody.innerHTML = '';
+        if (emptyEl) emptyEl.classList.remove('hidden');
+        return;
+    }
+    if (emptyEl) emptyEl.classList.add('hidden');
+
+    tableBody.innerHTML = itemsToRender.map(item => {
+        const baseUnitName = item.baseUnit ? item.baseUnit.name : 'غير محددة';
+        const isActive = item.isActive !== false;
+        
+        const unitsBadges = (item.units || []).map(u => {
+            if (u.isBaseUnit) {
+                return `<span class="bg-primary/10 text-primary px-2 py-0.5 rounded-full font-bold text-[11px]">${u.name} (أساسية)</span>`;
+            }
+            const rate = Number(u.conversionRate);
+            // Show inverted: "1 base = X this unit"
+            const invertedRate = rate > 0 ? (1 / rate) : 0;
+            const formattedInverted = Number(invertedRate.toFixed(4));
+            return `<span class="bg-surface-container text-secondary px-2 py-0.5 rounded-full font-bold text-[11px]">${u.name} (1 ${baseUnitName} = ${formattedInverted})</span>`;
+        }).join(' ');
+
+        const stockNum = Number(item.currentStock) || 0;
+        const stockColorClass = stockNum > 0 ? 'text-green-600 font-bold' : (stockNum < 0 ? 'text-error font-bold' : 'text-secondary font-bold');
+        
+        const rowClass = isActive 
+            ? 'hover:bg-primary/5 transition-colors' 
+            : 'bg-surface-container-low/60 opacity-70 hover:opacity-100 transition-opacity';
+
+        return `
+            <tr class="${rowClass}">
+                <td class="px-md py-md">
+                    <div class="flex flex-col">
+                        <div class="flex items-center gap-2">
+                            <span class="font-bold text-on-surface text-base">${item.name}</span>
+                            ${!isActive ? `<span class="bg-slate-200 text-slate-700 font-bold px-2 py-0.5 rounded-full text-[10px]">معطّل</span>` : ''}
+                        </div>
+                        ${item.notes ? `<span class="text-xs text-secondary">${item.notes}</span>` : ''}
+                    </div>
+                </td>
+                <td class="px-md py-md">
+                    <span class="px-2 py-1 bg-primary-container text-on-primary-container rounded-lg font-bold text-xs">${baseUnitName}</span>
+                </td>
+                <td class="px-md py-md">
+                    <div class="flex flex-wrap gap-1">
+                        ${unitsBadges}
+                    </div>
+                </td>
+                <td class="px-md py-md">
+                    <span class="text-base dir-ltr inline-block ${stockColorClass}">${formatCurrency(stockNum).replace(' ج.م', '')} ${baseUnitName}</span>
+                </td>
+                <td class="px-md py-md">
+                    <div class="flex items-center justify-center gap-1 flex-wrap">
+                        ${isActive ? `
+                            <button type="button" onclick="openRestockModal(${item.id})" class="px-2.5 py-1 bg-green-700 hover:bg-green-800 text-white rounded-lg text-xs font-bold transition-all flex items-center gap-1 shadow-xs cursor-pointer" title="توريد مخزون">
+                                <span class="material-symbols-outlined text-sm">warehouse</span>
+                                <span>توريد</span>
+                            </button>
+                        ` : ''}
+                        <button type="button" onclick="openStockLogModal(${item.id})" class="px-2.5 py-1 bg-surface-container hover:bg-primary/10 text-secondary hover:text-primary rounded-lg text-xs font-bold transition-all flex items-center gap-1 cursor-pointer" title="عرض السجل">
+                            <span class="material-symbols-outlined text-sm">history</span>
+                            <span>السجل</span>
+                        </button>
+                        <button type="button" onclick="openEditItemModal(${item.id})" class="px-2.5 py-1 border border-outline-variant hover:bg-surface-container text-secondary rounded-lg text-xs font-bold transition-all cursor-pointer" title="تعديل">
+                            <span class="material-symbols-outlined text-sm">edit</span>
+                        </button>
+                        ${isActive ? `
+                            <button type="button" onclick="promptToggleActive(${item.id}, true)" class="px-2.5 py-1 border border-amber-500/40 text-amber-700 hover:bg-amber-500/10 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1" title="تعطيل الصنف">
+                                <span class="material-symbols-outlined text-sm">block</span>
+                                <span>تعطيل</span>
+                            </button>
+                        ` : `
+                            <button type="button" onclick="promptToggleActive(${item.id}, false)" class="px-2.5 py-1 bg-green-600 hover:bg-green-700 text-white rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1" title="إعادة تفعيل الصنف">
+                                <span class="material-symbols-outlined text-sm">restore</span>
+                                <span>تفعيل</span>
+                            </button>
+                        `}
+                    </div>
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
 function updateStats(items) {
-    document.getElementById('statTotalItems').textContent = items.length;
-    const inStock = items.filter(i => (Number(i.currentStock) || 0) > 0).length;
-    const zeroStock = items.filter(i => (Number(i.currentStock) || 0) <= 0).length;
-    document.getElementById('statInStock').textContent = inStock;
-    document.getElementById('statZeroStock').textContent = zeroStock;
+    const activeItems = items.filter(i => i.isActive !== false);
+    const lowStockItems = items.filter(i => i.isActive !== false && (Number(i.currentStock) || 0) < LOW_STOCK_THRESHOLD);
+
+    const totalEl = document.getElementById('statTotalItems');
+    if (totalEl) totalEl.textContent = activeItems.length;
+
+    const lowStockEl = document.getElementById('statLowStock');
+    if (lowStockEl) lowStockEl.textContent = lowStockItems.length;
 }
 
 // ─── Dynamic Relative Units Builder Logic ─────────────────────────────
@@ -1024,7 +1073,11 @@ async function executeToggleActive() {
     if (!pendingToggleItemId) return;
 
     const confirmBtn = document.getElementById('confirmToggleBtn');
-    confirmBtn.disabled = true;
+    const origBtnHtml = confirmBtn ? confirmBtn.innerHTML : '';
+    if (confirmBtn) {
+        confirmBtn.disabled = true;
+        confirmBtn.innerHTML = '<span class="material-symbols-outlined text-sm animate-spin">progress_activity</span> <span>جاري التنفيذ...</span>';
+    }
 
     try {
         const res = await fetch(`/api/items/${pendingToggleItemId}`, {
@@ -1041,7 +1094,10 @@ async function executeToggleActive() {
         console.error(err);
         showToast(err.message || 'فشل في تغيير حالة الصنف', 'error');
     } finally {
-        confirmBtn.disabled = false;
+        if (confirmBtn) {
+            confirmBtn.disabled = false;
+            confirmBtn.innerHTML = origBtnHtml;
+        }
     }
 }
 </script>

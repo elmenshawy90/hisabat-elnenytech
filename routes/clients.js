@@ -85,6 +85,8 @@ router.get('/', async (req, res) => {
         return {
           ...c,
           _id: c.id,
+          createdAt: c.createdAt,
+          updatedAt: c.updatedAt,
           balance: balanceMap.get(c.id) || 0,
           lastTransaction: c.updatedAt,
           lastTransactionNote: c.notes || '',
@@ -103,7 +105,8 @@ router.get('/', async (req, res) => {
         creditCount,
         creditTotal,
         debtCount,
-        debtTotal
+        debtTotal,
+        netDifference: debtTotal - creditTotal
       }
     });
 

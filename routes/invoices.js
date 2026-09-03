@@ -220,9 +220,26 @@ router.post('/', async (req, res) => {
       finalAmount = Math.round((finalAmount - discountAmount + Number.EPSILON) * 100) / 100;
     } else {
       const rawAmount = isNaN(parseFloat(data.amount)) ? 0 : parseFloat(data.amount);
-      finalAmount = Math.round((rawAmount + Number.EPSILON) * 100) / 100;
-      if (finalAmount < 0) {
+      let baseAmount = Math.round((rawAmount + Number.EPSILON) * 100) / 100;
+      if (baseAmount < 0) {
         return res.status(400).json({ error: 'المبلغ لا يمكن أن يكون سالباً' });
+      }
+
+      if (data.type === 'payment') {
+        const discountType = data.discountType; // 'percentage' or 'fixed'
+        const discountVal = Number(data.discountValue);
+        if (!isNaN(discountVal) && discountVal > 0) {
+          if (discountType === 'percentage') {
+            const pct = Math.min(Math.max(discountVal, 0), 100);
+            discountAmount = Math.round((baseAmount * (pct / 100) + Number.EPSILON) * 100) / 100;
+          } else if (discountType === 'fixed') {
+            discountAmount = Math.round((discountVal + Number.EPSILON) * 100) / 100;
+          }
+        }
+        discountAmount = Math.min(discountAmount, baseAmount);
+        finalAmount = Math.round((baseAmount - discountAmount + Number.EPSILON) * 100) / 100;
+      } else {
+        finalAmount = baseAmount;
       }
     }
 

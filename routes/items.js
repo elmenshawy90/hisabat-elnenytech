@@ -141,7 +141,18 @@ router.get('/', async (req, res) => {
         })
       );
 
-      return res.json({ data: itemsWithStock });
+      const LOW_STOCK_THRESHOLD = 10;
+      const totalActive = itemsWithStock.filter(i => i.isActive !== false).length;
+      const lowStockCount = itemsWithStock.filter(i => i.isActive !== false && (Number(i.currentStock) || 0) < LOW_STOCK_THRESHOLD).length;
+
+      return res.json({
+        data: itemsWithStock,
+        stats: {
+          totalActive,
+          lowStockCount,
+          lowStockThreshold: LOW_STOCK_THRESHOLD
+        }
+      });
     }
 
     const items = await prisma.item.findMany({
@@ -166,7 +177,18 @@ router.get('/', async (req, res) => {
       })
     );
 
-    res.json({ data: itemsWithStock });
+    const LOW_STOCK_THRESHOLD = 10;
+    const totalActive = itemsWithStock.filter(i => i.isActive !== false).length;
+    const lowStockCount = itemsWithStock.filter(i => i.isActive !== false && (Number(i.currentStock) || 0) < LOW_STOCK_THRESHOLD).length;
+
+    res.json({
+      data: itemsWithStock,
+      stats: {
+        totalActive,
+        lowStockCount,
+        lowStockThreshold: LOW_STOCK_THRESHOLD
+      }
+    });
   } catch (err) {
     console.error('Error fetching items:', err);
     res.status(500).json({ error: 'فشل في جلب قائمة الأصناف' });
