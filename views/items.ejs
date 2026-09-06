@@ -282,6 +282,13 @@
             </div>
 
             <div class="space-y-xs">
+                <label class="block text-xs font-bold text-on-surface-variant">المورد (اختياري)</label>
+                <select id="restockSupplierSelect" class="w-full h-11 px-md rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary outline-none text-right font-bold text-on-surface cursor-pointer">
+                    <option value="">-- بدون مورد محدد --</option>
+                </select>
+            </div>
+
+            <div class="space-y-xs">
                 <label class="block text-xs font-bold text-on-surface-variant">الكمية الموردة <span class="text-error">*</span></label>
                 <input type="number" step="any" min="0.001" id="restockQuantity" required class="w-full h-11 px-md rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary outline-none text-right font-bold text-on-surface dir-ltr" placeholder="0.00" />
             </div>
@@ -328,6 +335,7 @@
                         <th class="px-md py-sm font-bold">نوع الحركة</th>
                         <th class="px-md py-sm font-bold">الكمية (بالوحدة الأساسية)</th>
                         <th class="px-md py-sm font-bold">الرصيد بعدها</th>
+                        <th class="px-md py-sm font-bold">المورد</th>
                         <th class="px-md py-sm font-bold">ملاحظات</th>
                     </tr>
                 </thead>
@@ -1422,6 +1430,21 @@ function openRestockModal(itemId) {
         return `<option value="${u.id}">${u.name} ${u.isBaseUnit ? '(الوحدة الأساسية)' : `(1 ${item.baseUnit?.name || ''} = ${invertedRate})`}</option>`;
     }).join('');
 
+    // تعبئة قائمة الموردين النشطين (اختياري)
+    const supplierSelect = document.getElementById('restockSupplierSelect');
+    if (supplierSelect) {
+        supplierSelect.innerHTML = '<option value="">-- بدون مورد محدد --</option>';
+        fetch('/api/suppliers?activeOnly=true')
+            .then(r => r.json())
+            .then(json => {
+                const list = json.data || [];
+                list.forEach(s => {
+                    supplierSelect.innerHTML += `<option value="${s.id}">${s.name}</option>`;
+                });
+            })
+            .catch(err => console.error('فشل جلب الموردين:', err));
+    }
+
     document.getElementById('restockForm').reset();
     const modal = document.getElementById('restockModal');
     modal.classList.remove('hidden');
@@ -1445,6 +1468,8 @@ async function submitRestock(e) {
     const unitId = document.getElementById('restockUnitSelect').value;
     const quantity = document.getElementById('restockQuantity').value;
     const notes = document.getElementById('restockNotes').value;
+    const supplierSel = document.getElementById('restockSupplierSelect');
+    const supplierId = supplierSel && supplierSel.value ? supplierSel.value : undefined;
 
     submitBtn.disabled = true;
     submitBtn.innerHTML = '<span class="material-symbols-outlined text-sm animate-spin">progress_activity</span> <span>جاري التوريد...</span>';
@@ -1453,7 +1478,7 @@ async function submitRestock(e) {
         const res = await fetch(`/api/items/${currentRestockItemId}/restock`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ quantity, unitId, notes })
+            body: JSON.stringify({ quantity, unitId, notes, supplierId })
         });
 
         const data = await res.json();
@@ -1480,7 +1505,7 @@ async function openStockLogModal(itemId) {
     const tableBody = document.getElementById('stockLogTableBody');
     const emptyEl = document.getElementById('stockLogEmpty');
 
-    tableBody.innerHTML = '<tr><td colspan="5" class="py-md text-center text-secondary">جاري تحميل حركة المخزون...</td></tr>';
+    tableBody.innerHTML = '<tr><td colspan="6" class="py-md text-center text-secondary">جاري تحميل حركة المخزون...</td></tr>';
     emptyEl.classList.add('hidden');
 
     const modal = document.getElementById('stockLogModal');
@@ -1528,6 +1553,7 @@ async function openStockLogModal(itemId) {
                     <td class="px-md py-sm">${typeBadge}</td>
                     <td class="px-md py-sm font-bold text-on-surface dir-ltr inline-block">${qtySign}${qtyVal} ${baseUnitName}</td>
                     <td class="px-md py-sm font-bold text-primary dir-ltr inline-block">${log.balanceAfter} ${baseUnitName}</td>
+                    <td class="px-md py-sm font-bold text-on-surface">${log.supplier ? log.supplier.name : '-'}</td>
                     <td class="px-md py-sm text-secondary">${log.notes || '-'}</td>
                 </tr>
             `;

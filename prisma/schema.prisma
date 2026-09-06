@@ -150,10 +150,29 @@ model StockLog {
   quantityBase  Float    // التغيير بوحدة القياس الأساسية
   balanceAfter  Float    // رصيد المخزون بعد العملية بالوحدة الأساسية
   invoiceId     Int?     // الفاتورة المربوطة
+  // المورد المرتبط بحركة التوريد (اختياري)
+  supplierId    Int?
+  supplier      Supplier? @relation(fields: [supplierId], references: [id], onDelete: SetNull)
   notes         String   @default("")
   createdAt     DateTime @default(now())
 
   @@index([itemId])
+  @@index([supplierId])
+}
+
+// الموردون — جهات توريد الخامات للمخزون
+model Supplier {
+  id        Int        @id @default(autoincrement())
+  name      String     // اسم المورد
+  phone     String     @default("-")
+  address   String     @default("")
+  notes     String     @default("")
+  isActive  Boolean    @default(true)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  stockLogs StockLog[]
+
+  @@index([name])
 }
 
 model InvoiceItem {

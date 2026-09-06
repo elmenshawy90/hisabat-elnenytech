@@ -257,11 +257,19 @@ router.get('/:id', async (req, res) => {
       return res.status(404).json({ error: 'الصنف غير موجود' });
     }
 
+    let stockLogInclude = {};
+    try {
+      if (prisma.stockLog && prisma.stockLog.fields && prisma.stockLog.fields.supplierId) {
+        stockLogInclude = { include: { supplier: { select: { id: true, name: true } } } };
+      }
+    } catch { /* وضع التوافق */ }
+
     const [stockLogs, latestLog, stockLogsCount] = await Promise.all([
       prisma.stockLog.findMany({
         where: { itemId: id },
         orderBy: { id: 'desc' },
-        take: 20
+        take: 20,
+        ...stockLogInclude
       }),
       prisma.stockLog.findFirst({
         where: { itemId: id },
@@ -519,7 +527,7 @@ router.delete('/:id', async (req, res) => {
 router.post('/:id/restock', async (req, res) => {
   try {
     const id = parseInt(req.params.id);
-    const { quantity, unitId, notes } = req.body;
+    const { quantity, unitId, notes, supplierId } = req.body;
 
     if (isNaN(id) || id <= 0) {
       return res.status(400).json({ error: 'معرف الصنف غير صالح' });
@@ -543,6 +551,29 @@ router.post('/:id/restock', async (req, res) => {
       return res.status(400).json({ error: 'الوحدة المحددة غير مرتبطة بهذا الصنف' });
     }
 
+    // المورد المرتبط بالتوريد (اختياري) — يُتجاهل بصمت قبل تطبيق ترحيل الموردين
+    let restockSupplierId = null;
+    let restockSupplierName = '';
+    if (supplierId !== undefined && supplierId !== null && supplierId !== '') {
+      if (!prisma.supplier) {
+        restockSupplierId = null;
+      } else {
+        const sid = parseInt(supplierId);
+        if (isNaN(sid) || sid <= 0) {
+          return res.status(400).json({ error: 'المورد المحدد غير صالح' });
+        }
+        const supplier = await prisma.supplier.findUnique({ where: { id: sid } });
+        if (!supplier) {
+          return res.status(404).json({ error: 'المورد غير موجود' });
+        }
+        if (supplier.isActive === false) {
+          return res.status(400).json({ error: 'لا يمكن التوريد من مورد معطّل — أعد تفعيله أولًا' });
+        }
+        restockSupplierId = supplier.id;
+        restockSupplierName = supplier.name;
+      }
+    }
+
     const quantityBase = qty * Number(unit.conversionRate);
 
     const result = await prisma.$transaction(async (tx) => {
@@ -555,18 +586,24 @@ router.post('/:id/restock', async (req, res) => {
       const balanceAfter = currentBalance + quantityBase;
 
       const restockNote = notes && String(notes).trim()
-        ? `توريد (${qty} ${unit.name}): ${String(notes).trim()}`
-        : `توريد (${qty} ${unit.name})`;
+        ? `توريد (${qty} ${unit.name})${restockSupplierName ? ` من ${restockSupplierName}` : ''}: ${String(notes).trim()}`
+        : `توريد (${qty} ${unit.name})${restockSupplierName ? ` من ${restockSupplierName}` : ''}`;
 
-      const stockLog = await tx.stockLog.create({
-        data: {
-          itemId: id,
-          changeType: 'restock',
-          quantityBase,
-          balanceAfter,
-          notes: restockNote
+      const stockLogData = {
+        itemId: id,
+        changeType: 'restock',
+        quantityBase,
+        balanceAfter,
+        notes: restockNote
+      };
+      // تضمين المورد فقط عند دعم العمود (توافق قبل الترحيل)
+      try {
+        if (restockSupplierId && tx.stockLog && tx.stockLog.fields && tx.stockLog.fields.supplierId) {
+          stockLogData.supplierId = restockSupplierId;
         }
-      });
+      } catch { /* وضع التوافق — بدون ربط */ }
+
+      const stockLog = await tx.stockLog.create({ data: stockLogData });
 
       return { stockLog, balanceAfter };
     });

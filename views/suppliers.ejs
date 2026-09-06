@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>سجل الديون - الموردين</title>
+<meta name="description" content="إدارة موردي الخامات وحركات التوريد"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script src="js/tailwind-config.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="css/styles.css" rel="stylesheet"/>
+</head>
+<body class="bg-background text-on-surface overflow-hidden max-w-[100vw]">
+<!-- Shell Container -->
+<div class="flex h-screen w-full">
+<%- include('partials/aside', { active: 'suppliers' }) %>
+<!-- Main Content Area -->
+<main class="flex-1 min-w-0 flex flex-col md:mr-64 h-full relative">
+
+<!-- Page Canvas -->
+<div class="flex-1 overflow-y-auto p-container-margin pb-24 md:pb-xl md:p-xl custom-scrollbar">
+<%- include('partials/header', { title: 'الموردين' }) %>
+
+<!-- Content Header -->
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-md mb-xl">
+    <div class="flex flex-col">
+        <h2 class="font-headline-md text-headline-md text-on-surface font-bold">الموردين</h2>
+        <p class="font-body-md text-body-md text-secondary">إدارة موردي الخامات وربطهم بحركات التوريد بالمخزون</p>
+    </div>
+    <div class="flex flex-wrap items-center gap-xs sm:gap-sm">
+        <button onclick="openAddSupplierModal()" class="px-md py-sm bg-primary hover:bg-primary-container text-white rounded-full flex items-center justify-center gap-xs font-bold text-sm shadow-sm transition-all active:scale-95 cursor-pointer">
+            <span class="material-symbols-outlined text-xl">add_business</span>
+            <span>مورد جديد</span>
+        </button>
+    </div>
+</div>
+
+<!-- Stats Row -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-md mb-xl">
+    <div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-md flex items-center justify-between shadow-sm select-none">
+        <div class="flex flex-col gap-xs">
+            <div class="flex items-center gap-xs">
+                <span class="font-label-md text-label-md text-secondary font-bold">إجمالي الموردين</span>
+                <span class="text-[10px] bg-primary/10 text-primary font-bold px-2 py-0.5 rounded-full">(نشط)</span>
+            </div>
+            <div class="flex items-baseline gap-sm">
+                <span class="font-headline-md text-headline-md text-primary font-bold" id="statTotalSuppliers">--</span>
+                <span class="text-xs text-secondary font-bold">مورد</span>
+            </div>
+        </div>
+        <div class="w-12 h-12 rounded-xl bg-primary-fixed flex items-center justify-center text-on-primary-fixed shrink-0">
+            <span class="material-symbols-outlined text-2xl">local_shipping</span>
+        </div>
+    </div>
+
+    <div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-md flex items-center justify-between shadow-sm select-none">
+        <div class="flex flex-col gap-xs">
+            <div class="flex items-center gap-xs">
+                <span class="font-label-md text-label-md text-secondary font-bold">توريدات مرتبطة بموردين</span>
+                <span class="text-[10px] bg-green-500/10 text-green-700 font-bold px-2 py-0.5 rounded-full">(سجل المخزون)</span>
+            </div>
+            <div class="flex items-baseline gap-sm">
+                <span class="font-headline-md text-headline-md text-green-700 font-bold" id="statTotalRestocks">--</span>
+                <span class="text-xs text-secondary font-bold">حركة توريد</span>
+            </div>
+        </div>
+        <div class="w-12 h-12 rounded-xl bg-green-500/10 text-green-700 flex items-center justify-center shrink-0">
+            <span class="material-symbols-outlined text-2xl">warehouse</span>
+        </div>
+    </div>
+</div>
+
+<!-- Search & Controls Bar -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-md mb-md shadow-sm flex flex-col md:flex-row items-center justify-between gap-md">
+    <div class="relative w-full md:flex-1">
+        <span class="material-symbols-outlined absolute right-md top-1/2 -translate-y-1/2 text-outline">search</span>
+        <input class="w-full h-12 pr-12 pl-md rounded-xl bg-background border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none font-body-md text-body-md transition-all" placeholder="البحث باسم المورد أو الهاتف أو العنوان..." type="text" id="searchInput" oninput="debounceSearch()"/>
+    </div>
+
+    <label class="flex items-center gap-xs cursor-pointer select-none border border-outline-variant/70 bg-surface px-md py-sm rounded-xl hover:bg-surface-container transition-colors shrink-0">
+        <input type="checkbox" id="showInactiveToggle" onchange="loadSuppliers()" class="w-4 h-4 text-primary rounded border-outline focus:ring-primary" />
+        <span class="text-xs font-bold text-on-surface">إظهار الموردين المعطّلين</span>
+    </label>
+</div>
+
+<!-- Suppliers Table Container -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-2xl shadow-sm overflow-hidden mb-xl">
+    <div class="overflow-x-auto">
+        <table class="w-full text-right border-collapse">
+            <thead>
+                <tr class="bg-surface-container-low border-b border-outline-variant text-secondary font-label-md text-xs">
+                    <th class="px-md py-md font-bold">الاسم</th>
+                    <th class="px-md py-md font-bold" dir="ltr">التليفون</th>
+                    <th class="px-md py-md font-bold">العنوان</th>
+                    <th class="px-md py-md font-bold">التوريدات</th>
+                    <th class="px-md py-md font-bold text-center">الإجراءات</th>
+                </tr>
+            </thead>
+            <tbody id="suppliersTableBody" class="divide-y divide-outline-variant/60 font-body-md text-sm">
+                <!-- Loaded via JS -->
+            </tbody>
+        </table>
+    </div>
+    <div id="suppliersLoading" class="py-xl text-center text-secondary">
+        <div class="flex flex-col items-center justify-center gap-sm">
+            <div class="w-8 h-8 border-3 border-outline-variant border-t-primary rounded-full animate-spin"></div>
+            <span>جاري تحميل الموردين...</span>
+        </div>
+    </div>
+    <div id="suppliersEmpty" class="hidden py-xl text-center text-secondary space-y-xs">
+        <span class="material-symbols-outlined text-4xl text-outline">local_shipping</span>
+        <p class="font-bold">لا يوجد موردون مسجلون</p>
+        <p class="text-xs">اضغط على زر "مورد جديد" لإضافة أول مورد.</p>
+    </div>
+</div>
+
+</div>
+</main>
+</div>
+
+<!-- Supplier Form Modal (Add & Edit) -->
+<div class="fixed inset-0 z-[120] hidden items-center justify-center bg-black/50 p-4" id="supplierModal">
+    <div class="bg-surface rounded-2xl shadow-2xl w-full max-w-lg p-lg space-y-md border border-outline-variant/60 max-h-[90vh] overflow-y-auto custom-scrollbar">
+        <div class="flex items-center justify-between border-b border-outline-variant/60 pb-sm">
+            <div class="flex items-center gap-sm text-primary">
+                <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                    <span class="material-symbols-outlined text-2xl" id="supplierModalIcon">add_business</span>
+                </div>
+                <h3 class="font-headline-sm font-bold text-on-surface" id="supplierModalTitle">إضافة مورد جديد</h3>
+            </div>
+            <button type="button" onclick="closeSupplierModal()" class="text-secondary hover:text-on-surface">
+                <span class="material-symbols-outlined">close</span>
+            </button>
+        </div>
+
+        <form id="supplierForm" onsubmit="submitSupplierForm(event)" class="space-y-md">
+            <input type="hidden" id="supplierModalId" value="" />
+
+            <div class="space-y-xs">
+                <label class="block text-xs font-bold text-on-surface-variant">الاسم <span class="text-error">*</span></label>
+                <div class="relative">
+                    <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline text-sm">business</span>
+                    <input type="text" id="supplierName" required class="w-full h-11 pr-9 pl-md rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none text-right font-bold text-on-surface" placeholder="مثال: شركة النور للأسمنت..." />
+                </div>
+            </div>
+
+            <div class="space-y-xs">
+                <label class="block text-xs font-bold text-on-surface-variant">التليفون</label>
+                <div class="relative">
+                    <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline text-sm">call</span>
+                    <input type="tel" id="supplierPhone" class="w-full h-11 pr-9 pl-md rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none text-right font-bold text-on-surface dir-ltr" placeholder="01XXXXXXXXX" />
+                </div>
+                <p id="supplierPhoneError" class="hidden text-error text-[11px] mt-1 pr-1 font-bold">يجب إدخال أرقام فقط</p>
+            </div>
+
+            <div class="space-y-xs">
+                <label class="block text-xs font-bold text-on-surface-variant">العنوان</label>
+                <div class="relative">
+                    <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline text-sm">location_on</span>
+                    <input type="text" id="supplierAddress" class="w-full h-11 pr-9 pl-md rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none text-right text-on-surface" placeholder="المنطقة، الشارع..." />
+                </div>
+            </div>
+
+            <div class="space-y-xs">
+                <label class="block text-xs font-bold text-on-surface-variant">ملاحظات (اختياري)</label>
+                <textarea id="supplierNotes" rows="2" class="w-full px-md py-sm rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none text-right text-on-surface resize-none text-sm" placeholder="أي تفاصيل إضافية عن المورد..."></textarea>
+            </div>
+
+            <div class="flex items-center justify-end gap-sm pt-md border-t border-outline-variant/60">
+                <button type="button" onclick="closeSupplierModal()" class="px-lg py-sm rounded-full border border-outline-variant text-on-surface font-label-md hover:bg-surface-container transition-colors">إلغاء</button>
+                <button type="submit" id="submitSupplierBtn" class="px-lg py-sm rounded-full bg-primary text-on-primary font-label-md hover:opacity-90 transition-opacity flex items-center gap-1 shadow-sm font-bold">
+                    <span class="material-symbols-outlined text-sm">check</span>
+                    <span>حفظ المورد</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Confirm Toggle Active Modal -->
+<div class="fixed inset-0 z-[120] hidden items-center justify-center bg-black/50 p-4" id="confirmToggleModal">
+    <div class="bg-surface rounded-2xl shadow-2xl w-full max-w-md p-lg space-y-md border border-outline-variant/60">
+        <div class="flex items-center gap-sm text-amber-600 border-b border-outline-variant/60 pb-sm">
+            <div class="w-10 h-10 rounded-full bg-amber-500/10 flex items-center justify-center">
+                <span class="material-symbols-outlined text-2xl" id="confirmModalIcon">warning</span>
+            </div>
+            <h3 class="font-headline-sm font-bold text-on-surface" id="confirmModalTitle">تأكيد تعطيل المورد</h3>
+        </div>
+
+        <p class="font-body-md text-on-surface text-sm leading-relaxed" id="confirmModalText">
+            هل تريد تعطيل هذا المورد؟ لن يظهر في قوائم التوريد الجديدة، لكن سجل توريداته سيبقى محفوظًا.
+        </p>
+
+        <div class="flex items-center justify-end gap-sm pt-md border-t border-outline-variant/60">
+            <button type="button" onclick="closeConfirmToggleModal()" class="px-lg py-sm rounded-full border border-outline-variant text-on-surface font-label-md hover:bg-surface-container transition-colors">إلغاء</button>
+            <button type="button" id="confirmToggleBtn" onclick="executeToggleActive()" class="px-lg py-sm rounded-full bg-amber-600 text-white font-label-md hover:opacity-90 transition-opacity flex items-center gap-1 shadow-sm font-bold">
+                <span class="material-symbols-outlined text-sm">check</span>
+                <span id="confirmToggleBtnText">تأكيد التعطيل</span>
+            </button>
+        </div>
+    </div>
+</div>
+
+<%- include('partials/bottom-nav', { active: 'suppliers' }) %>
+<script src="/js/shared-ui.js"></script>
+<script>
+let allSuppliersData = [];
+let activeSearchTimeout = null;
+let pendingToggleSupplierId = null;
+
+document.addEventListener('DOMContentLoaded', () => {
+    checkAuth();
+    loadSuppliers();
+    const phoneInput = document.getElementById('supplierPhone');
+    if (phoneInput) {
+        phoneInput.addEventListener('input', () => {
+            const errEl = document.getElementById('supplierPhoneError');
+            const val = phoneInput.value.trim();
+            if (val !== '' && !/^[0-9+\-\s]+$/.test(val)) {
+                if (errEl) errEl.classList.remove('hidden');
+            } else {
+                if (errEl) errEl.classList.add('hidden');
+            }
+        });
+    }
+});
+
+function debounceSearch() {
+    clearTimeout(activeSearchTimeout);
+    activeSearchTimeout = setTimeout(() => {
+        loadSuppliers();
+    }, 300);
+}
+
+async function loadSuppliers() {
+    const loadingEl = document.getElementById('suppliersLoading');
+    const searchVal = document.getElementById('searchInput').value.trim();
+    const showInactive = document.getElementById('showInactiveToggle').checked;
+
+    loadingEl.classList.remove('hidden');
+
+    try {
+        let url = `/api/suppliers?includeInactive=${showInactive}`;
+        if (searchVal) {
+            url += `&search=${encodeURIComponent(searchVal)}`;
+        }
+
+        const res = await fetch(url);
+        const json = await res.json();
+
+        if (!res.ok) throw new Error(json.error || 'فشل في جلب الموردين');
+
+        allSuppliersData = json.data || [];
+
+        updateStats(allSuppliersData, json.stats);
+        renderSuppliersTable();
+        loadingEl.classList.add('hidden');
+    } catch (err) {
+        console.error(err);
+        loadingEl.classList.add('hidden');
+        showToast(err.message || 'فشل في تحميل بيانات الموردين', 'error');
+    }
+}
+
+function updateStats(suppliers, stats) {
+    const active = suppliers.filter(s => s.isActive !== false);
+    const totalEl = document.getElementById('statTotalSuppliers');
+    if (totalEl) totalEl.textContent = active.length;
+
+    const restocksTotal = suppliers.reduce((sum, s) => sum + (Number(s.restocksCount) || 0), 0);
+    const restocksEl = document.getElementById('statTotalRestocks');
+    if (restocksEl) restocksEl.textContent = restocksTotal;
+}
+
+function renderSuppliersTable() {
+    const tableBody = document.getElementById('suppliersTableBody');
+    const emptyEl = document.getElementById('suppliersEmpty');
+    if (!tableBody) return;
+
+    if (allSuppliersData.length === 0) {
+        tableBody.innerHTML = '';
+        if (emptyEl) emptyEl.classList.remove('hidden');
+        return;
+    }
+    if (emptyEl) emptyEl.classList.add('hidden');
+
+    tableBody.innerHTML = allSuppliersData.map(s => {
+        const isActive = s.isActive !== false;
+        const rowClass = isActive
+            ? 'hover:bg-primary/5 transition-colors'
+            : 'bg-surface-container-low/60 opacity-70 hover:opacity-100 transition-opacity';
+        const restocksCount = Number(s.restocksCount) || 0;
+
+        return `
+            <tr class="${rowClass}">
+                <td class="px-md py-md">
+                    <div class="flex flex-col">
+                        <div class="flex items-center gap-2">
+                            <span class="font-bold text-on-surface text-base">${s.name}</span>
+                            ${!isActive ? `<span class="bg-slate-200 text-slate-700 font-bold px-2 py-0.5 rounded-full text-[10px]">معطّل</span>` : ''}
+                        </div>
+                        ${s.notes ? `<span class="text-xs text-secondary">${s.notes}</span>` : ''}
+                    </div>
+                </td>
+                <td class="px-md py-md">
+                    <span class="dir-ltr inline-block font-bold text-on-surface">${s.phone && s.phone !== '-' ? s.phone : '-'}</span>
+                </td>
+                <td class="px-md py-md">
+                    <span class="text-secondary text-sm">${s.address || '-'}</span>
+                </td>
+                <td class="px-md py-md">
+                    <div class="flex flex-col gap-1">
+                        <span class="font-bold text-primary text-sm">${restocksCount} ${restocksCount === 1 ? 'توريدة' : 'توريدات'}</span>
+                        ${s.lastRestockAt ? `<span class="text-[11px] text-secondary">آخرها: ${formatDate(s.lastRestockAt)}</span>` : ''}
+                    </div>
+                </td>
+                <td class="px-md py-md">
+                    <div class="flex items-center justify-center gap-1 flex-wrap">
+                        <button type="button" onclick="openEditSupplierModal(${s.id})" class="px-2.5 py-1 border border-outline-variant hover:bg-surface-container text-secondary rounded-lg text-xs font-bold transition-all cursor-pointer" title="تعديل">
+                            <span class="material-symbols-outlined text-sm">edit</span>
+                        </button>
+                        ${isActive ? `
+                            <button type="button" onclick="promptToggleActive(${s.id}, true)" class="px-2.5 py-1 border border-amber-500/40 text-amber-700 hover:bg-amber-500/10 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1" title="تعطيل المورد">
+                                <span class="material-symbols-outlined text-sm">block</span>
+                                <span>تعطيل</span>
+                            </button>
+                        ` : `
+                            <button type="button" onclick="promptToggleActive(${s.id}, false)" class="px-2.5 py-1 bg-green-600 hover:bg-green-700 text-white rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1" title="إعادة تفعيل المورد">
+                                <span class="material-symbols-outlined text-sm">restore</span>
+                                <span>تفعيل</span>
+                            </button>
+                        `}
+                    </div>
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+// ─── Supplier Form (Add / Edit) ─────────────────────────────────
+function openAddSupplierModal() {
+    document.getElementById('supplierModalId').value = '';
+    document.getElementById('supplierModalTitle').textContent = 'إضافة مورد جديد';
+    document.getElementById('supplierModalIcon').textContent = 'add_business';
+    document.getElementById('supplierName').value = '';
+    document.getElementById('supplierPhone').value = '';
+    document.getElementById('supplierAddress').value = '';
+    document.getElementById('supplierNotes').value = '';
+    document.getElementById('supplierPhoneError').classList.add('hidden');
+
+    const modal = document.getElementById('supplierModal');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    document.body.style.overflow = 'hidden';
+    document.getElementById('supplierName').focus();
+}
+
+async function openEditSupplierModal(supplierId) {
+    try {
+        const res = await fetch(`/api/suppliers/${supplierId}`);
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'فشل في جلب بيانات المورد');
+
+        document.getElementById('supplierModalId').value = data.id;
+        document.getElementById('supplierModalTitle').textContent = `تعديل المورد "${data.name}"`;
+        document.getElementById('supplierModalIcon').textContent = 'edit';
+        document.getElementById('supplierName').value = data.name || '';
+        document.getElementById('supplierPhone').value = (data.phone && data.phone !== '-') ? data.phone : '';
+        document.getElementById('supplierAddress').value = data.address || '';
+        document.getElementById('supplierNotes').value = data.notes || '';
+        document.getElementById('supplierPhoneError').classList.add('hidden');
+
+        const modal = document.getElementById('supplierModal');
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        document.body.style.overflow = 'hidden';
+    } catch (err) {
+        console.error(err);
+        showToast(err.message || 'فشل في جلب بيانات المورد للتعديل', 'error');
+    }
+}
+
+function closeSupplierModal() {
+    const modal = document.getElementById('supplierModal');
+    if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    }
+    document.body.style.overflow = '';
+}
+
+async function submitSupplierForm(e) {
+    e.preventDefault();
+    const supplierId = document.getElementById('supplierModalId').value;
+    const submitBtn = document.getElementById('submitSupplierBtn');
+    const name = document.getElementById('supplierName').value.trim();
+    const phone = document.getElementById('supplierPhone').value.trim();
+    const address = document.getElementById('supplierAddress').value.trim();
+    const notes = document.getElementById('supplierNotes').value.trim();
+
+    if (!name) {
+        showToast('الرجاء إدخال اسم المورد', 'warning');
+        return;
+    }
+    if (phone !== '' && !/^[0-9+\-\s]+$/.test(phone)) {
+        document.getElementById('supplierPhoneError').classList.remove('hidden');
+        showToast('رقم التليفون يجب أن يحتوي على أرقام فقط', 'warning');
+        return;
+    }
+
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<span class="material-symbols-outlined text-sm animate-spin">progress_activity</span> <span>جاري الحفظ...</span>';
+
+    try {
+        const isEdit = Boolean(supplierId);
+        const res = await fetch(isEdit ? `/api/suppliers/${supplierId}` : '/api/suppliers', {
+            method: isEdit ? 'PUT' : 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, phone, address, notes })
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'فشل في حفظ بيانات المورد');
+
+        closeSupplierModal();
+        showToast(isEdit ? 'تم تحديث بيانات المورد بنجاح ✓' : `تم إضافة المورد "${data.name}" بنجاح ✓`, 'success');
+        loadSuppliers();
+    } catch (err) {
+        console.error(err);
+        showToast(err.message || 'فشل في حفظ المورد', 'error');
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<span class="material-symbols-outlined text-sm">check</span> <span>حفظ المورد</span>';
+    }
+}
+
+// ─── Soft Delete / Toggle Active ────────────────────────────────
+function promptToggleActive(supplierId, willDeactivate) {
+    const supplier = allSuppliersData.find(s => s.id === supplierId);
+    if (!supplier) return;
+
+    pendingToggleSupplierId = supplierId;
+    const titleEl = document.getElementById('confirmModalTitle');
+    const textEl = document.getElementById('confirmModalText');
+    const btnText = document.getElementById('confirmToggleBtnText');
+    const iconEl = document.getElementById('confirmModalIcon');
+    const btn = document.getElementById('confirmToggleBtn');
+
+    if (willDeactivate) {
+        titleEl.textContent = `تعطيل المورد "${supplier.name}"`;
+        textEl.textContent = 'هل تريد تعطيل هذا المورد؟ لن يظهر في قوائم التوريد الجديدة، لكن سجل توريداته سيبقى محفوظًا.';
+        btnText.textContent = 'تأكيد التعطيل';
+        iconEl.textContent = 'warning';
+        btn.className = 'px-lg py-sm rounded-full bg-amber-600 text-white font-label-md hover:opacity-90 transition-opacity flex items-center gap-1 shadow-sm font-bold';
+    } else {
+        titleEl.textContent = `إعادة تفعيل المورد "${supplier.name}"`;
+        textEl.textContent = 'هل تريد إعادة تفعيل هذا المورد ليظهر مجددًا في قوائم التوريد؟';
+        btnText.textContent = 'تأكيد التفعيل';
+        iconEl.textContent = 'restore';
+        btn.className = 'px-lg py-sm rounded-full bg-green-600 text-white font-label-md hover:opacity-90 transition-opacity flex items-center gap-1 shadow-sm font-bold';
+    }
+
+    const modal = document.getElementById('confirmToggleModal');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeConfirmToggleModal() {
+    const modal = document.getElementById('confirmToggleModal');
+    if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    }
+    document.body.style.overflow = '';
+    pendingToggleSupplierId = null;
+}
+
+async function executeToggleActive() {
+    if (!pendingToggleSupplierId) return;
+    try {
+        const res = await fetch(`/api/suppliers/${pendingToggleSupplierId}`, { method: 'DELETE' });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'فشل في تغيير حالة المورد');
+        closeConfirmToggleModal();
+        showToast(data.message, 'success');
+        loadSuppliers();
+    } catch (err) {
+        console.error(err);
+        showToast(err.message || 'فشل في تغيير حالة المورد', 'error');
+    }
+}
+</script>
+</body>
+</html>
