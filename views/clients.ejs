@@ -337,9 +337,9 @@
 <span class="material-symbols-outlined text-base">account_balance_wallet</span>
 <span>+ إضافة رصيد افتتاحي</span>
 </span>
-<span class="material-symbols-outlined text-base transition-transform duration-200" id="openingBalanceArrow">expand_more</span>
+<span class="material-symbols-outlined text-base transition-transform duration-200 rotate-180" id="openingBalanceArrow">expand_more</span>
 </button>
-<div id="openingBalanceSection" class="hidden mt-sm p-sm bg-surface-container-low rounded-xl border border-outline-variant/60 space-y-sm">
+<div id="openingBalanceSection" class="mt-sm p-sm bg-surface-container-low rounded-xl border border-outline-variant/60 space-y-sm">
 <div class="flex flex-col gap-xs">
 <label class="font-label-md text-xs font-bold text-on-surface-variant">المبلغ (ج.م)</label>
 <div class="relative">
@@ -1145,8 +1145,8 @@ function openAddClientModal() {
     
     const obSection = document.getElementById('openingBalanceSection');
     const obArrow = document.getElementById('openingBalanceArrow');
-    if (obSection) obSection.classList.add('hidden');
-    if (obArrow) obArrow.classList.remove('rotate-180');
+    if (obSection) obSection.classList.remove('hidden');
+    if (obArrow) obArrow.classList.add('rotate-180');
     const obErr = document.getElementById('openingBalanceTypeError');
     if (obErr) obErr.classList.add('hidden');
 
@@ -1172,8 +1172,8 @@ function closeAddClientModal() {
 
     const obSection = document.getElementById('openingBalanceSection');
     const obArrow = document.getElementById('openingBalanceArrow');
-    if (obSection) obSection.classList.add('hidden');
-    if (obArrow) obArrow.classList.remove('rotate-180');
+    if (obSection) obSection.classList.remove('hidden');
+    if (obArrow) obArrow.classList.add('rotate-180');
     const obErr = document.getElementById('openingBalanceTypeError');
     if (obErr) obErr.classList.add('hidden');
 }
