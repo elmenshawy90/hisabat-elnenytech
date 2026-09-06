@@ -16,6 +16,36 @@ function stockSupplierSupported() {
   }
 }
 
+// دعم تدريجي: دفتر حساب المورد قبل تطبيق الترحيل
+function ledgerSupported() {
+  try {
+    return Boolean(prisma.supplierTransaction);
+  } catch {
+    return false;
+  }
+}
+
+function round2(n) {
+  return Math.round((Number(n) + Number.EPSILON) * 100) / 100;
+}
+
+// صافي المستحق للمورد = إجمالي التوريدات الآجلة − إجمالي الدفعات
+async function getSupplierBalance(supplierId) {
+  if (!ledgerSupported()) return 0;
+  const groups = await prisma.supplierTransaction.groupBy({
+    by: ['type'],
+    _sum: { amount: true },
+    where: { supplierId }
+  });
+  let purchase = 0;
+  let payment = 0;
+  for (const g of groups) {
+    if (g.type === 'payment') payment += g._sum.amount || 0;
+    else purchase += g._sum.amount || 0;
+  }
+  return round2(purchase - payment);
+}
+
 // GET /api/suppliers - قائمة الموردين مع البحث وعدد التوريدات
 // Query: ?search= &includeInactive=true &activeOnly=true
 router.get('/', async (req, res) => {
@@ -67,16 +97,44 @@ router.get('/', async (req, res) => {
 
     const activeCount = suppliers.filter(s => s.isActive !== false).length;
 
+    // أرصدة الموردين (المستحق لكل مورد)
+    let balanceMap = new Map();
+    if (ledgerSupported()) {
+      try {
+        const groups = await prisma.supplierTransaction.groupBy({
+          by: ['supplierId', 'type'],
+          _sum: { amount: true }
+        });
+        const tmp = new Map();
+        for (const g of groups) {
+          if (!tmp.has(g.supplierId)) tmp.set(g.supplierId, { purchase: 0, payment: 0 });
+          tmp.get(g.supplierId)[g.type === 'payment' ? 'payment' : 'purchase'] += g._sum.amount || 0;
+        }
+        for (const [sid, v] of tmp) {
+          balanceMap.set(sid, round2(v.purchase - v.payment));
+        }
+      } catch {
+        balanceMap = new Map();
+      }
+    }
+
+    let totalPayables = 0;
+    for (const b of balanceMap.values()) {
+      if (b > 0) totalPayables = round2(totalPayables + b);
+    }
+
     res.json({
       data: suppliers.map(s => ({
         ...s,
         _id: s.id,
         restocksCount: countsMap.get(s.id) || 0,
-        lastRestockAt: lastMap.get(s.id) || null
+        lastRestockAt: lastMap.get(s.id) || null,
+        balance: balanceMap.get(s.id) || 0
       })),
       stats: {
         totalActive: activeCount,
-        totalInactive: suppliers.length - activeCount
+        totalInactive: suppliers.length - activeCount,
+        totalPayables
       }
     });
   } catch (err) {
@@ -116,6 +174,108 @@ router.get('/:id', async (req, res) => {
   } catch (err) {
     console.error('Error fetching supplier:', err);
     res.status(500).json({ error: 'فشل في جلب بيانات المورد' });
+  }
+});
+
+// GET /api/suppliers/:id/statement - كشف حساب المورد (توريدات ودفعات مع رصيد متحرك)
+router.get('/:id/statement', async (req, res) => {
+  try {
+    if (!ledgerSupported()) {
+      return res.status(400).json({ error: 'كشف الحساب يتطلب تطبيق ترحيل دفتر الموردين أولًا' });
+    }
+    const id = parseInt(req.params.id);
+    if (isNaN(id) || id <= 0) {
+      return res.status(400).json({ error: 'معرف غير صالح' });
+    }
+
+    const supplier = await prisma.supplier.findUnique({ where: { id } });
+    if (!supplier) {
+      return res.status(404).json({ error: 'المورد غير موجود' });
+    }
+
+    const txs = await prisma.supplierTransaction.findMany({
+      where: { supplierId: id },
+      include: {
+        stockLog: {
+          include: { item: { select: { id: true, name: true } } }
+        }
+      },
+      orderBy: [{ date: 'asc' }, { id: 'asc' }]
+    });
+
+    let running = 0;
+    const transactions = txs.map(t => {
+      running = round2(running + (t.type === 'payment' ? -Number(t.amount) : Number(t.amount)));
+      return { ...t, _id: t.id, runningBalance: running };
+    });
+
+    res.json({
+      supplier: { id: supplier.id, name: supplier.name, phone: supplier.phone },
+      balance: running,
+      transactions
+    });
+  } catch (err) {
+    console.error('Error fetching supplier statement:', err);
+    res.status(500).json({ error: 'فشل في جلب كشف حساب المورد' });
+  }
+});
+
+// POST /api/suppliers/:id/transactions - حركة يدوية (دفعة للمورد أو توريد/رصيد يدوي)
+// Body: { type: 'payment' | 'purchase', amount, notes?, date? }
+router.post('/:id/transactions', async (req, res) => {
+  try {
+    if (!ledgerSupported()) {
+      return res.status(400).json({ error: 'دفتر المورد يتطلب تطبيق ترحيل دفتر الموردين أولًا' });
+    }
+    const id = parseInt(req.params.id);
+    if (isNaN(id) || id <= 0) {
+      return res.status(400).json({ error: 'معرف غير صالح' });
+    }
+
+    const supplier = await prisma.supplier.findUnique({ where: { id } });
+    if (!supplier) {
+      return res.status(404).json({ error: 'المورد غير موجود' });
+    }
+
+    const { type, amount, notes, date } = req.body;
+    if (type !== 'payment' && type !== 'purchase') {
+      return res.status(400).json({ error: 'نوع الحركة يجب أن يكون دفعة (payment) أو توريد (purchase)' });
+    }
+
+    const parsedAmount = round2(Number(amount));
+    if (isNaN(parsedAmount) || parsedAmount <= 0) {
+      return res.status(400).json({ error: 'المبلغ يجب أن يكون رقمًا موجبًا أكبر من صفر' });
+    }
+
+    let txDate = new Date();
+    if (date) {
+      const d = new Date(date);
+      if (!isNaN(d.getTime())) txDate = d;
+    }
+
+    const tx = await prisma.supplierTransaction.create({
+      data: {
+        supplierId: id,
+        type,
+        amount: parsedAmount,
+        notes: notes ? String(notes).trim() : (type === 'payment' ? 'دفعة للمورد' : 'توريد يدوي'),
+        date: txDate
+      }
+    });
+
+    const balance = await getSupplierBalance(id);
+
+    res.status(201).json({
+      ...tx,
+      _id: tx.id,
+      balance,
+      message: type === 'payment'
+        ? `تم تسجيل دفعة ${parsedAmount} للمورد "${supplier.name}" ✓`
+        : `تم تسجيل توريد يدوي ${parsedAmount} للمورد "${supplier.name}" ✓`
+    });
+  } catch (err) {
+    console.error('Error creating supplier transaction:', err);
+    res.status(500).json({ error: 'فشل في تسجيل الحركة' });
   }
 });
 

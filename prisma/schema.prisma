@@ -153,6 +153,7 @@ model StockLog {
   // المورد المرتبط بحركة التوريد (اختياري)
   supplierId    Int?
   supplier      Supplier? @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+  transaction   SupplierTransaction?
   notes         String   @default("")
   createdAt     DateTime @default(now())
 
@@ -162,17 +163,37 @@ model StockLog {
 
 // الموردون — جهات توريد الخامات للمخزون
 model Supplier {
-  id        Int        @id @default(autoincrement())
-  name      String     // اسم المورد
-  phone     String     @default("-")
-  address   String     @default("")
-  notes     String     @default("")
-  isActive  Boolean    @default(true)
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
-  stockLogs StockLog[]
+  id           Int                   @id @default(autoincrement())
+  name         String                // اسم المورد
+  phone        String                @default("-")
+  address      String                @default("")
+  notes        String                @default("")
+  isActive     Boolean               @default(true)
+  createdAt    DateTime              @default(now())
+  updatedAt    DateTime              @updatedAt
+  stockLogs    StockLog[]
+  transactions SupplierTransaction[]
 
   @@index([name])
+}
+
+// دفتر حساب المورد — مستحقات المورد (توريدات آجلة) ومدفوعاته
+model SupplierTransaction {
+  id         Int      @id @default(autoincrement())
+  supplierId Int
+  supplier   Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  // 'purchase' (توريد آجل يزيد المستحق للمورد) أو 'payment' (دفعة تنقص المستحق)
+  type       String
+  amount     Float
+  notes      String   @default("")
+  // ربط اختياري بحركة التوريد الأصلية
+  stockLogId Int?     @unique
+  stockLog   StockLog? @relation(fields: [stockLogId], references: [id], onDelete: SetNull)
+  date       DateTime @default(now())
+  createdAt  DateTime @default(now())
+
+  @@index([supplierId])
+  @@index([date])
 }
 
 model InvoiceItem {

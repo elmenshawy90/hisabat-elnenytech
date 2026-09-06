@@ -527,7 +527,7 @@ router.delete('/:id', async (req, res) => {
 router.post('/:id/restock', async (req, res) => {
   try {
     const id = parseInt(req.params.id);
-    const { quantity, unitId, notes, supplierId } = req.body;
+    const { quantity, unitId, notes, supplierId, totalCost } = req.body;
 
     if (isNaN(id) || id <= 0) {
       return res.status(400).json({ error: 'معرف الصنف غير صالح' });
@@ -576,6 +576,18 @@ router.post('/:id/restock', async (req, res) => {
 
     const quantityBase = qty * Number(unit.conversionRate);
 
+    // تكلفة التوريد الإجمالية (اختيارية) — تُسجل كمستحق للمورد وتتطلب تحديد المورد
+    let restockCost = 0;
+    if (totalCost !== undefined && totalCost !== null && totalCost !== '') {
+      restockCost = Math.round((Number(totalCost) + Number.EPSILON) * 100) / 100;
+      if (isNaN(restockCost) || restockCost < 0) {
+        return res.status(400).json({ error: 'تكلفة التوريد يجب أن تكون رقمًا موجبًا' });
+      }
+      if (restockCost > 0 && !restockSupplierId) {
+        return res.status(400).json({ error: 'تسجيل تكلفة التوريد يتطلب تحديد المورد' });
+      }
+    }
+
     const result = await prisma.$transaction(async (tx) => {
       const latestLog = await tx.stockLog.findFirst({
         where: { itemId: id },
@@ -605,13 +617,35 @@ router.post('/:id/restock', async (req, res) => {
 
       const stockLog = await tx.stockLog.create({ data: stockLogData });
 
-      return { stockLog, balanceAfter };
+      // مستحق المورد: توريد آجل بقيمة التكلفة (يتجاوز بصمت قبل ترحيل الدفتر)
+      let purchaseTx = null;
+      try {
+        if (restockCost > 0 && restockSupplierId && tx.supplierTransaction) {
+          purchaseTx = await tx.supplierTransaction.create({
+            data: {
+              supplierId: restockSupplierId,
+              type: 'purchase',
+              amount: restockCost,
+              notes: `توريد ${unit.name} × ${qty}${restockSupplierName ? ` — ${restockSupplierName}` : ''}`,
+              stockLogId: stockLog.id,
+              date: new Date()
+            }
+          });
+        }
+      } catch (ledgerErr) {
+        console.warn('[suppliers] ledger unavailable, skipping payable:', ledgerErr.message);
+      }
+
+      return { stockLog, balanceAfter, purchaseTx };
     });
 
     res.status(201).json({
       stockLog: result.stockLog,
       currentStock: result.balanceAfter,
-      message: 'تم توريد المخزون بنجاح'
+      purchaseTransaction: result.purchaseTx || undefined,
+      message: result.purchaseTx
+        ? 'تم توريد المخزون وتسجيل المستحق للمورد بنجاح'
+        : 'تم توريد المخزون بنجاح'
     });
   } catch (err) {
     console.error('Error restocking item:', err);

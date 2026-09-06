@@ -294,6 +294,12 @@
             </div>
 
             <div class="space-y-xs">
+                <label class="block text-xs font-bold text-on-surface-variant">إجمالي سعر التوريد (اختياري)</label>
+                <input type="number" step="any" min="0" id="restockTotalCost" class="w-full h-11 px-md rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary outline-none text-right font-bold text-on-surface dir-ltr" placeholder="0.00" />
+                <p class="text-[11px] text-secondary">عند إدخال التكلفة مع تحديد المورد تُسجَّل تلقائيًا كمستحق له في حسابه.</p>
+            </div>
+
+            <div class="space-y-xs">
                 <label class="block text-xs font-bold text-on-surface-variant">ملاحظات التوريد (اختياري)</label>
                 <input type="text" id="restockNotes" class="w-full h-11 px-md rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary outline-none text-right text-on-surface" placeholder="اسم المورد، رقم الإذن..." />
             </div>
@@ -1470,6 +1476,8 @@ async function submitRestock(e) {
     const notes = document.getElementById('restockNotes').value;
     const supplierSel = document.getElementById('restockSupplierSelect');
     const supplierId = supplierSel && supplierSel.value ? supplierSel.value : undefined;
+    const costEl = document.getElementById('restockTotalCost');
+    const totalCost = costEl && costEl.value !== '' ? costEl.value : undefined;
 
     submitBtn.disabled = true;
     submitBtn.innerHTML = '<span class="material-symbols-outlined text-sm animate-spin">progress_activity</span> <span>جاري التوريد...</span>';
@@ -1478,14 +1486,14 @@ async function submitRestock(e) {
         const res = await fetch(`/api/items/${currentRestockItemId}/restock`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ quantity, unitId, notes, supplierId })
+            body: JSON.stringify({ quantity, unitId, notes, supplierId, totalCost })
         });
 
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'فشل في إضافة التوريد');
 
         closeRestockModal();
-        showToast('تم توريد المخزون بنجاح ✓', 'success');
+        showToast((data && data.message ? data.message : 'تم توريد المخزون بنجاح') + ' ✓', 'success');
         loadItems();
     } catch (err) {
         console.error(err);
