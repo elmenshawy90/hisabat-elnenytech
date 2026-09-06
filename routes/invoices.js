@@ -11,6 +11,43 @@ const MAX_INVOICE_EDIT_DAYS = 30;
 // Apply auth middleware to all routes
 router.use(requireAuth);
 
+/**
+ * دعم تدريجي لجدول خدمات الفواتير (InvoiceService):
+ * يعمل قبل تطبيق الترحيل (بدون خدمات) وبعده.
+ */
+function servicesSupported(db) {
+  return Boolean(db && db.invoiceService);
+}
+function servicesInclude(db) {
+  return servicesSupported(db) ? { services: true } : {};
+}
+
+/**
+ * تحليل بنود الخدمات الإضافية (أخري): [{ name, price }]
+ * يتجاوز الصفوف الفارغة تمامًا، ويرمي خطأ عربيًا عند البيانات الناقصة.
+ */
+function parseServicesInput(raw) {
+  if (raw === undefined || raw === null) return { services: [], total: 0 };
+  if (!Array.isArray(raw)) throw new Error('بيانات الخدمات (أخري) غير صالحة');
+  const services = [];
+  let total = 0;
+  for (let i = 0; i < raw.length; i++) {
+    const s = raw[i] || {};
+    const name = s.name ? String(s.name).trim() : '';
+    const priceRaw = s.price;
+    const price = priceRaw === undefined || priceRaw === null || priceRaw === '' ? NaN : Number(priceRaw);
+    const isEmptyRow = !name && (priceRaw === undefined || priceRaw === null || priceRaw === '' || isNaN(price) || price <= 0);
+    if (isEmptyRow) continue;
+    if (!name) throw new Error(`اسم الخدمة مطلوب للخدمة رقم ${i + 1} (قسم أخري)`);
+    if (isNaN(price) || price < 0) throw new Error(`سعر الخدمة غير صالح للخدمة "${name}"`);
+    const rounded = Math.round((price + Number.EPSILON) * 100) / 100;
+    if (rounded <= 0) throw new Error(`سعر الخدمة يجب أن يكون أكبر من صفر للخدمة "${name}"`);
+    services.push({ name, price: rounded });
+    total = Math.round((total + rounded + Number.EPSILON) * 100) / 100;
+  }
+  return { services, total };
+}
+
 // GET /api/invoices - List invoices with pagination and filters
 router.get('/', async (req, res) => {
   try {
@@ -35,7 +72,8 @@ router.get('/', async (req, res) => {
             item: true,
             itemUnit: true
           }
-        }
+        },
+        ...servicesInclude(prisma)
       },
       orderBy: [
         { date: 'desc' },
@@ -79,7 +117,8 @@ router.get('/:id', async (req, res) => {
             item: true,
             itemUnit: true
           }
-        }
+        },
+        ...servicesInclude(prisma)
       }
     });
 
@@ -189,6 +228,16 @@ router.post('/', async (req, res) => {
     let stockWarnings = [];
     let discountAmount = 0;
 
+    // خدمات قسم (أخري) — تُضاف بعد الخصم (غير خاضعة للخصم)
+    let parsedServices = { services: [], total: 0 };
+    if (data.type === 'purchase') {
+      try {
+        parsedServices = parseServicesInput(data.services);
+      } catch (svcErr) {
+        return res.status(400).json({ error: svcErr.message });
+      }
+    }
+
     if (hasItems) {
       for (let i = 0; i < data.items.length; i++) {
         const itemInput = data.items[i];
@@ -286,6 +335,19 @@ router.post('/', async (req, res) => {
       }
     }
 
+    // خدمات (أخري) تُضاف للإجمالي بعد الخصم — والفاتورة تقبل بنودًا أو خدمات أو كليهما
+    if (data.type === 'purchase') {
+      if (!hasItems && parsedServices.services.length === 0) {
+        return res.status(400).json({ error: 'يجب إدخال بند واحد أو خدمة واحدة على الأقل بفاتورة الشراء' });
+      }
+      if (!hasItems) {
+        discountAmount = 0;
+        finalAmount = parsedServices.total;
+      } else if (parsedServices.total > 0) {
+        finalAmount = Math.round((finalAmount + parsedServices.total + Number.EPSILON) * 100) / 100;
+      }
+    }
+
     const paidAmount = data.paidAmount !== undefined && data.paidAmount !== null && !isNaN(parseFloat(data.paidAmount)) 
       ? Math.round((parseFloat(data.paidAmount) + Number.EPSILON) * 100) / 100 
       : 0;
@@ -340,7 +402,12 @@ router.post('/', async (req, res) => {
               unitPrice: pi.unitPrice,
               lineTotal: pi.lineTotal
             }))
-          } : undefined
+          } : undefined,
+          ...(servicesSupported(tx) && parsedServices.services.length > 0 ? {
+            services: {
+              create: parsedServices.services.map(s => ({ name: s.name, price: s.price }))
+            }
+          } : {})
         },
         include: {
           endClient: true,
@@ -349,7 +416,8 @@ router.post('/', async (req, res) => {
               item: true,
               itemUnit: true
             }
-          }
+          },
+          ...servicesInclude(tx)
         }
       });
 
@@ -485,8 +553,15 @@ router.put('/:id', async (req, res) => {
     }
 
     const data = req.body;
-    if (!data.items || !Array.isArray(data.items) || data.items.length === 0) {
-      return res.status(400).json({ error: 'يجب إدخال بند واحد على الأقل بفاتورة الشراء' });
+    const itemsArr = Array.isArray(data.items) ? data.items : [];
+    let parsedServices = { services: [], total: 0 };
+    try {
+      parsedServices = parseServicesInput(data.services);
+    } catch (svcErr) {
+      return res.status(400).json({ error: svcErr.message });
+    }
+    if (itemsArr.length === 0 && parsedServices.services.length === 0) {
+      return res.status(400).json({ error: 'يجب إدخال بند واحد أو خدمة واحدة على الأقل بفاتورة الشراء' });
     }
 
     // Verify endClient if provided
@@ -522,8 +597,8 @@ router.put('/:id', async (req, res) => {
     }
 
     // Fetch and validate items and units
-    const itemIds = [...new Set(data.items.map(it => parseInt(it.itemId)).filter(Boolean))];
-    const unitIds = [...new Set(data.items.map(it => parseInt(it.itemUnitId)).filter(Boolean))];
+    const itemIds = [...new Set(itemsArr.map(it => parseInt(it.itemId)).filter(Boolean))];
+    const unitIds = [...new Set(itemsArr.map(it => parseInt(it.itemUnitId)).filter(Boolean))];
 
     const [dbItems, dbUnits] = await Promise.all([
       prisma.item.findMany({ where: { id: { in: itemIds } } }),
@@ -536,7 +611,7 @@ router.put('/:id', async (req, res) => {
     let calculatedSubtotal = 0;
     const newPreparedItems = [];
 
-    for (const rawItem of data.items) {
+    for (const rawItem of itemsArr) {
       const iId = parseInt(rawItem.itemId);
       const uId = parseInt(rawItem.itemUnitId);
       const qty = parseFloat(rawItem.quantity);
@@ -583,7 +658,11 @@ router.put('/:id', async (req, res) => {
       }
     }
     discountAmount = Math.min(discountAmount, calculatedSubtotal);
-    const finalAmount = Math.round((calculatedSubtotal - discountAmount + Number.EPSILON) * 100) / 100;
+    let finalAmount = Math.round((calculatedSubtotal - discountAmount + Number.EPSILON) * 100) / 100;
+    // خدمات (أخري) تُضاف بعد الخصم
+    if (parsedServices.total > 0) {
+      finalAmount = Math.round((finalAmount + parsedServices.total + Number.EPSILON) * 100) / 100;
+    }
 
     const paidAmount = data.paidAmount !== undefined && data.paidAmount !== null && !isNaN(parseFloat(data.paidAmount))
       ? Math.round((parseFloat(data.paidAmount) + Number.EPSILON) * 100) / 100
@@ -616,18 +695,38 @@ router.put('/:id', async (req, res) => {
         where: { invoiceId: invoice.id }
       });
 
+      // b2. Replace old services (if supported)
+      if (servicesSupported(tx)) {
+        await tx.invoiceService.deleteMany({
+          where: { invoiceId: invoice.id }
+        });
+      }
+
       // c. Create new InvoiceItems
-      await tx.invoiceItem.createMany({
-        data: newPreparedItems.map(it => ({
-          invoiceId: invoice.id,
-          itemId: it.itemId,
-          itemUnitId: it.itemUnitId,
-          quantity: it.quantity,
-          quantityBase: it.quantityBase,
-          unitPrice: it.unitPrice,
-          lineTotal: it.lineTotal
-        }))
-      });
+      if (newPreparedItems.length > 0) {
+        await tx.invoiceItem.createMany({
+          data: newPreparedItems.map(it => ({
+            invoiceId: invoice.id,
+            itemId: it.itemId,
+            itemUnitId: it.itemUnitId,
+            quantity: it.quantity,
+            quantityBase: it.quantityBase,
+            unitPrice: it.unitPrice,
+            lineTotal: it.lineTotal
+          }))
+        });
+      }
+
+      // c2. Create new services
+      if (servicesSupported(tx) && parsedServices.services.length > 0) {
+        await tx.invoiceService.createMany({
+          data: parsedServices.services.map(s => ({
+            invoiceId: invoice.id,
+            name: s.name,
+            price: s.price
+          }))
+        });
+      }
 
       // d. For each new item: check stock availability and deduct stock
       for (const newItem of newPreparedItems) {
@@ -670,7 +769,8 @@ router.put('/:id', async (req, res) => {
               itemUnit: true
             }
           },
-          endClient: true
+          endClient: true,
+          ...servicesInclude(tx)
         }
       });
 

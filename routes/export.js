@@ -862,7 +862,8 @@ router.get('/invoice/:id/image', async (req, res) => {
             item: true,
             itemUnit: true
           }
-        }
+        },
+        ...(prisma.invoiceService ? { services: true } : {})
       }
     });
 

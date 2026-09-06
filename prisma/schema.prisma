@@ -75,9 +75,10 @@ model Invoice {
   address           String
   date              DateTime      @default(now())
   status            String        @default("pending") // 'pending', 'paid', 'overdue'
-  createdAt         DateTime      @default(now())
-  updatedAt         DateTime      @updatedAt
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
   items             InvoiceItem[]
+  services          InvoiceService[]
 
   @@index([clientId])
   @@index([endClientId])
@@ -171,6 +172,18 @@ model InvoiceItem {
 
   @@index([invoiceId])
   @@index([itemId])
+}
+
+// بنود الخدمات الإضافية (أخري) — اسم الخدمة + السعر، بلا مخزون
+model InvoiceService {
+  id        Int      @id @default(autoincrement())
+  invoiceId Int
+  invoice   Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  name      String   // اسم الخدمة: مثال "نقل"، "تحميل"، "تركيب"
+  price     Float    // سعر الخدمة
+  createdAt DateTime @default(now())
+
+  @@index([invoiceId])
 }
 
 model Setting {

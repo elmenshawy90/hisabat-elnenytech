@@ -343,6 +343,32 @@
         </table>
         <% } %>
 
+        <!-- Other Services (أخري) -->
+        <% const receiptServices = invoice.services || []; %>
+        <% if (receiptServices.length > 0) {
+            let servicesSum = 0;
+            receiptServices.forEach(s => { servicesSum += Number(s.price) || 0; });
+        %>
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 5%;">#</th>
+                    <th style="width: 65%;">أخري — اسم الخدمة</th>
+                    <th class="text-left" style="width: 30%;">السعر</th>
+                </tr>
+            </thead>
+            <tbody>
+                <% receiptServices.forEach((s, idx) => { %>
+                <tr>
+                    <td class="text-center"><%= idx + 1 %></td>
+                    <td><strong><%= s.name %></strong></td>
+                    <td class="text-left font-bold dir-ltr"><%= formatCurrency(s.price) %></td>
+                </tr>
+                <% }); %>
+            </tbody>
+        </table>
+        <% } %>
+
         <!-- Summary & Totals -->
         <div class="summary-container">
             <div class="notes-box" style="<%= (!invoice.notes && !invoice.details) ? 'visibility: hidden;' : '' %>">
@@ -361,6 +387,13 @@
                 <div class="total-row" style="color: #b45309;">
                     <span class="info-label">الخصم المطبق:</span>
                     <span class="dir-ltr">-<%= formatCurrency(invoice.discountAmount) %></span>
+                </div>
+                <% } %>
+                <% const receiptServicesTotal = (invoice.services || []).reduce((s, x) => s + (Number(x.price) || 0), 0); %>
+                <% if (receiptServicesTotal > 0) { %>
+                <div class="total-row">
+                    <span class="info-label">مجموع الخدمات (أخري):</span>
+                    <span class="dir-ltr"><%= formatCurrency(receiptServicesTotal) %></span>
                 </div>
                 <% } %>
 

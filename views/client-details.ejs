@@ -448,6 +448,29 @@
                     <!-- Dynamic Line Rows Rendered via JS -->
                 </div>
 
+                <!-- Other Services Section (أخري) -->
+                <div id="otherServicesContainer" class="space-y-sm border border-outline-variant/80 rounded-xl p-md bg-surface">
+                    <div class="flex items-center justify-between border-b border-outline-variant/40 pb-xs">
+                        <div>
+                            <h4 class="font-bold text-sm text-on-surface">أخري — خدمات إضافية</h4>
+                            <p class="text-[11px] text-secondary">خدمات بلا مخزون (نقل، تحميل، تركيب...) — تُضاف للإجمالي بعد الخصم.</p>
+                        </div>
+                        <button type="button" onclick="addServiceRow()" class="px-sm py-1 bg-primary/10 hover:bg-primary text-primary hover:text-white rounded-lg text-xs font-bold transition-all flex items-center gap-1 cursor-pointer">
+                            <span class="material-symbols-outlined text-sm">add</span>
+                            <span>إضافة خدمة</span>
+                        </button>
+                    </div>
+
+                    <div id="serviceRowsContainer" class="space-y-xs pt-xs">
+                        <!-- Dynamic Service Rows Rendered via JS -->
+                    </div>
+
+                    <div class="flex items-center justify-between font-bold text-xs text-on-surface-variant border-t border-outline-variant/60 pt-sm">
+                        <span>مجموع الخدمات:</span>
+                        <span id="servicesSubtotalText" class="text-on-surface text-sm font-bold dir-ltr">0.00 ج.م</span>
+                    </div>
+                </div>
+
                 <!-- Subtotal, Discount & Final Total Footer -->
                 <div class="space-y-xs border-t border-outline-variant/60 pt-sm">
                     <div class="flex items-center justify-between font-bold text-xs text-on-surface-variant">
@@ -472,8 +495,12 @@
                             <input type="number" step="any" min="0" id="discountValue" placeholder="0" class="w-full h-8 px-xs rounded-md bg-surface-container-low border border-outline-variant text-xs font-bold text-center dir-ltr focus:border-primary outline-none" oninput="updateAllLineTotalsAndGrandTotal()" />
                         </div>
                     </div>
+                    <div class="flex items-center justify-between font-bold text-xs text-on-surface-variant">
+                        <span>مجموع الخدمات (أخري):</span>
+                        <span id="itemsServicesTotalText" class="text-on-surface text-sm font-bold dir-ltr">0.00 ج.م</span>
+                    </div>
                     <div class="flex items-center justify-between pt-xs font-bold text-sm border-t border-outline-variant/40">
-                        <span class="text-on-surface font-bold">الإجمالي الكلي بعد الخصم:</span>
+                        <span class="text-on-surface font-bold">الإجمالي الكلي بعد الخصم والخدمات:</span>
                         <span id="itemsGrandTotalText" class="text-primary text-base font-bold dir-ltr">0.00 ج.م</span>
                     </div>
 
@@ -577,6 +604,24 @@
                         </thead>
                         <tbody id="tdItemsBreakdownBody" class="divide-y divide-outline-variant/40">
                             <!-- Items populated via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Other Services Breakdown (Shown if invoice has services) -->
+            <div id="tdServicesBreakdownContainer" class="hidden border-b border-outline-variant pb-xs space-y-xs">
+                <span class="text-secondary font-label-md font-bold">خدمات إضافية (أخري)</span>
+                <div class="overflow-x-auto rounded-lg border border-outline-variant/60">
+                    <table class="w-full text-right text-xs border-collapse">
+                        <thead class="bg-surface-container-low text-secondary font-bold border-b border-outline-variant/60">
+                            <tr>
+                                <th class="p-2">اسم الخدمة</th>
+                                <th class="p-2">السعر</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tdServicesBreakdownBody" class="divide-y divide-outline-variant/40">
+                            <!-- Services populated via JS -->
                         </tbody>
                     </table>
                 </div>
@@ -1750,6 +1795,23 @@ function openTransactionDetails(id) {
     } else {
         itemsContainer.classList.add('hidden');
     }
+
+    // Render services (أخري) breakdown if available
+    const servicesContainer = document.getElementById('tdServicesBreakdownContainer');
+    const servicesBody = document.getElementById('tdServicesBreakdownBody');
+    if (servicesContainer && servicesBody) {
+        if (inv.services && inv.services.length > 0) {
+            servicesBody.innerHTML = inv.services.map(s => `
+                <tr>
+                    <td class="p-2 font-bold text-on-surface">${s.name}</td>
+                    <td class="p-2 font-bold text-primary dir-ltr text-right">${formatCurrency(s.price)}</td>
+                </tr>
+            `).join('');
+            servicesContainer.classList.remove('hidden');
+        } else {
+            servicesContainer.classList.add('hidden');
+        }
+    }
     
     const modal = document.getElementById('transactionDetailsModal');
     modal.classList.remove('hidden');
@@ -2046,6 +2108,17 @@ async function openEditInvoiceModal(id) {
         }
     }
 
+    // Preload other services (أخري) — fresh fetch to guarantee services data
+    let editServices = inv.services || [];
+    try {
+        const fullRes = await fetch(`/api/invoices/${inv.id || inv._id}`);
+        if (fullRes.ok) {
+            const fullJson = await fullRes.json();
+            if (Array.isArray(fullJson.services)) editServices = fullJson.services;
+        }
+    } catch (svcErr) { console.error(svcErr); }
+    renderServiceRows(editServices);
+
     updateAllLineTotalsAndGrandTotal();
 }
 
@@ -2135,8 +2208,7 @@ function renderInvoiceLineRows() {
     if (!container) return;
     container.innerHTML = '';
     addInvoiceLineRow();
-    addInvoiceLineRow();
-    addInvoiceLineRow();
+    renderServiceRows([]);
     const discountValInput = document.getElementById('discountValue');
     if (discountValInput) discountValInput.value = '';
 }
@@ -2356,6 +2428,80 @@ function populateAllUnitDropdowns() {
     });
 }
 
+// ===== خدمات (أخري): اسم الخدمة + السعر — بلا مخزون =====
+function escapeAttr(val) {
+    return String(val ?? '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+}
+
+function addServiceRow(name = '', price = '') {
+    const container = document.getElementById('serviceRowsContainer');
+    if (!container) return;
+    const rowId = `svc_row_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
+    const row = document.createElement('div');
+    row.className = 'service-row flex items-center gap-xs flex-wrap sm:flex-nowrap bg-surface p-xs rounded-xl border border-outline-variant/60';
+    row.id = rowId;
+    row.innerHTML = `
+        <div class="flex-1 min-w-[140px]">
+            <label class="block text-[11px] font-bold text-secondary mb-1">اسم الخدمه <span class="text-error">*</span></label>
+            <input type="text" value="${escapeAttr(name)}" class="service-name-input w-full h-9 px-xs rounded-md bg-surface-container-low border border-outline-variant text-xs font-bold text-right outline-none focus:border-primary" placeholder="مثال: نقل، تحميل، تركيب..." />
+        </div>
+        <div class="w-28">
+            <label class="block text-[11px] font-bold text-secondary mb-1">السعر (ج.م) <span class="text-error">*</span></label>
+            <input type="number" step="any" min="0" value="${price === '' || price === null || price === undefined ? '' : price}" class="service-price-input w-full h-9 px-xs rounded-md bg-surface-container-low border border-outline-variant text-xs font-bold text-center dir-ltr focus:border-primary outline-none" placeholder="0.00" oninput="updateAllLineTotalsAndGrandTotal()" />
+        </div>
+        <div class="w-8 shrink-0 pt-4">
+            <button type="button" onclick="removeServiceRow('${rowId}')" class="w-8 h-8 flex items-center justify-center text-error hover:bg-error/10 rounded-md transition-colors cursor-pointer" title="حذف الخدمة">
+                <span class="material-symbols-outlined text-base">delete</span>
+            </button>
+        </div>
+    `;
+    container.appendChild(row);
+    updateAllLineTotalsAndGrandTotal();
+}
+
+function removeServiceRow(rowId) {
+    const row = document.getElementById(rowId);
+    if (row) row.remove();
+    updateAllLineTotalsAndGrandTotal();
+}
+
+function getServicesTotal() {
+    let total = 0;
+    document.querySelectorAll('#serviceRowsContainer .service-price-input').forEach(inp => {
+        total += parseFloat(inp.value) || 0;
+    });
+    return Math.round((total + Number.EPSILON) * 100) / 100;
+}
+
+function collectServicesPayload() {
+    const rows = Array.from(document.querySelectorAll('#serviceRowsContainer .service-row'));
+    const services = [];
+    for (let i = 0; i < rows.length; i++) {
+        const nameEl = rows[i].querySelector('.service-name-input');
+        const priceEl = rows[i].querySelector('.service-price-input');
+        const name = nameEl ? nameEl.value.trim() : '';
+        const priceRaw = priceEl ? priceEl.value : '';
+        const price = priceRaw === '' ? NaN : parseFloat(priceRaw);
+        if (!name && (priceRaw === '' || isNaN(price) || price <= 0)) continue;
+        if (!name) return { error: `الرجاء إدخال اسم الخدمه للخدمة رقم ${i + 1} (قسم أخري)` };
+        if (isNaN(price) || price <= 0) return { error: `الرجاء إدخال سعر صحيح للخدمة "${name}"` };
+        services.push({ name, price: Math.round((price + Number.EPSILON) * 100) / 100 });
+    }
+    return { services };
+}
+
+function renderServiceRows(services) {
+    const container = document.getElementById('serviceRowsContainer');
+    if (!container) return;
+    container.innerHTML = '';
+    if (services && services.length > 0) {
+        services.forEach(s => addServiceRow(s.name || '', s.price ?? ''));
+    } else {
+        addServiceRow();
+    }
+    updateAllLineTotalsAndGrandTotal();
+}
+
 function onLineUnitChanged(rowId) {
     const row = document.getElementById(rowId);
     if (!row) return;
@@ -2435,12 +2581,6 @@ function onLineUnitChanged(rowId) {
 }
 
 function removeInvoiceLineRow(rowId) {
-    const container = document.getElementById('invoiceLineRowsContainer');
-    const rows = container.querySelectorAll('.invoice-line-row');
-    if (rows.length <= 1) {
-        showToast('يجب إدخال بند واحد على الأقل بفاتورة الشراء', 'warning');
-        return;
-    }
     const row = document.getElementById(rowId);
     if (row) row.remove();
     updateAllLineTotalsAndGrandTotal();
@@ -2579,13 +2719,19 @@ function updateAllLineTotalsAndGrandTotal() {
     }
 
     discountAmount = Math.min(discountAmount, subtotal);
-    const grandTotal = Math.round((subtotal - discountAmount + Number.EPSILON) * 100) / 100;
+    // خدمات (أخري) تُضاف بعد الخصم
+    const servicesTotal = getServicesTotal();
+    const grandTotal = Math.round((subtotal - discountAmount + servicesTotal + Number.EPSILON) * 100) / 100;
 
     const subtotalEl = document.getElementById('itemsSubtotalText');
     const grandTotalEl = document.getElementById('itemsGrandTotalText');
+    const servicesTotalEl = document.getElementById('itemsServicesTotalText');
+    const servicesSubtotalEl = document.getElementById('servicesSubtotalText');
     const invoiceAmountInput = document.getElementById('invoiceAmount');
 
     if (subtotalEl) subtotalEl.textContent = formatCurrency(subtotal);
+    if (servicesTotalEl) servicesTotalEl.textContent = formatCurrency(servicesTotal);
+    if (servicesSubtotalEl) servicesSubtotalEl.textContent = formatCurrency(servicesTotal);
     if (grandTotalEl) grandTotalEl.textContent = formatCurrency(grandTotal);
     if (invoiceAmountInput && currentTransactionType === 'purchase') {
         invoiceAmountInput.value = grandTotal;
@@ -2642,6 +2788,7 @@ function closeInvoiceModal() {
     if (modalTitle) modalTitle.textContent = 'إضافة فاتورة جديدة';
     const submitBtn = document.getElementById('submitBtn');
     if (submitBtn) submitBtn.textContent = 'حفظ الفاتورة';
+    renderServiceRows([]);
 }
 
 document.getElementById('invoiceModal').addEventListener('click', function (e) {
@@ -2728,6 +2875,7 @@ document.getElementById('invoiceForm').addEventListener('submit', async function
     let itemsPayload = undefined;
     let discountType = undefined;
     let discountValue = undefined;
+    let servicesPayload = [];
 
     if (currentTransactionType === 'purchase') {
         const rows = Array.from(document.querySelectorAll('#invoiceLineRowsContainer .invoice-line-row'));
@@ -2763,8 +2911,15 @@ document.getElementById('invoiceForm').addEventListener('submit', async function
             itemsPayload.push({ itemId, itemUnitId, quantity, unitPrice });
         }
 
-        if (itemsPayload.length === 0) {
-            showToast('يجب إدخال بند واحد على الأقل بفاتورة الشراء', 'warning');
+        const collected = collectServicesPayload();
+        if (collected.error) {
+            showToast(collected.error, 'warning');
+            return;
+        }
+        servicesPayload = collected.services;
+
+        if (itemsPayload.length === 0 && servicesPayload.length === 0) {
+            showToast('يجب إدخال بند واحد أو خدمة واحدة على الأقل بفاتورة الشراء', 'warning');
             return;
         }
 
@@ -2818,6 +2973,7 @@ document.getElementById('invoiceForm').addEventListener('submit', async function
                 address: address || '-',
                 type: currentTransactionType,
                 items: itemsPayload,
+                services: servicesPayload,
                 discountType,
                 discountValue,
                 paidAmount: paidAmountVal,
