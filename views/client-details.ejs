@@ -1582,12 +1582,17 @@ async function fetchActiveItemsCatalog() {
     } finally {
         isFetchingItems = false;
         populateItemDropdowns();
+        populateAllUnitDropdowns();
+        fetchMasterUnits();
     }
 }
 
 function populateItemDropdowns() {
     const itemSelects = document.querySelectorAll('.line-item-select');
     itemSelects.forEach(select => {
+        const row = select.closest('.invoice-line-row');
+        const unitSelect = row ? row.querySelector('.line-unit-select') : null;
+        const activeUnitVal = unitSelect && unitSelect.value ? unitSelect.value : '';
         const currentVal = select.value;
         if (isFetchingItems && cachedActiveItems.length === 0) {
             select.innerHTML = '<option value="">⏳ جاري تحميل الأصناف...</option>';
@@ -1596,12 +1601,25 @@ function populateItemDropdowns() {
             select.innerHTML = '<option value="">⚠️ لا توجد أصناف متاحة في الكتالوج</option>';
             select.disabled = true;
         } else {
+            // لو وحدة مختارة مسبقاً بدون صنف: اعرض الأصناف المتوافقة فقط (مطابقة رئيسية ثم اسمية)
+            let list = cachedActiveItems;
+            if (!currentVal && activeUnitVal) {
+                const resolved = resolveSelectedMaster(unitSelect, activeUnitVal);
+                if (resolved && (resolved.masterId || resolved.name)) {
+                    const compatible = itemsCompatibleWithMaster(resolved.masterId, resolved.name);
+                    if (compatible.length > 0) list = compatible;
+                }
+            }
             const options = ['<option value="">-- اختر الصنف --</option>'];
-            cachedActiveItems.forEach(item => {
+            list.forEach(item => {
                 const idStr = String(item.id || item._id);
                 const isSelected = idStr === String(currentVal) ? 'selected' : '';
                 options.push(`<option value="${idStr}" ${isSelected}>${item.name}</option>`);
             });
+            if (currentVal && !list.some(it => String(it.id || it._id) === String(currentVal))) {
+                const kept = cachedActiveItems.find(it => String(it.id || it._id) === String(currentVal));
+                if (kept) options.push(`<option value="${String(kept.id || kept._id)}" selected>${kept.name}</option>`);
+            }
             select.innerHTML = options.join('');
             select.disabled = false;
         }
@@ -2052,10 +2070,10 @@ function addPreloadedInvoiceLineRow(itemData) {
             </div>
             <div class="w-28">
                 <label class="block text-[11px] font-bold text-secondary mb-1">الوحدة <span class="text-error">*</span></label>
-                <select class="line-unit-select w-full h-9 px-xs rounded-md bg-surface-container-low border border-outline-variant text-xs font-bold text-right outline-none cursor-pointer" onchange="onLineInputsCalculated('${rowId}')">
+                <select class="line-unit-select w-full h-9 px-xs rounded-md bg-surface-container-low border border-outline-variant text-xs font-bold text-right outline-none cursor-pointer" onchange="onLineUnitChanged('${rowId}')">
                     <option value="">-- اختر الوحدة --</option>
                 </select>
-                <span class="unit-hint-text text-[10px] text-secondary/70 hidden mt-0.5">اختر الصنف أولاً</span>
+                <span class="unit-hint-text text-[10px] text-secondary/70 hidden mt-0.5"></span>
             </div>
             <div class="flex-1 min-w-[140px]">
                 <label class="block text-[11px] font-bold text-secondary mb-1">الصنف <span class="text-error">*</span></label>
@@ -2139,13 +2157,13 @@ function addInvoiceLineRow() {
                 <input type="number" step="any" min="0.001" class="line-qty-input w-full h-9 px-xs rounded-md bg-surface-container-low border border-outline-variant text-xs font-bold text-center dir-ltr focus:border-primary outline-none" placeholder="0" oninput="onLineInputsCalculated('${rowId}')" />
             </div>
 
-            <!-- 2. Unit Select -->
+            <!-- 2. Unit Select (مستقلة — يمكن اختيارها قبل الصنف) -->
             <div class="w-28">
                 <label class="block text-[11px] font-bold text-secondary mb-1">الوحدة <span class="text-error">*</span></label>
-                <select class="line-unit-select w-full h-9 px-xs rounded-md bg-surface-container-low border border-outline-variant text-xs font-bold text-right outline-none cursor-pointer" disabled onchange="onLineInputsCalculated('${rowId}')">
+                <select class="line-unit-select w-full h-9 px-xs rounded-md bg-surface-container-low border border-outline-variant text-xs font-bold text-right outline-none cursor-pointer" onchange="onLineUnitChanged('${rowId}')">
                     <option value="">-- اختر الوحدة --</option>
                 </select>
-                <span class="unit-hint-text text-[10px] text-secondary/70 block mt-0.5">اختر الصنف أولاً</span>
+                <span class="unit-hint-text text-[10px] text-secondary/70 hidden mt-0.5"></span>
             </div>
 
             <!-- 3. Item Select -->
@@ -2182,7 +2200,238 @@ function addInvoiceLineRow() {
 
     container.appendChild(row);
     populateItemDropdowns();
+    populateUnitDropdownForRow(row);
     updateAllLineTotalsAndGrandTotal();
+}
+
+// ===== الوحدات الرئيسية المشتركة + helpers (الوحدة قابلة للاختيار قبل الصنف) =====
+let cachedMasterUnits = [];
+
+async function fetchMasterUnits() {
+    try {
+        const res = await fetch('/api/units?activeOnly=true');
+        const json = await res.json();
+        if (res.ok) {
+            cachedMasterUnits = (json.data || []).filter(u => u.isActive !== false);
+            populateAllUnitDropdowns();
+        }
+    } catch (err) {
+        console.error('فشل في جلب كتالوج الوحدات (وضع التوافق):', err);
+        cachedMasterUnits = [];
+    }
+}
+
+function findUnitOwnerItem(unitId) {
+    const uid = String(unitId);
+    for (const item of (cachedActiveItems || [])) {
+        if (Array.isArray(item.units) && item.units.some(u => String(u.id) === uid)) {
+            return item;
+        }
+    }
+    return null;
+}
+
+function findUnitById(unitId) {
+    const uid = String(unitId);
+    for (const item of (cachedActiveItems || [])) {
+        if (Array.isArray(item.units)) {
+            const u = item.units.find(x => String(x.id) === uid);
+            if (u) return { ...u, _ownerItem: item };
+        }
+    }
+    return null;
+}
+
+function findMasterById(masterId) {
+    return (cachedMasterUnits || []).find(u => String(u.id) === String(masterId)) || null;
+}
+
+// الهوية الرئيسية للاختيار الحالي: { masterId, name } — بالمعرف أولًا ثم الاسم
+function resolveSelectedMaster(unitSelect, rawValue) {
+    const val = rawValue !== undefined ? rawValue : (unitSelect ? unitSelect.value : '');
+    if (!val) return null;
+    const opt = unitSelect && unitSelect.selectedIndex >= 0 ? unitSelect.options[unitSelect.selectedIndex] : null;
+    if (String(val).startsWith('m:')) {
+        const masterId = String(val).slice(2);
+        const master = findMasterById(masterId);
+        const name = master ? master.name : (opt?.dataset.unitName || '');
+        return { masterId, name };
+    }
+    const iu = findUnitById(val);
+    if (iu) {
+        return { masterId: iu.unitId ? String(iu.unitId) : null, name: iu.name || opt?.dataset.unitName || '' };
+    }
+    return { masterId: null, name: opt?.dataset.unitName || '' };
+}
+
+function findItemUnitForMaster(item, masterId, masterName) {
+    if (!item || !Array.isArray(item.units)) return null;
+    if (masterId) {
+        const byId = item.units.find(u => u.unitId && String(u.unitId) === String(masterId));
+        if (byId) return byId;
+    }
+    if (masterName) {
+        return item.units.find(u => u.name === masterName) || null;
+    }
+    return null;
+}
+
+function itemsCompatibleWithMaster(masterId, masterName) {
+    return (cachedActiveItems || []).filter(it => Boolean(findItemUnitForMaster(it, masterId, masterName)));
+}
+
+function buildAllUnitsOptions(selectedValue) {
+    const sel = selectedValue ? String(selectedValue) : '';
+    // المصدر المفضل: الكتالوج الرئيسي — كل وحدة مرة واحدة بلا تكرار
+    if (cachedMasterUnits && cachedMasterUnits.length > 0) {
+        let selMaster = null;
+        if (sel.startsWith('m:')) {
+            selMaster = sel.slice(2);
+        } else if (sel) {
+            const iu = findUnitById(sel);
+            if (iu) selMaster = iu.unitId ? `m:${iu.unitId}` : null;
+        }
+        let html = '<option value="">-- اختر الوحدة --</option>';
+        html += cachedMasterUnits.map(u => {
+            const val = `m:${u.id}`;
+            const isSel = selMaster === val || sel === val ? 'selected' : '';
+            return `<option value="${val}" data-master-id="${u.id}" data-unit-name="${u.name}" ${isSel}>${u.name}</option>`;
+        }).join('');
+        // قيمة رقمية قديمة (وحدة صنف غير مربوطة بالكتالوج) — حافظ عليها
+        if (sel && !sel.startsWith('m:') && !selMaster) {
+            const iu = findUnitById(sel);
+            if (iu) html += `<option value="${iu.id}" data-unit-name="${iu.name}" selected>${iu.name} (خاصة بالصنف)</option>`;
+        }
+        return html;
+    }
+    // وضع التوافق (قبل بناء الكتالوج): تجميع حسب الصنف
+    let html = '<option value="">-- اختر الوحدة --</option>';
+    (cachedActiveItems || []).forEach(item => {
+        if (!Array.isArray(item.units) || item.units.length === 0) return;
+        const itemName = item.name || '';
+        html += `<optgroup label="${itemName}">` + item.units.map(u => {
+            const isSel = String(u.id) === sel ? 'selected' : '';
+            return `<option value="${u.id}" data-rate="${u.conversionRate}" data-unit-name="${u.name}" data-owner-item="${item.id || item._id}" ${isSel}>${u.name}${u.isBaseUnit ? ' (أساسية)' : ''}</option>`;
+        }).join('') + '</optgroup>';
+    });
+    return html;
+}
+
+function populateUnitDropdownForRow(row, preserveValue) {
+    if (!row) return;
+    const unitSelect = row.querySelector('.line-unit-select');
+    if (!unitSelect) return;
+    const itemSelect = row.querySelector('.line-item-select');
+    const itemId = itemSelect && itemSelect.value ? parseInt(itemSelect.value) : null;
+    const currentVal = preserveValue !== undefined ? preserveValue : unitSelect.value;
+
+    if (itemId) {
+        const selectedItem = cachedActiveItems.find(i => String(i.id || i._id) === String(itemId));
+        if (selectedItem && Array.isArray(selectedItem.units) && selectedItem.units.length > 0) {
+            // وحّد القيمة الحالية إلى وحدة من وحدات هذا الصنف (بالمعرف الرئيسي ثم الاسم)
+            let targetUnitId = null;
+            if (currentVal && selectedItem.units.some(u => String(u.id) === String(currentVal))) {
+                targetUnitId = String(currentVal);
+            } else if (currentVal) {
+                const resolved = resolveSelectedMaster(unitSelect, currentVal);
+                const match = resolved ? findItemUnitForMaster(selectedItem, resolved.masterId, resolved.name) : null;
+                if (match) targetUnitId = String(match.id);
+            }
+            unitSelect.innerHTML = '<option value="">-- اختر الوحدة --</option>' + selectedItem.units.map(u => {
+                const isSel = targetUnitId && String(u.id) === targetUnitId ? 'selected' : '';
+                return `<option value="${u.id}" data-rate="${u.conversionRate}" data-unit-name="${u.name}" ${u.unitId ? `data-master-id="${u.unitId}"` : ''} ${isSel}>${u.name}${u.isBaseUnit ? ' (أساسية)' : ''}</option>`;
+            }).join('');
+            unitSelect.disabled = false;
+            return;
+        }
+    }
+
+    unitSelect.innerHTML = buildAllUnitsOptions(currentVal);
+    unitSelect.disabled = false;
+}
+
+function populateAllUnitDropdowns() {
+    document.querySelectorAll('#invoiceLineRowsContainer .invoice-line-row').forEach(row => {
+        populateUnitDropdownForRow(row);
+    });
+}
+
+function onLineUnitChanged(rowId) {
+    const row = document.getElementById(rowId);
+    if (!row) return;
+    const itemSelect = row.querySelector('.line-item-select');
+    const unitSelect = row.querySelector('.line-unit-select');
+    const unitHint = row.querySelector('.unit-hint-text');
+    const selectedUnitId = unitSelect ? unitSelect.value : '';
+
+    if (!selectedUnitId) {
+        if (unitHint) unitHint.classList.add('hidden');
+        onLineInputsCalculated(rowId);
+        return;
+    }
+
+    const currentItemId = itemSelect && itemSelect.value ? String(itemSelect.value) : '';
+    const selectedVal = unitSelect ? unitSelect.value : '';
+    const resolved = resolveSelectedMaster(unitSelect, selectedVal);
+
+    if (!currentItemId) {
+        // لا يوجد صنف مختار: فلتر قائمة الأصناف على المتوافقة مع الوحدة المختارة
+        if (resolved && (resolved.masterId || resolved.name)) {
+            const compatible = itemsCompatibleWithMaster(resolved.masterId, resolved.name);
+            if (compatible.length > 0 && compatible.length < (cachedActiveItems || []).length) {
+                const opts = ['<option value="">-- اختر الصنف --</option>'];
+                compatible.forEach(item => {
+                    opts.push(`<option value="${item.id || item._id}">${item.name}</option>`);
+                });
+                itemSelect.innerHTML = opts.join('');
+                itemSelect.disabled = false;
+                if (unitHint) {
+                    unitHint.textContent = `يعرض الآن ${compatible.length} صنف بهذه الوحدة فقط`;
+                    unitHint.classList.remove('hidden');
+                }
+            } else if (unitHint) {
+                unitHint.classList.add('hidden');
+            }
+        }
+        populateUnitDropdownForRow(row, selectedVal);
+        onLineInputsCalculated(rowId);
+        return;
+    }
+
+    // صنف مختار: وحّد القيمة إلى وحدة هذا الصنف (مطابقة رئيسية/اسمية)
+    if (selectedVal && String(selectedVal).startsWith('m:')) {
+        const selectedItem = cachedActiveItems.find(i => String(i.id || i._id) === String(currentItemId));
+        const match = selectedItem && resolved ? findItemUnitForMaster(selectedItem, resolved.masterId, resolved.name) : null;
+        if (match) {
+            populateUnitDropdownForRow(row, String(match.id));
+        } else {
+            populateUnitDropdownForRow(row, '');
+            if (unitHint) {
+                unitHint.textContent = `الوحدة "${resolved.name}" غير مربوطة بهذا الصنف — اربطها من تبويب الوحدات`;
+                unitHint.classList.remove('hidden');
+            }
+            onLineInputsCalculated(rowId);
+            return;
+        }
+        if (unitHint) unitHint.classList.add('hidden');
+        tryAutoFillDefaultPrice(rowId);
+        onLineInputsCalculated(rowId);
+        return;
+    }
+
+    // قيمة رقمية قديمة من صنف آخر: انقل الصنف تلقائياً لمالك الوحدة
+    const owner = selectedVal ? findUnitOwnerItem(selectedVal) : null;
+    if (owner && String(owner.id || owner._id) !== String(currentItemId)) {
+        itemSelect.value = String(owner.id || owner._id);
+        populateUnitDropdownForRow(row, selectedVal);
+        if (unitHint) unitHint.classList.add('hidden');
+        tryAutoFillDefaultPrice(rowId);
+        onLineInputsCalculated(rowId);
+        return;
+    }
+
+    if (unitHint) unitHint.classList.add('hidden');
+    onLineInputsCalculated(rowId);
 }
 
 function removeInvoiceLineRow(rowId) {
@@ -2208,10 +2457,10 @@ function tryAutoFillDefaultPrice(rowId) {
     if (!itemSelect || !unitSelect || !priceInput) return;
     if (priceInput.value.trim() !== '') return;
 
-    const itemId = parseInt(itemSelect.value);
+    const itemId = itemSelect && itemSelect.value ? String(itemSelect.value) : '';
     if (!itemId) return;
 
-    const selectedItem = cachedActiveItems.find(i => i.id === itemId);
+    const selectedItem = cachedActiveItems.find(i => String(i.id || i._id) === String(itemId));
     if (!selectedItem || selectedItem.defaultSellingPrice === undefined || selectedItem.defaultSellingPrice === null) return;
 
     const selectedOption = unitSelect.options[unitSelect.selectedIndex];
@@ -2230,26 +2479,23 @@ function onLineItemChanged(rowId) {
     const itemSelect = row.querySelector('.line-item-select');
     const unitSelect = row.querySelector('.line-unit-select');
     const unitHint = row.querySelector('.unit-hint-text');
-    const itemId = itemSelect ? parseInt(itemSelect.value) : null;
+    const itemId = itemSelect && itemSelect.value ? parseInt(itemSelect.value) : null;
+    const prevUnitVal = unitSelect ? unitSelect.value : '';
 
     if (!itemId) {
-        unitSelect.innerHTML = '<option value="">-- اختر الوحدة --</option>';
-        unitSelect.disabled = true;
-        if (unitHint) unitHint.classList.remove('hidden');
+        populateItemDropdowns();
+        populateUnitDropdownForRow(row, prevUnitVal);
+        if (prevUnitVal) {
+            onLineUnitChanged(rowId);
+            return;
+        }
+        if (unitHint) unitHint.classList.add('hidden');
         onLineInputsCalculated(rowId);
         return;
     }
 
-    const selectedItem = cachedActiveItems.find(i => i.id === itemId);
-    if (selectedItem && Array.isArray(selectedItem.units)) {
-        unitSelect.innerHTML = selectedItem.units.map(u => `<option value="${u.id}" data-rate="${u.conversionRate}">${u.name}${u.isBaseUnit ? ' (أساسية)' : ''}</option>`).join('');
-        unitSelect.disabled = false;
-        if (unitHint) unitHint.classList.add('hidden');
-    } else {
-        unitSelect.innerHTML = '<option value="">-- اختر الوحدة --</option>';
-        unitSelect.disabled = true;
-        if (unitHint) unitHint.classList.remove('hidden');
-    }
+    populateUnitDropdownForRow(row, prevUnitVal);
+    if (unitHint) unitHint.classList.add('hidden');
 
     tryAutoFillDefaultPrice(rowId);
     onLineInputsCalculated(rowId);
@@ -2268,7 +2514,7 @@ function onLineInputsCalculated(rowId) {
     const lineTotalEl = row.querySelector('.line-total-text');
     const stockInfoEl = row.querySelector('.line-stock-info');
 
-    const itemId = itemSelect ? parseInt(itemSelect.value) : null;
+    const itemId = itemSelect && itemSelect.value ? String(itemSelect.value) : null;
     const qty = qtyInput ? parseFloat(qtyInput.value) || 0 : 0;
     const price = priceInput ? parseFloat(priceInput.value) || 0 : 0;
     const lineTotal = Math.round((qty * price + Number.EPSILON) * 100) / 100;
@@ -2278,7 +2524,7 @@ function onLineInputsCalculated(rowId) {
     }
 
     if (itemId) {
-        const itemObj = cachedActiveItems.find(i => i.id === itemId);
+        const itemObj = cachedActiveItems.find(i => String(i.id || i._id) === String(itemId));
         const selectedOption = unitSelect ? unitSelect.options[unitSelect.selectedIndex] : null;
         const conversionRate = selectedOption && selectedOption.dataset.rate ? parseFloat(selectedOption.dataset.rate) : 1.0;
         
@@ -2495,12 +2741,19 @@ document.getElementById('invoiceForm').addEventListener('submit', async function
             const priceInput = row.querySelector('.line-price-input');
 
             const itemId = itemSelect ? parseInt(itemSelect.value) : 0;
-            const itemUnitId = unitSelect ? parseInt(unitSelect.value) : 0;
+            const rawUnitVal = unitSelect ? unitSelect.value : '';
             const quantity = qtyInput ? parseFloat(qtyInput.value) || 0 : 0;
             const unitPrice = priceInput ? parseFloat(priceInput.value) || 0 : 0;
 
-            // Skip empty rows (where no item is selected)
-            if (!itemId) continue;
+            // صف فارغ تمامًا: تجاوزه — لكن وحدة بلا صنف خطأ صريح
+            if (!itemId) {
+                if (rawUnitVal) {
+                    showToast(`اختر الصنف للبند رقم ${i + 1} — الوحدة مختارة بدون صنف`, 'warning');
+                    return;
+                }
+                continue;
+            }
+            const itemUnitId = parseInt(rawUnitVal);
 
             if (!itemUnitId || quantity <= 0) {
                 showToast(`الرجاء استكمال بيانات الوحدة والكمية للبند رقم ${i + 1}`, 'warning');

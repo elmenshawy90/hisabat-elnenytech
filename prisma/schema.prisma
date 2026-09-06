@@ -115,6 +115,9 @@ model ItemUnit {
   id             Int           @id @default(autoincrement())
   itemId         Int
   item           Item          @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  // ربط اختياري بوحدة قياس رئيسية مشتركة (كتالوج الوحدات) — الاسم ومعامل التحويل يبقيان لكل صنف
+  unitId         Int?
+  unit           Unit?         @relation(fields: [unitId], references: [id], onDelete: SetNull)
   name           String        // مثال: "طن"، "شكارة"، "كيلو"
   isBaseUnit     Boolean       @default(false) // الوحدة الأساسية اللي المخزون متخزن بيها فعليًا
   conversionRate Float         // كام وحدة أساسية = 1 من الوحدة دي
@@ -122,7 +125,20 @@ model ItemUnit {
   invoiceItems   InvoiceItem[]
 
   @@index([itemId])
+  @@index([unitId])
   @@unique([itemId, name])
+}
+
+// كتالوج الوحدات الرئيسي المشترك — يُعرَّف مرة واحدة ويُربط بعدة أصناف
+model Unit {
+  id        Int        @id @default(autoincrement())
+  name      String     @unique // مثال: "طن"، "شكارة"، "كيلو"
+  isActive  Boolean    @default(true)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  itemUnits ItemUnit[]
+
+  @@index([name])
 }
 
 model StockLog {

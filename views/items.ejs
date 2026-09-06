@@ -74,8 +74,22 @@
     </div>
 </div>
 
+<!-- Sub Tabs: الأصناف / الوحدات -->
+<div class="flex items-center gap-xs mb-md bg-surface-container-lowest border border-outline-variant rounded-xl p-1.5 shadow-sm w-full md:w-auto md:inline-flex">
+    <button type="button" id="tabBtnItems" onclick="switchItemsTab('items')" class="flex-1 md:flex-initial px-lg py-2 rounded-lg text-sm font-bold transition-all flex items-center justify-center gap-1 cursor-pointer bg-primary text-white shadow-sm">
+        <span class="material-symbols-outlined text-lg">inventory_2</span>
+        <span>الأصناف</span>
+        <span id="tabItemsCount" class="text-[11px] bg-white/20 px-1.5 py-0.5 rounded-full"></span>
+    </button>
+    <button type="button" id="tabBtnUnits" onclick="switchItemsTab('units')" class="flex-1 md:flex-initial px-lg py-2 rounded-lg text-sm font-bold transition-all flex items-center justify-center gap-1 cursor-pointer text-secondary hover:bg-surface-container">
+        <span class="material-symbols-outlined text-lg">straighten</span>
+        <span>الوحدات</span>
+        <span id="tabUnitsCount" class="text-[11px] bg-surface-container px-1.5 py-0.5 rounded-full"></span>
+    </button>
+</div>
+
 <!-- Search & Controls Bar -->
-<div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-md mb-md shadow-sm flex flex-col md:flex-row items-center justify-between gap-md">
+<div id="itemsSearchBar" class="bg-surface-container-lowest border border-outline-variant rounded-xl p-md mb-md shadow-sm flex flex-col md:flex-row items-center justify-between gap-md">
     <div class="relative w-full md:flex-1">
         <span class="material-symbols-outlined absolute right-md top-1/2 -translate-y-1/2 text-outline">search</span>
         <input class="w-full h-12 pr-12 pl-md rounded-xl bg-background border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none font-body-md text-body-md transition-all" placeholder="البحث باسم الصنف..." type="text" id="searchInput" oninput="debounceSearch()"/>
@@ -89,7 +103,7 @@
 </div>
 
 <!-- Items Table Container -->
-<div class="bg-surface-container-lowest border border-outline-variant rounded-2xl shadow-sm overflow-hidden mb-xl">
+<div id="itemsTableContainer" class="bg-surface-container-lowest border border-outline-variant rounded-2xl shadow-sm overflow-hidden mb-xl">
     <div class="overflow-x-auto">
         <table class="w-full text-right border-collapse">
             <thead>
@@ -117,6 +131,48 @@
         <span class="material-symbols-outlined text-4xl text-outline">inventory_2</span>
         <p class="font-bold">لا يوجد أصناف مسجلة</p>
         <p class="text-xs">اضغط على زر "صنف جديد" لإضافة أول صنف في الكتالوج.</p>
+    </div>
+</div>
+
+<!-- Units Section (Sub-tab) -->
+<div id="unitsSection" class="hidden mb-xl space-y-md">
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-md">
+        <div class="flex flex-col">
+            <h3 class="font-bold text-base text-on-surface">كتالوج الوحدات الرئيسي</h3>
+            <p class="text-xs text-secondary">عرّف الوحدة مرة واحدة (طن، شكارة، كيلو...) ثم اربطها بعدة أصناف — يمنع التكرار والاختلاف في الأسماء.</p>
+        </div>
+        <button onclick="openUnitModal()" class="px-md py-sm bg-primary hover:bg-primary-container text-white rounded-full flex items-center justify-center gap-xs font-bold text-sm shadow-sm transition-all active:scale-95 cursor-pointer">
+            <span class="material-symbols-outlined text-xl">add</span>
+            <span>وحدة جديدة</span>
+        </button>
+    </div>
+
+    <div class="bg-surface-container-lowest border border-outline-variant rounded-2xl shadow-sm overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-right border-collapse">
+                <thead>
+                    <tr class="bg-surface-container-low border-b border-outline-variant text-secondary font-label-md text-xs">
+                        <th class="px-md py-md font-bold">اسم الوحدة</th>
+                        <th class="px-md py-md font-bold">الحالة</th>
+                        <th class="px-md py-md font-bold">الأصناف المرتبطة</th>
+                        <th class="px-md py-md font-bold text-center">الإجراءات</th>
+                    </tr>
+                </thead>
+                <tbody id="unitsTableBody" class="divide-y divide-outline-variant/60 font-body-md text-sm">
+                </tbody>
+            </table>
+        </div>
+        <div id="unitsLoading" class="py-xl text-center text-secondary">
+            <div class="flex flex-col items-center justify-center gap-sm">
+                <div class="w-8 h-8 border-3 border-outline-variant border-t-primary rounded-full animate-spin"></div>
+                <span>جاري تحميل الوحدات...</span>
+            </div>
+        </div>
+        <div id="unitsEmpty" class="hidden py-xl text-center text-secondary space-y-xs">
+            <span class="material-symbols-outlined text-4xl text-outline">straighten</span>
+            <p class="font-bold">لا توجد وحدات مسجلة</p>
+            <p class="text-xs">اضغط على زر "وحدة جديدة" لإضافة أول وحدة في الكتالوج.</p>
+        </div>
     </div>
 </div>
 
@@ -314,6 +370,81 @@
     </div>
 </div>
 
+<!-- Unit Form Modal (Add / Edit shared unit) -->
+<div class="fixed inset-0 z-[130] hidden items-center justify-center bg-black/50 p-4" id="unitModal">
+    <div class="bg-surface rounded-2xl shadow-2xl w-full max-w-md p-lg space-y-md border border-outline-variant/60">
+        <div class="flex items-center justify-between border-b border-outline-variant/60 pb-sm">
+            <div class="flex items-center gap-sm text-primary">
+                <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                    <span class="material-symbols-outlined text-2xl" id="unitModalIcon">straighten</span>
+                </div>
+                <h3 class="font-headline-sm font-bold text-on-surface" id="unitModalTitle">إضافة وحدة جديدة</h3>
+            </div>
+            <button type="button" onclick="closeUnitModal()" class="text-secondary hover:text-on-surface">
+                <span class="material-symbols-outlined">close</span>
+            </button>
+        </div>
+
+        <form id="unitForm" onsubmit="submitUnitForm(event)" class="space-y-md">
+            <input type="hidden" id="unitModalId" value="" />
+            <div class="space-y-xs">
+                <label class="block text-xs font-bold text-on-surface-variant">اسم الوحدة <span class="text-error">*</span></label>
+                <input type="text" id="unitName" required class="w-full h-11 px-md rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none text-right font-bold text-on-surface" placeholder="مثال: طن، شكارة، كيلو، متر..." />
+                <p class="text-[11px] text-secondary">تعديل الاسم يُحدّثه تلقائيًا في كل الأصناف المرتبطة.</p>
+            </div>
+            <div class="flex items-center justify-end gap-sm pt-md border-t border-outline-variant/60">
+                <button type="button" onclick="closeUnitModal()" class="px-lg py-sm rounded-full border border-outline-variant text-on-surface font-label-md hover:bg-surface-container transition-colors">إلغاء</button>
+                <button type="submit" id="submitUnitBtn" class="px-lg py-sm rounded-full bg-primary text-on-primary font-label-md hover:opacity-90 transition-opacity flex items-center gap-1 shadow-sm font-bold">
+                    <span class="material-symbols-outlined text-sm">check</span>
+                    <span>حفظ الوحدة</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Map Unit to Items Modal -->
+<div class="fixed inset-0 z-[130] hidden items-center justify-center bg-black/50 p-4" id="unitMapModal">
+    <div class="bg-surface rounded-2xl shadow-2xl w-full max-w-lg p-lg space-y-md border border-outline-variant/60 max-h-[85vh] flex flex-col">
+        <div class="flex items-center justify-between border-b border-outline-variant/60 pb-sm shrink-0">
+            <div class="flex items-center gap-sm text-primary">
+                <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                    <span class="material-symbols-outlined text-2xl">link</span>
+                </div>
+                <div>
+                    <h3 class="font-headline-sm font-bold text-on-surface">ربط الوحدة بأصناف</h3>
+                    <p class="text-xs text-secondary">الوحدة: <strong id="mapUnitName" class="text-primary"></strong></p>
+                </div>
+            </div>
+            <button type="button" onclick="closeMapModal()" class="text-secondary hover:text-on-surface">
+                <span class="material-symbols-outlined">close</span>
+            </button>
+        </div>
+
+        <div class="space-y-xs shrink-0">
+            <label class="block text-xs font-bold text-on-surface-variant">معامل التحويل الافتراضي للربط الجديد</label>
+            <input type="number" step="any" min="0.000001" id="mapConversionRate" value="1" class="w-full h-11 px-md rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary outline-none text-right font-bold text-on-surface dir-ltr" />
+            <p class="text-[11px] text-secondary">يُستخدم عند إنشاء الربط فقط — اضبط المعامل الدقيق لكل صنف من نافذة تعديل الصنف.</p>
+        </div>
+
+        <div class="relative shrink-0">
+            <span class="material-symbols-outlined absolute right-md top-1/2 -translate-y-1/2 text-outline">search</span>
+            <input id="mapItemsSearch" oninput="renderMapItemsList()" class="w-full h-11 pr-12 pl-md rounded-xl bg-background border border-outline-variant focus:border-primary outline-none text-right text-sm" placeholder="ابحث باسم الصنف..." type="text" />
+        </div>
+
+        <div id="mapItemsList" class="overflow-y-auto custom-scrollbar flex-1 border border-outline-variant/60 rounded-xl divide-y divide-outline-variant/40 min-h-[150px]">
+        </div>
+
+        <div class="flex items-center justify-end gap-sm pt-sm border-t border-outline-variant/60 shrink-0">
+            <button type="button" onclick="closeMapModal()" class="px-lg py-sm rounded-full border border-outline-variant text-on-surface font-label-md hover:bg-surface-container transition-colors">إلغاء</button>
+            <button type="button" id="submitMapBtn" onclick="submitMap()" class="px-lg py-sm rounded-full bg-primary text-on-primary font-label-md hover:opacity-90 transition-opacity flex items-center gap-1 shadow-sm font-bold">
+                <span class="material-symbols-outlined text-sm">link</span>
+                <span>حفظ الربط</span>
+            </button>
+        </div>
+    </div>
+</div>
+
 <%- include('partials/bottom-nav', { active: 'items' }) %>
 <script src="/js/shared-ui.js"></script>
 <script>
@@ -327,6 +458,7 @@ let currentItemHasStockLogs = false;
 document.addEventListener('DOMContentLoaded', () => {
     checkAuth();
     loadItems();
+    loadMasterUnits();
 });
 
 function debounceSearch() {
@@ -501,6 +633,9 @@ function updateStats(items) {
 
     const lowStockEl = document.getElementById('statLowStock');
     if (lowStockEl) lowStockEl.textContent = lowStockItems.length;
+
+    const tabCount = document.getElementById('tabItemsCount');
+    if (tabCount) tabCount.textContent = activeItems.length;
 }
 
 // ─── Dynamic Relative Units Builder Logic ─────────────────────────────
@@ -539,10 +674,11 @@ function appendUnitRowToDOM(unitObj = {}, idx, isProtected = false) {
 
     row.innerHTML = `
         <div class="flex items-center gap-xs flex-wrap sm:flex-nowrap">
-            <!-- Unit Name Input -->
+            <!-- Unit Name Select (من كتالوج الوحدات الرئيسي) -->
             <div class="flex-1 min-w-[120px]">
                 <label class="block text-[11px] font-bold text-secondary mb-1">اسم الوحدة <span class="text-error">*</span></label>
-                <input type="text" value="${unitObj.name || ''}" ${isRowProtected ? 'readonly' : ''} class="unit-name-input w-full h-9 px-sm rounded-md bg-surface-container-low border border-outline-variant text-xs font-bold text-right focus:border-primary outline-none" placeholder="مثال: كيلو، شكارة، طن..." required oninput="onUnitFormChanged()" />
+                <select ${isRowProtected ? 'disabled' : ''} class="unit-name-input w-full h-9 px-sm rounded-md bg-surface-container-low border border-outline-variant text-xs font-bold text-right focus:border-primary outline-none cursor-pointer" required onchange="onUnitNameSelectChanged(this)">
+                </select>
             </div>
 
             <!-- Base Unit Radio Selector -->
@@ -593,6 +729,13 @@ function appendUnitRowToDOM(unitObj = {}, idx, isProtected = false) {
     `;
 
     container.appendChild(row);
+
+    // تعبئة قائمة الوحدات الرئيسية مع الحفاظ على القيمة الحالية (مهم للأصناف القديمة قبل الربط)
+    const nameSelect = row.querySelector('.unit-name-input');
+    if (nameSelect) {
+        nameSelect.innerHTML = buildMasterUnitNameOptions(unitObj.name || '');
+        nameSelect.dataset.prev = nameSelect.value;
+    }
 }
 
 function addUnitRow() {
@@ -646,10 +789,11 @@ function updateAllRelativeDropdownsAndPreviews() {
 
     const N = rows.length;
 
-    // Collect unit names for all rows
+    // Collect unit names for all rows (selects now — '__new__' means "not chosen yet")
     const unitNames = rows.map((row, idx) => {
         const nameInput = row.querySelector('.unit-name-input');
-        return nameInput ? nameInput.value.trim() : '';
+        const raw = nameInput ? String(nameInput.value || '').trim() : '';
+        return raw === '__new__' ? '' : raw;
     });
 
     // Step 1: Calculate raw reference value for each row
@@ -745,8 +889,358 @@ function updateAllRelativeDropdownsAndPreviews() {
     });
 }
 
+// ─── Shared Units Catalog (الوحدات الرئيسية) ─────────────────────
+let allUnitsData = [];
+let unitsLoaded = false;
+let currentItemsTab = 'items';
+let pendingQuickAddSelect = null;
+let currentMapUnitId = null;
+
+function switchItemsTab(tab) {
+    currentItemsTab = tab;
+    const btnItems = document.getElementById('tabBtnItems');
+    const btnUnits = document.getElementById('tabBtnUnits');
+    const searchBar = document.getElementById('itemsSearchBar');
+    const tableContainer = document.getElementById('itemsTableContainer');
+    const unitsSection = document.getElementById('unitsSection');
+
+    const activeCls = 'flex-1 md:flex-initial px-lg py-2 rounded-lg text-sm font-bold transition-all flex items-center justify-center gap-1 cursor-pointer bg-primary text-white shadow-sm';
+    const idleCls = 'flex-1 md:flex-initial px-lg py-2 rounded-lg text-sm font-bold transition-all flex items-center justify-center gap-1 cursor-pointer text-secondary hover:bg-surface-container';
+
+    if (tab === 'units') {
+        if (btnUnits) btnUnits.className = activeCls;
+        if (btnItems) btnItems.className = idleCls;
+        if (searchBar) searchBar.classList.add('hidden');
+        if (tableContainer) tableContainer.classList.add('hidden');
+        if (unitsSection) unitsSection.classList.remove('hidden');
+        loadMasterUnits();
+    } else {
+        if (btnItems) btnItems.className = activeCls;
+        if (btnUnits) btnUnits.className = idleCls;
+        if (searchBar) searchBar.classList.remove('hidden');
+        if (tableContainer) tableContainer.classList.remove('hidden');
+        if (unitsSection) unitsSection.classList.add('hidden');
+    }
+}
+
+async function loadMasterUnits() {
+    const loadingEl = document.getElementById('unitsLoading');
+    if (loadingEl) loadingEl.classList.remove('hidden');
+    try {
+        const res = await fetch('/api/units');
+        const json = await res.json();
+        if (!res.ok) throw new Error(json.error || 'فشل في جلب الوحدات');
+        allUnitsData = json.data || [];
+        unitsLoaded = true;
+        const tabCount = document.getElementById('tabUnitsCount');
+        if (tabCount) tabCount.textContent = allUnitsData.filter(u => u.isActive !== false).length;
+        renderUnitsTable();
+        refreshAllUnitNameSelects();
+    } catch (err) {
+        console.error(err);
+        // تنبيه مرئي فقط داخل تبويب الوحدات (حتى لا يزعج مستخدم الأصناف قبل تطبيق الترحيل)
+        if (currentItemsTab === 'units') showToast(err.message || 'فشل في تحميل الوحدات', 'error');
+    } finally {
+        if (loadingEl) loadingEl.classList.add('hidden');
+    }
+}
+
+function renderUnitsTable() {
+    const tableBody = document.getElementById('unitsTableBody');
+    const emptyEl = document.getElementById('unitsEmpty');
+    if (!tableBody) return;
+
+    if (!allUnitsData || allUnitsData.length === 0) {
+        tableBody.innerHTML = '';
+        if (emptyEl) emptyEl.classList.remove('hidden');
+        return;
+    }
+    if (emptyEl) emptyEl.classList.add('hidden');
+
+    tableBody.innerHTML = allUnitsData.map(unit => {
+        const isActive = unit.isActive !== false;
+        const items = unit.items || [];
+        const itemsBadges = items.length > 0
+            ? items.map(it => `<span class="bg-primary/10 text-primary px-2 py-0.5 rounded-full font-bold text-[11px]">${it.name}</span>`).join(' ')
+            : '<span class="text-secondary text-xs">غير مرتبطة بأي صنف بعد</span>';
+        const rowClass = isActive ? 'hover:bg-primary/5 transition-colors' : 'bg-surface-container-low/60 opacity-70 hover:opacity-100 transition-opacity';
+        return `
+            <tr class="${rowClass}">
+                <td class="px-md py-md">
+                    <div class="flex items-center gap-2">
+                        <span class="font-bold text-on-surface text-base">${unit.name}</span>
+                        ${!isActive ? `<span class="bg-slate-200 text-slate-700 font-bold px-2 py-0.5 rounded-full text-[10px]">معطّلة</span>` : ''}
+                    </div>
+                </td>
+                <td class="px-md py-md">
+                    <span class="px-2 py-1 rounded-lg font-bold text-xs ${isActive ? 'bg-green-500/10 text-green-700' : 'bg-slate-200 text-slate-600'}">${isActive ? 'نشطة' : 'معطّلة'}</span>
+                </td>
+                <td class="px-md py-md">
+                    <div class="flex flex-col gap-1">
+                        <span class="text-xs font-bold text-secondary">${unit.itemsCount} ${unit.itemsCount === 1 ? 'صنف' : 'أصناف'}</span>
+                        <div class="flex flex-wrap gap-1">${itemsBadges}</div>
+                    </div>
+                </td>
+                <td class="px-md py-md">
+                    <div class="flex items-center justify-center gap-1 flex-wrap">
+                        ${isActive ? `
+                            <button type="button" onclick="openMapModal(${unit.id})" class="px-2.5 py-1 bg-primary hover:bg-primary-container text-white rounded-lg text-xs font-bold transition-all flex items-center gap-1 shadow-xs cursor-pointer" title="ربط بأصناف">
+                                <span class="material-symbols-outlined text-sm">link</span>
+                                <span>ربط بأصناف</span>
+                            </button>
+                        ` : ''}
+                        <button type="button" onclick="openUnitModal(${unit.id})" class="px-2.5 py-1 border border-outline-variant hover:bg-surface-container text-secondary rounded-lg text-xs font-bold transition-all cursor-pointer" title="تعديل الاسم">
+                            <span class="material-symbols-outlined text-sm">edit</span>
+                        </button>
+                        ${isActive ? `
+                            <button type="button" onclick="toggleUnitActive(${unit.id}, true)" class="px-2.5 py-1 border border-amber-500/40 text-amber-700 hover:bg-amber-500/10 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1" title="تعطيل الوحدة">
+                                <span class="material-symbols-outlined text-sm">block</span>
+                                <span>تعطيل</span>
+                            </button>
+                        ` : `
+                            <button type="button" onclick="toggleUnitActive(${unit.id}, false)" class="px-2.5 py-1 bg-green-600 hover:bg-green-700 text-white rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1" title="إعادة تفعيل الوحدة">
+                                <span class="material-symbols-outlined text-sm">restore</span>
+                                <span>تفعيل</span>
+                            </button>
+                        `}
+                    </div>
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+// خيارات أسماء الوحدات لصفوف نموذج الصنف — من الكتالوج الرئيسي أولًا
+function buildMasterUnitNameOptions(selectedName) {
+    const sel = selectedName ? String(selectedName).trim() : '';
+    const active = (allUnitsData || []).filter(u => u.isActive !== false);
+    let html = '<option value="">-- اختر الوحدة --</option>';
+    const seen = new Set();
+    active.forEach(u => {
+        seen.add(String(u.name).trim());
+        const isSel = sel === String(u.name).trim() ? 'selected' : '';
+        html += `<option value="${u.name}" ${isSel}>${u.name}</option>`;
+    });
+    // قيمة قديمة غير موجودة في الكتالوج (قبل البناء) — اعرضها كخيار للحفاظ عليها
+    if (sel && !seen.has(sel)) {
+        html += `<option value="${sel}" selected>${sel} (غير مربوطة بالكتالوج)</option>`;
+    }
+    html += `<option value="__new__">＋ وحدة جديدة...</option>`;
+    return html;
+}
+
+function refreshAllUnitNameSelects() {
+    document.querySelectorAll('#unitsRowsContainer .unit-name-input').forEach(sel => {
+        if (sel.tagName !== 'SELECT' || sel.disabled) return;
+        const cur = sel.value && sel.value !== '__new__' ? sel.value : (sel.dataset.prev || '');
+        sel.innerHTML = buildMasterUnitNameOptions(cur);
+        sel.dataset.prev = sel.value;
+    });
+}
+
+function onUnitNameSelectChanged(sel) {
+    if (!sel || sel.disabled) return;
+    if (sel.value === '__new__') {
+        // أعد القيمة السابقة وافتح نافذة إضافة سريعة
+        sel.value = sel.dataset.prev || '';
+        pendingQuickAddSelect = sel;
+        openUnitModal(null, true);
+        return;
+    }
+    sel.dataset.prev = sel.value;
+    onUnitFormChanged();
+}
+
+function openUnitModal(unitId = null, quickAdd = false) {
+    document.getElementById('unitModalId').value = unitId || '';
+    document.getElementById('unitModalTitle').textContent = unitId ? 'تعديل اسم الوحدة' : 'إضافة وحدة جديدة';
+    document.getElementById('unitModalIcon').textContent = unitId ? 'edit' : 'straighten';
+    const nameInput = document.getElementById('unitName');
+    if (unitId) {
+        const unit = allUnitsData.find(u => String(u.id) === String(unitId));
+        nameInput.value = unit ? unit.name : '';
+    } else {
+        nameInput.value = '';
+    }
+    if (!quickAdd) pendingQuickAddSelect = null;
+    const modal = document.getElementById('unitModal');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    nameInput.focus();
+}
+
+function closeUnitModal() {
+    const modal = document.getElementById('unitModal');
+    if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    }
+    pendingQuickAddSelect = null;
+}
+
+async function submitUnitForm(e) {
+    e.preventDefault();
+    const unitId = document.getElementById('unitModalId').value;
+    const name = document.getElementById('unitName').value.trim();
+    const submitBtn = document.getElementById('submitUnitBtn');
+    if (!name) {
+        showToast('الرجاء إدخال اسم الوحدة', 'warning');
+        return;
+    }
+
+    submitBtn.disabled = true;
+    try {
+        const isEdit = Boolean(unitId);
+        const res = await fetch(isEdit ? `/api/units/${unitId}` : '/api/units', {
+            method: isEdit ? 'PUT' : 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'فشل في حفظ الوحدة');
+
+        const quickSel = pendingQuickAddSelect;
+        closeUnitModal();
+        showToast(isEdit ? 'تم تحديث اسم الوحدة في كل الأصناف المرتبطة ✓' : `تم إضافة الوحدة "${data.name}" ✓`, 'success');
+        await loadMasterUnits();
+        loadItems();
+        if (quickSel && quickSel.isConnected) {
+            quickSel.innerHTML = buildMasterUnitNameOptions(data.name);
+            quickSel.value = data.name;
+            quickSel.dataset.prev = data.name;
+            onUnitFormChanged();
+        }
+    } catch (err) {
+        console.error(err);
+        showToast(err.message || 'فشل في حفظ الوحدة', 'error');
+    } finally {
+        submitBtn.disabled = false;
+    }
+}
+
+async function toggleUnitActive(unitId, isCurrentlyActive) {
+    try {
+        const res = await fetch(`/api/units/${unitId}`, { method: 'DELETE' });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'فشل في تغيير حالة الوحدة');
+        showToast(data.message, 'success');
+        await loadMasterUnits();
+        loadItems();
+    } catch (err) {
+        console.error(err);
+        showToast(err.message || 'فشل في تغيير حالة الوحدة', 'error');
+    }
+}
+
+// ─── ربط الوحدة بأصناف ──────────────────────────────────────────
+function openMapModal(unitId) {
+    const unit = allUnitsData.find(u => String(u.id) === String(unitId));
+    if (!unit) return;
+    currentMapUnitId = unitId;
+    document.getElementById('mapUnitName').textContent = unit.name;
+    document.getElementById('mapConversionRate').value = '1';
+    document.getElementById('mapItemsSearch').value = '';
+    renderMapItemsList();
+    const modal = document.getElementById('unitMapModal');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+}
+
+function closeMapModal() {
+    const modal = document.getElementById('unitMapModal');
+    if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    }
+    currentMapUnitId = null;
+}
+
+function renderMapItemsList() {
+    const listEl = document.getElementById('mapItemsList');
+    if (!listEl || !currentMapUnitId) return;
+    const unit = allUnitsData.find(u => String(u.id) === String(currentMapUnitId));
+    const searchVal = (document.getElementById('mapItemsSearch').value || '').trim();
+
+    let items = (allItemsData || []).filter(i => i.isActive !== false);
+    if (searchVal) {
+        items = items.filter(i => (i.name || '').includes(searchVal));
+    }
+
+    if (items.length === 0) {
+        listEl.innerHTML = '<div class="p-md text-center text-xs text-secondary">لا توجد أصناف مطابقة — أضف الصنف أولًا من تبويب الأصناف.</div>';
+        return;
+    }
+
+    listEl.innerHTML = items.map(item => {
+        const linkedUnit = (item.units || []).find(u => (u.unitId && String(u.unitId) === String(currentMapUnitId)) || u.name === unit.name);
+        const linked = Boolean(linkedUnit);
+        return `
+            <label class="flex items-center justify-between gap-sm px-md py-2.5 hover:bg-primary/5 transition-colors ${linked ? 'opacity-70' : 'cursor-pointer'}">
+                <span class="flex items-center gap-sm">
+                    <input type="checkbox" value="${item.id}" ${linked ? 'checked disabled' : ''} class="map-item-checkbox w-4 h-4 text-primary rounded border-outline focus:ring-primary ${linked ? '' : 'cursor-pointer'}" />
+                    <span class="font-bold text-sm text-on-surface">${item.name}</span>
+                </span>
+                ${linked ? `
+                    <span class="flex items-center gap-1">
+                        <span class="text-[11px] font-bold text-green-700 bg-green-500/10 px-2 py-0.5 rounded-full">مرتبطة ✓</span>
+                        <button type="button" onclick="unmapUnitFromItem(event, ${item.id})" class="text-[11px] font-bold text-error hover:bg-error/10 px-2 py-0.5 rounded-full transition-colors cursor-pointer" title="فك الربط">فك</button>
+                    </span>
+                ` : `<span class="text-[11px] text-secondary">${(item.units || []).length} وحدات</span>`}
+            </label>
+        `;
+    }).join('');
+}
+
+async function submitMap() {
+    if (!currentMapUnitId) return;
+    const checked = Array.from(document.querySelectorAll('.map-item-checkbox:checked:not(:disabled)')).map(c => parseInt(c.value));
+    if (checked.length === 0) {
+        showToast('اختر صنفًا واحدًا على الأقل للربط', 'warning');
+        return;
+    }
+    const rateVal = document.getElementById('mapConversionRate').value;
+    const submitBtn = document.getElementById('submitMapBtn');
+    submitBtn.disabled = true;
+    try {
+        const res = await fetch(`/api/units/${currentMapUnitId}/map`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ itemIds: checked, conversionRate: rateVal ? parseFloat(rateVal) : 1 })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'فشل في الربط');
+        showToast(data.message, 'success');
+        closeMapModal();
+        await loadMasterUnits();
+        loadItems();
+    } catch (err) {
+        console.error(err);
+        showToast(err.message || 'فشل في الربط', 'error');
+    } finally {
+        submitBtn.disabled = false;
+    }
+}
+
+async function unmapUnitFromItem(e, itemId) {
+    if (e) e.preventDefault();
+    if (!currentMapUnitId) return;
+    if (!confirm('هل تريد فك ربط هذه الوحدة عن الصنف؟')) return;
+    try {
+        const res = await fetch(`/api/units/${currentMapUnitId}/items/${itemId}`, { method: 'DELETE' });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'فشل في فك الربط');
+        showToast(data.message, 'success');
+        await loadMasterUnits();
+        loadItems();
+        renderMapItemsList();
+    } catch (err) {
+        console.error(err);
+        showToast(err.message || 'فشل في فك الربط', 'error');
+    }
+}
+
 // ─── Open Item Form (Add / Edit) ────────────────────────────────
-function openAddItemModal() {
+async function openAddItemModal() {
     currentItemHasStockLogs = false;
     document.getElementById('itemModalId').value = '';
     document.getElementById('itemModalTitle').textContent = 'إضافة صنف جديد';
@@ -757,6 +1251,9 @@ function openAddItemModal() {
     if (defPriceInput) defPriceInput.value = '';
     document.getElementById('stockProtectedWarning').classList.add('hidden');
 
+    if (!unitsLoaded) {
+        try { await loadMasterUnits(); } catch (e) { console.error(e); }
+    }
     renderUnitsBuilder([], false);
 
     const modal = document.getElementById('itemModal');
@@ -773,6 +1270,10 @@ async function openEditItemModal(itemId) {
         if (!res.ok) throw new Error(data.error || 'فشل في جلب بيانات الصنف');
 
         currentItemHasStockLogs = Boolean(data.hasStockLogs);
+
+        if (!unitsLoaded) {
+            try { await loadMasterUnits(); } catch (e) { console.error(e); }
+        }
 
         document.getElementById('itemModalId').value = data.id;
         document.getElementById('itemModalTitle').textContent = `تعديل الصنف "${data.name}"`;
@@ -828,11 +1329,21 @@ async function submitItemForm(e) {
     }
 
     const unitsPayload = [];
-    const baseUnitName = rows[0].querySelector('.unit-name-input').value.trim();
+    const readUnitName = (row) => {
+        const el = row.querySelector('.unit-name-input');
+        const raw = el ? String(el.value || '').trim() : '';
+        return raw === '__new__' ? '' : raw;
+    };
+    const baseUnitName = readUnitName(rows[0]);
 
-    rows.forEach((row, idx) => {
+    for (let idx = 0; idx < rows.length; idx++) {
+        const row = rows[idx];
         const uId = row.dataset.unitId ? parseInt(row.dataset.unitId) : undefined;
-        const uName = row.querySelector('.unit-name-input').value.trim();
+        const uName = readUnitName(row);
+        if (!uName) {
+            showToast(`اختر اسم الوحدة للصف رقم ${idx + 1} من الكتالوج`, 'warning');
+            return;
+        }
         const radio = row.querySelector('.base-unit-radio');
         const isBase = radio ? radio.checked : (idx === 0);
 
@@ -848,7 +1359,7 @@ async function submitItemForm(e) {
             const qtyInput = row.querySelector('.unit-qty-input');
             const targetIdx = select ? parseInt(select.value) || 0 : 0;
             const targetRow = rows[targetIdx];
-            const targetName = targetRow ? targetRow.querySelector('.unit-name-input').value.trim() : baseUnitName;
+            const targetName = targetRow ? readUnitName(targetRow) : baseUnitName;
             const userQty = parseFloat(qtyInput.value) || 0;
 
             // User entered: "1 [reference] = userQty [current unit]"
@@ -865,7 +1376,7 @@ async function submitItemForm(e) {
                 relativeQuantity: relQty
             });
         }
-    });
+    }
 
     submitBtn.disabled = true;
     submitBtn.innerHTML = '<span class="material-symbols-outlined text-sm animate-spin">progress_activity</span> <span>جاري الحفظ...</span>';

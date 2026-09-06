@@ -8,6 +8,49 @@ const { normalize } = require('../lib/normalize');
 router.use(requireAuth);
 
 /**
+ * ربط اسم وحدة بالكتالوج الرئيسي (Unit): بحث بالاسم المطابق ثم المطبّع، ثم إنشاء عند الحاجة.
+ * يعمل مع prisma أو مع كائن الـ transaction (tx) — كلاهما يملك .unit
+ * @returns {Promise<number|null>} معرف الوحدة الرئيسية أو null عند الاسم الفارغ
+ */
+async function resolveMasterUnitId(db, rawName) {
+  try {
+    // قبل تطبيق ترحيل الوحدات أو توليد عميل Prisma قد لا يوجد نموذج Unit — نعود لوضع الاسم فقط
+    if (!db.unit) return null;
+    const trimmed = rawName ? String(rawName).trim() : '';
+    if (!trimmed) return null;
+
+    const exact = await db.unit.findUnique({ where: { name: trimmed } });
+    if (exact) return exact.id;
+
+    const normName = normalize(trimmed);
+    const all = await db.unit.findMany({ select: { id: true, name: true } });
+    const normMatch = all.find(u => normalize(u.name) === normName);
+    if (normMatch) return normMatch.id;
+
+    try {
+      const created = await db.unit.create({ data: { name: trimmed } });
+      return created.id;
+    } catch (err) {
+      // إنشاء متزامن محتمل — أعد المحاولة بالقراءة
+      const retry = await db.unit.findUnique({ where: { name: trimmed } });
+      return retry ? retry.id : null;
+    }
+  } catch (err) {
+    console.warn('[units] master catalog unavailable, using name-only mode:', err.message);
+    return null;
+  }
+}
+
+/**
+ * بناء كائن إنشاء/تحديث ItemUnit مع تضمين unitId فقط عند توفره
+ * (توافق تدريجي: يعمل قبل تطبيق الترحيل وبعده)
+ */
+function withMasterLink(data, unitId) {
+  if (unitId) data.unitId = unitId;
+  return data;
+}
+
+/**
  * Helper to process and calculate final conversion rates relative to the user-selected base unit.
  * Supports selecting ANY unit row as the Base Unit, and handles relative links in any order.
  */
@@ -270,17 +313,22 @@ router.post('/', async (req, res) => {
     const processedUnits = calculateCumulativeUnits(units);
 
     const newItem = await prisma.$transaction(async (tx) => {
+      // ربط كل وحدة بالكتالوج الرئيسي (إنشاء تلقائي للأسماء الجديدة)
+      const unitsWithMaster = [];
+      for (const u of processedUnits) {
+        unitsWithMaster.push({ ...u, unitId: await resolveMasterUnitId(tx, u.name) });
+      }
       const createdItem = await tx.item.create({
         data: {
           name: trimmedName,
           notes: notes ? String(notes).trim() : '',
           defaultSellingPrice: parsedPrice,
           units: {
-            create: processedUnits.map(u => ({
+            create: unitsWithMaster.map(u => withMasterLink({
               name: u.name,
               isBaseUnit: u.isBaseUnit,
               conversionRate: u.conversionRate
-            }))
+            }, u.unitId))
           }
         },
         include: {
@@ -383,12 +431,12 @@ router.put('/:id', async (req, res) => {
 
           for (const u of newUnitsToCreate) {
             await tx.itemUnit.create({
-              data: {
+              data: withMasterLink({
                 itemId: id,
                 name: u.name,
                 isBaseUnit: false,
                 conversionRate: u.conversionRate
-              }
+              }, await resolveMasterUnitId(tx, u.name))
             });
           }
 
@@ -397,20 +445,24 @@ router.put('/:id', async (req, res) => {
             if (u.id && existingUnitIds.has(u.id)) {
               await tx.itemUnit.update({
                 where: { id: u.id },
-                data: { name: u.name }
+                data: withMasterLink({ name: u.name }, await resolveMasterUnitId(tx, u.name))
               });
             }
           }
         } else {
           // No stock logs exist: full free replacement of units
           await tx.itemUnit.deleteMany({ where: { itemId: id } });
+          const unitsWithMaster = [];
+          for (const u of processedUnits) {
+            unitsWithMaster.push({ ...u, unitId: await resolveMasterUnitId(tx, u.name) });
+          }
           await tx.itemUnit.createMany({
-            data: processedUnits.map(u => ({
+            data: unitsWithMaster.map(u => withMasterLink({
               itemId: id,
               name: u.name,
               isBaseUnit: u.isBaseUnit,
               conversionRate: u.conversionRate
-            }))
+            }, u.unitId))
           });
         }
       }

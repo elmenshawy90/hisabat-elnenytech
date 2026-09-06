@@ -69,6 +69,7 @@ app.use('/api/clients', require('./routes/clients'));
 app.use('/api/end-clients', require('./routes/end-clients'));
 app.use('/api/invoices', require('./routes/invoices'));
 app.use('/api/items', require('./routes/items'));
+app.use('/api/units', require('./routes/units'));
 app.use('/api/dashboard', require('./routes/dashboard'));
 app.use('/api/export', require('./routes/export'));
 app.use('/api/search', require('./routes/search'));
