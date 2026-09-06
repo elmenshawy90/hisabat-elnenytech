@@ -82,4 +82,31 @@ select {
     padding-right: 0.75rem !important;
 }
 
+/* ─── Mobile Bottom-Nav Clearance ─────────────────────────── */
+/* Fixed bottom-nav is h-4rem + safe-area; keep page content scrollable above it */
+@media (max-width: 767.98px) {
+    main,
+    .flex-1.overflow-y-auto {
+        scroll-padding-bottom: calc(5rem + env(safe-area-inset-bottom));
+    }
+    /* Safety net: any mobile main content always clears the fixed nav */
+    /* (beats Tailwind pb-* utilities which would otherwise win on specificity) */
+    main {
+        padding-bottom: calc(6rem + env(safe-area-inset-bottom)) !important;
+    }
+    .flex-1.overflow-y-auto {
+        padding-bottom: calc(6rem + env(safe-area-inset-bottom)) !important;
+    }
+    /* Pinned top bar (floating pill): stick offset matches container top padding */
+    .app-topbar {
+        position: sticky;
+        top: 20px;
+        z-index: 40;
+    }
+    /* client-details / status mains use pt-md (16px) instead of p-container-margin */
+    main.pt-md > .app-topbar {
+        top: 16px;
+    }
+}
+
 
