@@ -277,7 +277,7 @@ router.put('/:id', async (req, res) => {
     const id = Number(req.params.id);
     if (isNaN(id) || !Number.isInteger(id)) return res.status(400).json({ error: 'معرف غير صالح' });
 
-    const { name, phone, address, notes, pageNumber } = req.body;
+    const { name, phone, address, notes, pageNumber, openingBalance, openingBalanceType } = req.body;
 
     const dataToUpdate = {};
     if (name !== undefined) dataToUpdate.name = name;
@@ -289,11 +289,50 @@ router.put('/:id', async (req, res) => {
       dataToUpdate.pageNumber = Number.isFinite(parsedPageNumber) && parsedPageNumber >= 0 ? parsedPageNumber : 0;
     }
 
-    const client = await prisma.client.update({
-      where: { id },
-      data: dataToUpdate
+    const hasOpeningBalance = openingBalance !== undefined && openingBalance !== null && openingBalance !== '' && !isNaN(Number(openingBalance)) && Number(openingBalance) > 0;
+
+    if (hasOpeningBalance && (!openingBalanceType || (openingBalanceType !== 'debit' && openingBalanceType !== 'credit'))) {
+      return res.status(400).json({ error: 'الرجاء تحديد نوع الرصيد الافتتاحي (له أو عليه)' });
+    }
+
+    // Balance changes go through transactions: record the opening balance as an invoice
+    const client = await prisma.$transaction(async (tx) => {
+      const updated = await tx.client.update({
+        where: { id },
+        data: dataToUpdate
+      });
+
+      if (hasOpeningBalance) {
+        const parsedAmount = Math.round((Number(openingBalance) + Number.EPSILON) * 100) / 100;
+        const balanceEffect = openingBalanceType === 'debit' ? 'increase' : 'decrease';
+        const detailsText = openingBalanceType === 'debit' ? 'رصيد افتتاحي (عليه)' : 'رصيد افتتاحي (له)';
+
+        const counter = await tx.counter.upsert({
+          where: { id: 'invoice' },
+          create: { id: 'invoice', value: 1 },
+          update: { value: { increment: 1 } }
+        });
+
+        await tx.invoice.create({
+          data: {
+            invoiceCode: `Nen${counter.value}`,
+            clientId: updated.id,
+            clientName: updated.name,
+            clientPhone: updated.phone,
+            type: 'opening_balance',
+            balanceEffect,
+            amount: parsedAmount,
+            details: detailsText,
+            address: updated.address || '-',
+            status: 'paid',
+            date: new Date()
+          }
+        });
+      }
+
+      return updated;
     });
-    
+
     const balance = await getClientBalance(prisma, id);
     res.json({ ...client, _id: client.id, balance });
   } catch (err) {

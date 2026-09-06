@@ -625,7 +625,7 @@
 
 <!-- Edit Client Modal -->
 <div class="fixed inset-0 z-[100] hidden items-center justify-center bg-black/50 p-4" id="editClientModal">
-    <div class="bg-white rounded-xl shadow-lg w-full max-w-md p-md md:p-xl">
+    <div class="bg-white rounded-xl shadow-lg w-full max-w-md p-md md:p-xl max-h-[90vh] overflow-y-auto custom-scrollbar">
         <div class="flex flex-row justify-between items-center mb-lg border-b border-outline-variant pb-sm">
             <h2 class="font-headline-md text-headline-md font-bold text-on-surface">تعديل بيانات العميل</h2>
             <button class="text-secondary hover:text-on-surface" onclick="closeEditClientModal()" type="button">
@@ -653,6 +653,35 @@
                 <div class="relative">
                     <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline">location_on</span>
                     <input class="w-full h-12 pr-10 pl-md rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all text-right" id="editClientAddress" placeholder="الحي، الشارع..." type="text"/>
+                </div>
+            </div>
+            <div class="border-t border-outline-variant/60 pt-sm space-y-sm">
+                <div class="flex items-center gap-xs text-xs font-bold text-primary">
+                    <span class="material-symbols-outlined text-base">account_balance_wallet</span>
+                    <span>إضافة رصيد افتتاحي</span>
+                </div>
+                <div class="p-sm bg-surface-container-low rounded-xl border border-outline-variant/60 space-y-sm">
+                    <div class="flex flex-col gap-xs">
+                        <label class="font-label-md text-xs font-bold text-on-surface-variant">المبلغ (ج.م)</label>
+                        <div class="relative">
+                            <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline text-sm">payments</span>
+                            <input type="number" step="any" min="0" id="editClientOpeningBalance" placeholder="0.00" class="w-full h-10 pr-9 pl-md rounded-lg bg-white border border-outline-variant text-xs font-bold text-right outline-none focus:border-primary" />
+                        </div>
+                    </div>
+                    <div class="flex flex-col gap-xs">
+                        <label class="font-label-md text-xs font-bold text-on-surface-variant">نوع الرصيد <span class="text-error">*</span></label>
+                        <div class="grid grid-cols-2 gap-xs">
+                            <label class="flex items-center justify-center gap-xs p-2 rounded-lg border border-outline-variant cursor-pointer hover:bg-surface transition-colors">
+                                <input type="radio" name="editOpeningBalanceType" value="debit" class="text-primary focus:ring-primary" />
+                                <span class="text-xs font-bold text-tertiary">عليه (مدين)</span>
+                            </label>
+                            <label class="flex items-center justify-center gap-xs p-2 rounded-lg border border-outline-variant cursor-pointer hover:bg-surface transition-colors">
+                                <input type="radio" name="editOpeningBalanceType" value="credit" class="text-primary focus:ring-primary" />
+                                <span class="text-xs font-bold text-green-700">له (دائن)</span>
+                            </label>
+                        </div>
+                        <p id="editOpeningBalanceTypeError" class="hidden text-error text-[11px] font-bold mt-0.5">الرجاء اختيار نوع الرصيد (له أو عليه)</p>
+                    </div>
                 </div>
             </div>
             <div class="flex flex-col md:flex-row items-center gap-md pt-md border-t border-outline-variant">
@@ -2582,7 +2611,13 @@ function openEditClientDetailsModal() {
     document.getElementById('editClientName').value = currentClientData.name || '';
     document.getElementById('editClientPhone').value = (currentClientData.phone && currentClientData.phone !== '-') ? currentClientData.phone : '';
     document.getElementById('editClientAddress').value = (currentClientData.address && currentClientData.address !== '-') ? currentClientData.address : '';
-    
+
+    // Reset opening-balance inputs on every open so stale values never persist
+    const editObInput = document.getElementById('editClientOpeningBalance');
+    if (editObInput) editObInput.value = '';
+    document.querySelectorAll('input[name="editOpeningBalanceType"]').forEach(r => { r.checked = false; });
+    document.getElementById('editOpeningBalanceTypeError').classList.add('hidden');
+
     document.getElementById('editClientPhoneError').classList.add('hidden');
     document.getElementById('editClientPhone').classList.remove('border-error');
     setTimeout(() => document.getElementById('editClientName').focus(), 50);
@@ -2624,6 +2659,21 @@ document.getElementById('editClientForm').addEventListener('submit', async funct
         return;
     }
 
+    const detailsObInput = document.getElementById('editClientOpeningBalance');
+    const detailsObVal = detailsObInput ? detailsObInput.value.trim() : '';
+    const detailsObNum = parseFloat(detailsObVal);
+    const detailsHasOb = !isNaN(detailsObNum) && detailsObNum > 0;
+
+    const detailsObTypeEl = document.querySelector('input[name="editOpeningBalanceType"]:checked');
+    const detailsObType = detailsObTypeEl ? detailsObTypeEl.value : null;
+
+    if (detailsHasOb && !detailsObType) {
+        showToast('الرجاء اختيار نوع الرصيد الافتتاحي (له أو عليه)', 'warning');
+        document.getElementById('editOpeningBalanceTypeError').classList.remove('hidden');
+        if (detailsObInput) detailsObInput.focus();
+        return;
+    }
+
     const editSubmitBtn = document.getElementById('editClientSubmitBtn') || document.querySelector('#editClientForm button[type="submit"]');
     const originalEditBtnHtml = editSubmitBtn ? editSubmitBtn.innerHTML : 'حفظ التعديلات';
     if (editSubmitBtn) {
@@ -2638,7 +2688,8 @@ document.getElementById('editClientForm').addEventListener('submit', async funct
             body: JSON.stringify({
                 name,
                 phone: phone || '-',
-                address: address || ''
+                address: address || '',
+                ...(detailsHasOb && detailsObType ? { openingBalance: detailsObNum, openingBalanceType: detailsObType } : {})
             })
         });
 
@@ -2671,6 +2722,11 @@ document.getElementById('editClientForm').addEventListener('submit', async funct
 
         closeEditClientModal();
         showToast('تم تحديث بيانات العميل بنجاح ✓', 'success');
+
+        // Refresh balance + statement if an opening-balance transaction was recorded
+        if (detailsHasOb && detailsObType && typeof loadClientDetails === 'function') {
+            await loadClientDetails(true);
+        }
     } catch (err) {
         console.error(err);
         showToast(err.message || 'فشل في تحديث بيانات العميل', 'error');
