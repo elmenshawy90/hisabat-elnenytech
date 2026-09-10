@@ -601,9 +601,10 @@
                     <table class="w-full text-right text-xs border-collapse">
                         <thead class="bg-surface-container-low text-secondary font-bold border-b border-outline-variant/60">
                             <tr>
+                                <th class="p-2">الكمية</th>
+                                <th class="p-2">الوحدة</th>
                                 <th class="p-2">الصنف</th>
-                                <th class="p-2">الكمية والوحدة</th>
-                                <th class="p-2">السعر</th>
+                                <th class="p-2">سعر الوحدة</th>
                                 <th class="p-2">الإجمالي</th>
                             </tr>
                         </thead>
@@ -612,6 +613,9 @@
                         </tbody>
                     </table>
                 </div>
+            </div>
+            <div id="tdItemsEmptyState" class="hidden rounded-lg border border-dashed border-outline-variant bg-surface-container-low px-md py-sm text-xs text-secondary">
+                لا توجد أصناف مخزنية محفوظة لهذه الفاتورة القديمة.
             </div>
 
             <!-- Other Services Breakdown (Shown if invoice has services) -->
@@ -1677,9 +1681,23 @@ function populateItemDropdowns() {
 }
 
 // Modal Functions
-function openTransactionDetails(id) {
-    const inv = clientInvoices.find(i => String(i._id || i.id) === String(id));
+async function openTransactionDetails(id) {
+    const invoiceIndex = clientInvoices.findIndex(i => String(i._id || i.id) === String(id));
+    let inv = invoiceIndex >= 0 ? clientInvoices[invoiceIndex] : null;
     if (!inv) return;
+
+    if (!Array.isArray(inv.items) || !Array.isArray(inv.services)) {
+        try {
+            const fullResponse = await fetch(`/api/invoices/${inv._id || inv.id}`);
+            if (fullResponse.ok) {
+                const fullInvoice = await fullResponse.json();
+                inv = { ...inv, ...fullInvoice };
+                clientInvoices[invoiceIndex] = inv;
+            }
+        } catch (error) {
+            console.error('تعذر تحديث تفاصيل الفاتورة:', error);
+        }
+    }
     
     const codeEl = document.getElementById('tdInvoiceCode');
     if (codeEl) {
@@ -1787,18 +1805,22 @@ function openTransactionDetails(id) {
     // Render items breakdown if available
     const itemsContainer = document.getElementById('tdItemsBreakdownContainer');
     const itemsBody = document.getElementById('tdItemsBreakdownBody');
+    const itemsEmptyState = document.getElementById('tdItemsEmptyState');
     if (inv.items && inv.items.length > 0) {
         itemsBody.innerHTML = inv.items.map(it => `
             <tr>
+                <td class="p-2 text-secondary font-mono">${it.quantity}</td>
+                <td class="p-2 text-secondary">${escapeHtml(it.itemUnit ? it.itemUnit.name : '-')}</td>
                 <td class="p-2 font-bold text-on-surface">${escapeHtml(it.item ? it.item.name : 'صنف')}</td>
-                <td class="p-2 text-secondary font-mono">${it.quantity} ${escapeHtml(it.itemUnit ? it.itemUnit.name : '')}</td>
                 <td class="p-2 text-secondary dir-ltr text-right">${formatCurrency(it.unitPrice)}</td>
                 <td class="p-2 font-bold text-primary dir-ltr text-right">${formatCurrency(it.lineTotal)}</td>
             </tr>
         `).join('');
         itemsContainer.classList.remove('hidden');
+        if (itemsEmptyState) itemsEmptyState.classList.add('hidden');
     } else {
         itemsContainer.classList.add('hidden');
+        if (itemsEmptyState) itemsEmptyState.classList.toggle('hidden', inv.type !== 'purchase');
     }
 
     // Render services (أخري) breakdown if available

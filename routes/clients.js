@@ -135,7 +135,8 @@ router.get('/:id', async (req, res) => {
                   item: true,
                   itemUnit: true
                 }
-              }
+              },
+              services: true
             },
             orderBy: [
               { date: 'desc' },

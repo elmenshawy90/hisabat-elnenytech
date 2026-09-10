@@ -29,6 +29,7 @@ try {
    else if(u.pathname==='/api/items')data={data:[item]};
    else if(u.pathname==='/api/units')data={data:[{...unit,items:[item],itemsCount:1}]};
    else if(u.pathname==='/api/invoices')data={...data,data:[inv]};
+   else if(u.pathname==='/api/invoices/1')data=inv;
    else if(u.pathname==='/api/end-clients')data={data:[client]};
    else if(u.pathname==='/api/suppliers')data={...data,data:[{...client,isActive:true}]};
    else if(u.pathname==='/api/dashboard')data={totalClients:1,outstandingBalance:50,todayTransactions:1,lateClients:1,overdueThresholdDays:7,overdueClients:[client],recentTransactions:[inv],topDebtors:[client],chartData:[]};
@@ -54,7 +55,14 @@ try {
    }
    if(name==='items') { renderUnitsTable();openRestockModal(1);await openStockLogModal(1); }
    if(name==='suppliers') await openStatementModal(1);
-   if(name==='new-invoice'||name==='client-details') { openTransactionDetails(1); addServiceRow(payload,10); }
+   if(name==='new-invoice'||name==='client-details') {
+    await openTransactionDetails(1);
+    const headers=Array.from(document.querySelectorAll('#tdItemsBreakdownContainer th')).map(el=>el.textContent.trim());
+    if(headers.join('|')!=='الكمية|الوحدة|الصنف|سعر الوحدة|الإجمالي') throw new Error('Invoice details columns are out of order: '+name);
+    if(document.querySelectorAll('#tdItemsBreakdownBody tr').length!==1) throw new Error('Invoice item details are missing: '+name);
+    if(document.querySelectorAll('#tdServicesBreakdownBody tr').length!==1) throw new Error('Invoice service details are missing: '+name);
+    addServiceRow(payload,10);
+   }
   },name,payload);
   const result=await page.evaluate(()=>({injected:!!window.__xss,nodes:document.querySelectorAll('[data-xss]').length,escapedVisible:document.body.textContent.includes('<img data-xss')}));
   console.log(name,JSON.stringify(result));
