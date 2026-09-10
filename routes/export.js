@@ -9,6 +9,7 @@ const prisma = require('../lib/prisma');
 const { requireAuth } = require('../middleware/auth');
 const { getAllClientBalances } = require('../lib/balance');
 const ejs = require('ejs');
+const { prepareChromiumEnvironment } = require('../lib/chromium-environment');
 
 // Helper to lazily load puppeteer and chromium so app startup on Vercel is 100% stable
 async function getPuppeteerAndChromium() {
@@ -42,12 +43,14 @@ async function getChromiumExecutablePath(chromium) {
 }
 
 async function launchPuppeteerBrowser(puppeteer, chromium, defaultViewport = null) {
+  const browserEnv = await prepareChromiumEnvironment();
   const isLocal = process.platform === 'darwin' || process.platform === 'win32';
   const executablePath = await getChromiumExecutablePath(chromium);
   const args = isLocal ? ['--no-sandbox', '--disable-setuid-sandbox'] : chromium.args;
   const headless = isLocal ? true : chromium.headless;
 
   return await puppeteer.launch({
+    env: browserEnv,
     args,
     defaultViewport: defaultViewport || chromium.defaultViewport,
     executablePath,
