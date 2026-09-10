@@ -12,7 +12,7 @@ const ejs = require('ejs');
 
 // Helper to lazily load puppeteer and chromium so app startup on Vercel is 100% stable
 async function getPuppeteerAndChromium() {
-  const puppeteer = require('puppeteer-core');
+  const { default: puppeteer } = await import('puppeteer-core');
   const chromium = require('@sparticuz/chromium');
   return { puppeteer, chromium };
 }
@@ -295,7 +295,7 @@ router.get('/clients/image', async (req, res) => {
     await page.setContent(html, { waitUntil: 'networkidle0' });
     await page.addStyleTag({ content: 'body { background: #fff !important; } .document { margin: 0 auto !important; box-shadow: none !important; }' });
 
-    const screenshotBuffer = await page.screenshot({ fullPage: true, type: 'png' });
+    const screenshotBuffer = Buffer.from(await page.screenshot({ fullPage: true, type: 'png' }));
 
     res.setHeader('Content-Type', 'image/png');
     res.setHeader('Content-Disposition', 'attachment; filename="clients-list.png"');
@@ -444,7 +444,7 @@ router.get('/invoices/image', async (req, res) => {
     await page.setContent(html, { waitUntil: 'networkidle0' });
     await page.addStyleTag({ content: 'body { background: #fff !important; } .document { margin: 0 auto !important; box-shadow: none !important; }' });
 
-    const screenshotBuffer = await page.screenshot({ fullPage: true, type: 'png' });
+    const screenshotBuffer = Buffer.from(await page.screenshot({ fullPage: true, type: 'png' }));
 
     res.setHeader('Content-Type', 'image/png');
     res.setHeader('Content-Disposition', 'attachment; filename="invoices-list.png"');
@@ -938,10 +938,10 @@ router.get('/client/:id/image', async (req, res) => {
     // Hide web action toolbar (.no-print) so image only contains statement content
     await page.addStyleTag({ content: '.no-print { display: none !important; } body { background: #fff !important; } .document { margin: 0 auto !important; box-shadow: none !important; }' });
 
-    const screenshotBuffer = await page.screenshot({
+    const screenshotBuffer = Buffer.from(await page.screenshot({
       fullPage: true,
       type: 'png'
-    });
+    }));
 
     const rawName = (client.name || 'client').trim();
     const safeName = rawName
@@ -1011,10 +1011,10 @@ router.get('/invoice/:id/image', async (req, res) => {
     // Hide web action toolbar (.no-print) so image only contains receipt card
     await page.addStyleTag({ content: '.no-print { display: none !important; } body { background: #fff !important; } .document { margin: 0 auto !important; box-shadow: none !important; }' });
 
-    const screenshotBuffer = await page.screenshot({
+    const screenshotBuffer = Buffer.from(await page.screenshot({
       fullPage: true,
       type: 'png'
-    });
+    }));
 
     const code = (invoice.invoiceCode || `inv-${invoice.id}`).replace(/[\\/:*?"<>|\s]/g, '_');
     const filename = `invoice-${code}.png`;
