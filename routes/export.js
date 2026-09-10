@@ -55,6 +55,88 @@ async function launchPuppeteerBrowser(puppeteer, chromium, defaultViewport = nul
   });
 }
 
+let cachedPrintAssets = null;
+
+function getPrintAssets() {
+  if (!cachedPrintAssets) {
+    const logoPath = path.join(__dirname, '..', 'public', 'images', 'logo.svg');
+    const fontPath = path.join(__dirname, '..', 'public', 'fonts', 'Tahoma.ttf');
+    cachedPrintAssets = {
+      logoDataUri: `data:image/svg+xml;base64,${fs.readFileSync(logoPath).toString('base64')}`,
+      fontDataBase64: fs.readFileSync(fontPath).toString('base64')
+    };
+  }
+  return cachedPrintAssets;
+}
+
+async function renderPrintTemplate(templateName, data) {
+  const templatePath = path.join(__dirname, '..', 'views', 'print', `${templateName}.ejs`);
+  return ejs.renderFile(templatePath, { ...data, ...getPrintAssets() });
+}
+
+const EXCEL_COLORS = {
+  brand: 'FF006840',
+  brandDark: 'FF064F35',
+  brandSoft: 'FFE8F3EE',
+  gold: 'FFD9AD55',
+  white: 'FFFFFFFF',
+  ink: 'FF17211D',
+  muted: 'FF718078',
+  line: 'FFDCE5E0'
+};
+
+function addExcelDocumentHeader(workbook, worksheet, { title, subtitle, lastColumn }) {
+  const logoPath = path.join(__dirname, '..', 'public', 'images', 'logo.png');
+  if (fs.existsSync(logoPath)) {
+    const logoId = workbook.addImage({ filename: logoPath, extension: 'png' });
+    worksheet.addImage(logoId, { tl: { col: 0.15, row: 0.15 }, ext: { width: 58, height: 58 } });
+  }
+
+  worksheet.mergeCells(`B1:${lastColumn}1`);
+  worksheet.mergeCells(`B2:${lastColumn}2`);
+  worksheet.getCell('B1').value = title;
+  worksheet.getCell('B1').font = { bold: true, size: 18, color: { argb: EXCEL_COLORS.white } };
+  worksheet.getCell('B2').value = subtitle;
+  worksheet.getCell('B2').font = { size: 10, color: { argb: EXCEL_COLORS.white } };
+  worksheet.getCell('B1').alignment = worksheet.getCell('B2').alignment = { horizontal: 'right', vertical: 'middle' };
+  worksheet.getRow(1).height = 34;
+  worksheet.getRow(2).height = 22;
+
+  for (let row = 1; row <= 2; row += 1) {
+    for (let col = 1; col <= worksheet.getColumn(lastColumn).number; col += 1) {
+      worksheet.getCell(row, col).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: EXCEL_COLORS.brand } };
+    }
+  }
+  worksheet.getRow(3).height = 8;
+}
+
+function styleExcelTable(worksheet, headerRowNumber, lastColumnNumber) {
+  const headerRow = worksheet.getRow(headerRowNumber);
+  headerRow.height = 26;
+  headerRow.font = { bold: true, color: { argb: EXCEL_COLORS.white } };
+  headerRow.alignment = { horizontal: 'center', vertical: 'middle' };
+  headerRow.eachCell({ includeEmpty: true }, (cell) => {
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: EXCEL_COLORS.brandDark } };
+    cell.border = { bottom: { style: 'thin', color: { argb: EXCEL_COLORS.gold } } };
+  });
+
+  for (let rowNumber = headerRowNumber + 1; rowNumber <= worksheet.rowCount; rowNumber += 1) {
+    const row = worksheet.getRow(rowNumber);
+    row.height = 23;
+    row.alignment = { vertical: 'middle', horizontal: 'right' };
+    for (let col = 1; col <= lastColumnNumber; col += 1) {
+      const cell = row.getCell(col);
+      cell.border = { bottom: { style: 'hair', color: { argb: EXCEL_COLORS.line } } };
+      if ((rowNumber - headerRowNumber) % 2 === 0) {
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8FAF9' } };
+      }
+    }
+  }
+
+  worksheet.autoFilter = { from: { row: headerRowNumber, column: 1 }, to: { row: headerRowNumber, column: lastColumnNumber } };
+  worksheet.views = [{ rightToLeft: true, state: 'frozen', ySplit: headerRowNumber }];
+}
+
 
 
 // Apply auth middleware
@@ -90,16 +172,18 @@ router.get('/clients/excel', async (req, res) => {
     const worksheet = workbook.addWorksheet('العملاء', { views: [{ rightToLeft: true }] });
     
     worksheet.columns = [
-      { header: 'اسم العميل', key: 'name', width: 30 },
-      { header: 'رقم الهاتف', key: 'phone', width: 20 },
-      { header: 'الرصيد المستحق (ج.م)', key: 'balance', width: 25 },
-      { header: 'تاريخ الإضافة', key: 'createdAt', width: 20 },
-      { header: 'آخر معاملة', key: 'lastTransaction', width: 20 }
+      { key: 'name', width: 30 },
+      { key: 'phone', width: 20 },
+      { key: 'balance', width: 25 },
+      { key: 'createdAt', width: 20 },
+      { key: 'lastTransaction', width: 20 }
     ];
-
-    // Style headers
-    worksheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
-    worksheet.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF006840' } }; // Primary color
+    addExcelDocumentHeader(workbook, worksheet, {
+      title: 'قائمة العملاء',
+      subtitle: `تقرير أرصدة العملاء — ${formatDate(new Date())}`,
+      lastColumn: 'E'
+    });
+    worksheet.getRow(4).values = ['اسم العميل', 'رقم الهاتف', 'الرصيد المستحق (ج.م)', 'تاريخ الإضافة', 'آخر معاملة'];
 
     clients.forEach(client => {
       worksheet.addRow({
@@ -110,6 +194,8 @@ router.get('/clients/excel', async (req, res) => {
         lastTransaction: formatDate(client.updatedAt)
       });
     });
+    styleExcelTable(worksheet, 4, 5);
+    worksheet.getColumn(3).numFmt = '#,##0.00 "ج.م"';
 
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     res.setHeader('Content-Disposition', 'attachment; filename="clients.xlsx"');
@@ -142,8 +228,7 @@ router.get('/clients/pdf', async (req, res) => {
     const clearClientsCount = clients.filter(c => c.balance <= 0).length;
     const printDate = formatDate(new Date());
 
-    const templatePath = path.join(__dirname, '..', 'views', 'print', 'clients-list.ejs');
-    const html = await ejs.renderFile(templatePath, {
+    const html = await renderPrintTemplate('clients-list', {
       clients,
       totalDebt,
       clearClientsCount,
@@ -157,11 +242,12 @@ router.get('/clients/pdf', async (req, res) => {
     const page = await browser.newPage();
     await page.setContent(html, { waitUntil: 'networkidle0' });
 
-    const pdfBuffer = await page.pdf({
+    const pdfBuffer = Buffer.from(await page.pdf({
       format: 'A4',
       printBackground: true,
-      margin: { top: '15mm', right: '15mm', bottom: '15mm', left: '15mm' }
-    });
+      preferCSSPageSize: true,
+      margin: { top: '10mm', right: '10mm', bottom: '10mm', left: '10mm' }
+    }));
 
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', 'attachment; filename="clients-list.pdf"');
@@ -194,8 +280,7 @@ router.get('/clients/image', async (req, res) => {
     const clearClientsCount = clients.filter(c => c.balance <= 0).length;
     const printDate = formatDate(new Date());
 
-    const templatePath = path.join(__dirname, '..', 'views', 'print', 'clients-list.ejs');
-    const html = await ejs.renderFile(templatePath, {
+    const html = await renderPrintTemplate('clients-list', {
       clients,
       totalDebt,
       clearClientsCount,
@@ -208,6 +293,7 @@ router.get('/clients/image', async (req, res) => {
 
     const page = await browser.newPage();
     await page.setContent(html, { waitUntil: 'networkidle0' });
+    await page.addStyleTag({ content: 'body { background: #fff !important; } .document { margin: 0 auto !important; box-shadow: none !important; }' });
 
     const screenshotBuffer = await page.screenshot({ fullPage: true, type: 'png' });
 
@@ -235,16 +321,19 @@ router.get('/invoices/excel', async (req, res) => {
     const worksheet = workbook.addWorksheet('الفواتير والمعاملات', { views: [{ rightToLeft: true }] });
     
     worksheet.columns = [
-      { header: 'التاريخ', key: 'date', width: 15 },
-      { header: 'اسم العميل', key: 'clientName', width: 30 },
-      { header: 'رقم الهاتف', key: 'clientPhone', width: 20 },
-      { header: 'النوع', key: 'type', width: 15 },
-      { header: 'المبلغ (ج.م)', key: 'amount', width: 20 },
-      { header: 'التفاصيل', key: 'details', width: 40 }
+      { key: 'date', width: 15 },
+      { key: 'clientName', width: 30 },
+      { key: 'clientPhone', width: 20 },
+      { key: 'type', width: 15 },
+      { key: 'amount', width: 20 },
+      { key: 'details', width: 40 }
     ];
-
-    worksheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
-    worksheet.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF006840' } };
+    addExcelDocumentHeader(workbook, worksheet, {
+      title: 'سجل الفواتير والمعاملات',
+      subtitle: `تقرير شامل — ${formatDate(new Date())}`,
+      lastColumn: 'F'
+    });
+    worksheet.getRow(4).values = ['التاريخ', 'اسم العميل', 'رقم الهاتف', 'النوع', 'المبلغ (ج.م)', 'التفاصيل'];
 
     invoices.forEach(inv => {
       worksheet.addRow({
@@ -256,6 +345,8 @@ router.get('/invoices/excel', async (req, res) => {
         details: inv.details || '-'
       });
     });
+    styleExcelTable(worksheet, 4, 6);
+    worksheet.getColumn(5).numFmt = '#,##0.00 "ج.م"';
 
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     res.setHeader('Content-Disposition', 'attachment; filename="invoices.xlsx"');
@@ -287,8 +378,7 @@ router.get('/invoices/pdf', async (req, res) => {
     }
 
     const printDate = formatDate(new Date());
-    const templatePath = path.join(__dirname, '..', 'views', 'print', 'invoices-list.ejs');
-    const html = await ejs.renderFile(templatePath, {
+    const html = await renderPrintTemplate('invoices-list', {
       invoices,
       totalPurchases,
       totalPayments,
@@ -302,11 +392,12 @@ router.get('/invoices/pdf', async (req, res) => {
     const page = await browser.newPage();
     await page.setContent(html, { waitUntil: 'networkidle0' });
 
-    const pdfBuffer = await page.pdf({
+    const pdfBuffer = Buffer.from(await page.pdf({
       format: 'A4',
       printBackground: true,
-      margin: { top: '15mm', right: '15mm', bottom: '15mm', left: '15mm' }
-    });
+      preferCSSPageSize: true,
+      margin: { top: '10mm', right: '10mm', bottom: '10mm', left: '10mm' }
+    }));
 
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', 'attachment; filename="invoices-list.pdf"');
@@ -338,8 +429,7 @@ router.get('/invoices/image', async (req, res) => {
     }
 
     const printDate = formatDate(new Date());
-    const templatePath = path.join(__dirname, '..', 'views', 'print', 'invoices-list.ejs');
-    const html = await ejs.renderFile(templatePath, {
+    const html = await renderPrintTemplate('invoices-list', {
       invoices,
       totalPurchases,
       totalPayments,
@@ -352,6 +442,7 @@ router.get('/invoices/image', async (req, res) => {
 
     const page = await browser.newPage();
     await page.setContent(html, { waitUntil: 'networkidle0' });
+    await page.addStyleTag({ content: 'body { background: #fff !important; } .document { margin: 0 auto !important; box-shadow: none !important; }' });
 
     const screenshotBuffer = await page.screenshot({ fullPage: true, type: 'png' });
 
@@ -426,23 +517,19 @@ router.get('/client/:id/excel', async (req, res) => {
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('كشف حساب', { views: [{ rightToLeft: true }] });
 
-    // Title & Client Header in Excel
-    worksheet.mergeCells('A1:F1');
-    const titleCell = worksheet.getCell('A1');
-    titleCell.value = `كشف حساب - ${client.name}`;
-    titleCell.font = { bold: true, size: 16, color: { argb: 'FFFFFFFF' } };
-    titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
-    titleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF006840' } };
-    worksheet.getRow(1).height = 35;
+    addExcelDocumentHeader(workbook, worksheet, {
+      title: `كشف حساب - ${client.name}`,
+      subtitle: `حركة الحساب حتى ${formatDate(new Date())}`,
+      lastColumn: 'F'
+    });
 
-    // Info Meta Rows
     worksheet.addRow(['رقم الهاتف:', client.phone || '-', '', 'تاريخ التقرير:', formatDate(new Date()), '']);
     worksheet.addRow(['إجمالي المشتريات:', totalPurchases, 'ج.م', 'إجمالي المدفوعات:', totalPayments, 'ج.م']);
     worksheet.addRow(['الرصيد المستحق:', currentBalance, 'ج.م', 'عدد العمليات:', client.invoices.length, '']);
-    worksheet.addRow([]); // Blank line
+    worksheet.addRow([]);
 
     // Table Header
-    const headerRowNumber = 6;
+    const headerRowNumber = 8;
     worksheet.getRow(headerRowNumber).values = [
       'التاريخ',
       'النوع',
@@ -451,11 +538,6 @@ router.get('/client/:id/excel', async (req, res) => {
       'العميل النهائي',
       'الرصيد بعد العملية (ج.م)'
     ];
-    worksheet.getRow(headerRowNumber).font = { bold: true, color: { argb: 'FFFFFFFF' } };
-    worksheet.getRow(headerRowNumber).alignment = { horizontal: 'center', vertical: 'middle' };
-    worksheet.getRow(headerRowNumber).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF006840' } };
-    worksheet.getRow(headerRowNumber).height = 25;
-
     worksheet.columns = [
       { key: 'date', width: 16 },
       { key: 'type', width: 14 },
@@ -481,6 +563,9 @@ router.get('/client/:id/excel', async (req, res) => {
         row.getCell(2).font = { color: { argb: 'FF16A34A' }, bold: true };
       }
     });
+    styleExcelTable(worksheet, headerRowNumber, 6);
+    worksheet.getColumn(3).numFmt = '#,##0.00 "ج.م"';
+    worksheet.getColumn(6).numFmt = '#,##0.00 "ج.م"';
 
     const safeName = (client.name || 'client').replace(/[\\/:*?"<>|]/g, '_');
     const filename = `client-statement-${safeName}.xlsx`;
@@ -552,6 +637,48 @@ router.get('/client/:id/pdf', async (req, res) => {
     const currentBalance = running;
     const displayInvoices = [...chronological].reverse(); // Newest first for report
     const printDate = formatDate(new Date());
+
+    // Use the same branded HTML document for PDF and image exports.
+    // The PDFKit renderer below remains a fallback for environments where Chromium cannot start.
+    let htmlBrowser = null;
+    try {
+      const { puppeteer, chromium } = await getPuppeteerAndChromium();
+      const firstTxDate = displayInvoices.length > 0 ? formatDate(displayInvoices[displayInvoices.length - 1].date) : '-';
+      const lastTxDate = displayInvoices.length > 0 ? formatDate(displayInvoices[0].date) : '-';
+      const html = await renderPrintTemplate('client-statement', {
+        client,
+        invoices: displayInvoices,
+        totalPurchases,
+        totalPayments,
+        currentBalance,
+        firstTxDate,
+        lastTxDate,
+        printDate,
+        formatCurrency,
+        formatDate
+      });
+
+      htmlBrowser = await launchPuppeteerBrowser(puppeteer, chromium);
+      const page = await htmlBrowser.newPage();
+      await page.setContent(html, { waitUntil: 'networkidle0' });
+      const pdfBuffer = Buffer.from(await page.pdf({
+        format: 'A4',
+        printBackground: true,
+        preferCSSPageSize: true,
+        margin: { top: '10mm', right: '10mm', bottom: '10mm', left: '10mm' }
+      }));
+
+      const safeName = (client.name || 'client').replace(/[\\/:*?"<>|]/g, '_');
+      const filename = `client-statement-${safeName}.pdf`;
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="client-statement.pdf"; filename*=UTF-8''${encodeURIComponent(filename)}`);
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+      return res.status(200).send(pdfBuffer);
+    } catch (htmlPdfError) {
+      console.warn('Branded HTML PDF failed; using PDFKit fallback:', htmlPdfError.message);
+    } finally {
+      if (htmlBrowser) await htmlBrowser.close();
+    }
 
     // Generate PDF via PDFKit
     const doc = new PDFDocument({
@@ -790,8 +917,7 @@ router.get('/client/:id/image', async (req, res) => {
     const lastTxDate = displayInvoices.length > 0 ? formatDate(displayInvoices[0].date) : '-';
 
     // Render HTML template via EJS
-    const templatePath = path.join(__dirname, '..', 'views', 'print', 'client-statement.ejs');
-    const html = await ejs.renderFile(templatePath, {
+    const html = await renderPrintTemplate('client-statement', {
       client,
       invoices: displayInvoices,
       totalPurchases,
@@ -810,7 +936,7 @@ router.get('/client/:id/image', async (req, res) => {
     await page.setContent(html, { waitUntil: 'networkidle0' });
 
     // Hide web action toolbar (.no-print) so image only contains statement content
-    await page.addStyleTag({ content: '.no-print { display: none !important; } body { padding: 24px !important; }' });
+    await page.addStyleTag({ content: '.no-print { display: none !important; } body { background: #fff !important; } .document { margin: 0 auto !important; box-shadow: none !important; }' });
 
     const screenshotBuffer = await page.screenshot({
       fullPage: true,
@@ -871,8 +997,7 @@ router.get('/invoice/:id/image', async (req, res) => {
       return res.status(404).send('الفاتورة غير موجودة');
     }
 
-    const templatePath = path.join(__dirname, '..', 'views', 'print', 'invoice-receipt.ejs');
-    const html = await ejs.renderFile(templatePath, {
+    const html = await renderPrintTemplate('invoice-receipt', {
       invoice,
       formatCurrency,
       formatDate
@@ -884,7 +1009,7 @@ router.get('/invoice/:id/image', async (req, res) => {
     await page.setContent(html, { waitUntil: 'networkidle0' });
 
     // Hide web action toolbar (.no-print) so image only contains receipt card
-    await page.addStyleTag({ content: '.no-print { display: none !important; } body { padding: 16px !important; }' });
+    await page.addStyleTag({ content: '.no-print { display: none !important; } body { background: #fff !important; } .document { margin: 0 auto !important; box-shadow: none !important; }' });
 
     const screenshotBuffer = await page.screenshot({
       fullPage: true,
@@ -909,5 +1034,3 @@ router.get('/invoice/:id/image', async (req, res) => {
 });
 
 module.exports = router;
-
-
