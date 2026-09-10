@@ -36,6 +36,7 @@ try {
    return req.respond({status:200,contentType:'application/json',body:JSON.stringify(data)});
   }
   if(u.pathname.startsWith('/js/'))return req.respond({status:200,contentType:'application/javascript',body:fs.readFileSync(path.join(root,'public',u.pathname),'utf8')});
+  if(u.pathname.startsWith('/css/'))return req.respond({status:200,contentType:'text/css',body:fs.readFileSync(path.join(root,'public',u.pathname),'utf8')});
   if(['/dashboard','/clients','/items','/suppliers','/new-invoice','/client-details'].includes(u.pathname)){
    const html=await ejs.renderFile(path.join(root,'views',u.pathname.slice(1)+'.ejs'));
    return req.respond({status:200,contentType:'text/html',body:html});
@@ -67,6 +68,25 @@ try {
  },payload);
  console.log('helpers',JSON.stringify(helpers));
  if(helpers.nodes||!helpers.roundtrip||!helpers.highlight)throw new Error('Helper browser verification failed');
+ await page.setViewport({width:390,height:844,deviceScaleFactor:1});
+ await page.goto('http://hisabat.test/new-invoice',{waitUntil:'networkidle0'});
+ await page.addStyleTag({content:'html,body{margin:0}.fixed{position:fixed}.inset-0{inset:0}.hidden{display:none}.flex{display:flex}.w-full{width:100%}.p-4{padding:1rem}'});
+ await page.evaluate(()=>openModal());
+ const mobileLayout=await page.evaluate(()=>{
+  const panel=document.querySelector('.invoice-modal-panel').getBoundingClientRect();
+  const grid=document.querySelector('.invoice-line-grid');
+  const fields=[...grid.children].slice(0,5).map(el=>el.querySelector('label')?.textContent.trim());
+  const columns=getComputedStyle(grid).gridTemplateColumns.split(' ').length;
+  const footer=document.querySelector('.invoice-modal-footer').getBoundingClientRect();
+  const panelStyle=getComputedStyle(document.querySelector('.invoice-modal-panel'));
+  const form=document.querySelector('.invoice-modal-form').getBoundingClientRect();
+  return {panelWidth:panel.width,panelHeight:panel.height,panelCssHeight:panelStyle.height,formTop:form.top,formBottom:form.bottom,formHeight:form.height,viewport:innerWidth,viewportHeight:innerHeight,columns,fields,footerPosition:getComputedStyle(document.querySelector('.invoice-modal-footer')).position,footerTop:footer.top,footerBottom:footer.bottom,footerParent:document.querySelector('.invoice-modal-footer').parentElement.className,formChildren:[...document.querySelector('.invoice-modal-form').children].map(x=>x.className||x.id),footerVisible:footer.top<innerHeight&&footer.bottom<=innerHeight+1};
+ });
+ console.log('mobileLayout',JSON.stringify(mobileLayout));
+ if(mobileLayout.panelWidth>mobileLayout.viewport||mobileLayout.columns!==2||!mobileLayout.footerVisible||
+    mobileLayout.fields.join('|')!=='الكمية *|الوحدة *|الصنف *|السعر (ج.م) *|الإجمالي') {
+   throw new Error('Mobile invoice layout verification failed');
+ }
  console.log('pageErrors',JSON.stringify(errors));
  if(errors.length)throw new Error('Browser page errors');
 } finally {await browser.close();}

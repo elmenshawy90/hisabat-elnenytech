@@ -272,21 +272,23 @@
 
 
     <!-- Modal -->
-    <div class="fixed inset-0 z-[100] hidden items-center justify-center bg-black/50 p-4" id="invoiceModal">
-        <div class="bg-white rounded-xl shadow-lg w-full max-w-3xl max-h-[90vh] overflow-y-auto p-md md:p-xl">
-            <div class="flex flex-row justify-between items-center mb-lg border-b border-outline-variant pb-sm">
+    <div class="invoice-modal-overlay fixed inset-0 z-[100] hidden items-center justify-center bg-black/50 p-4" id="invoiceModal">
+        <div class="invoice-modal-panel bg-white rounded-2xl shadow-lg w-full max-w-6xl max-h-[94vh] overflow-y-auto">
+            <div class="invoice-modal-header flex flex-row justify-between items-center border-b border-outline-variant px-md md:px-xl py-md">
                 <h2 class="font-headline-md text-headline-md font-bold text-on-surface" id="modalTitle">إضافة فاتورة
                     جديدة</h2>
                 <button class="text-secondary hover:text-on-surface" onclick="closeModal()" type="button">
                     <span class="material-symbols-outlined">close</span>
                 </button>
             </div>
-            <p class="text-[13px] text-secondary mb-md -mt-sm">الحقول المشار إليها بنجمة (<span
+            <p class="text-[12px] text-secondary px-md md:px-xl pt-sm">الحقول المشار إليها بنجمة (<span
                     class="text-error font-bold">*</span>) هي حقول إجبارية</p>
-            <form class="space-y-lg" id="invoiceForm" novalidate>
+            <form class="invoice-modal-form space-y-md px-md md:px-xl pt-md" id="invoiceForm" novalidate>
                 <input type="hidden" id="invoiceId">
                 <input type="hidden" id="clientId">
                 <input type="hidden" id="endClientId">
+
+                <div class="invoice-modal-scroll space-y-md">
 
                 <!-- Client Summary Card (Hidden initially) -->
                 <div id="clientSummaryCard"
@@ -308,7 +310,7 @@
                     </a>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-lg">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-md">
                     <div class="flex flex-col gap-xs">
                         <label class="font-label-md text-label-md text-on-surface-variant mb-xs">اسم العميل <span
                                 class="text-error">*</span></label>
@@ -377,7 +379,7 @@
 
                     <!-- Dynamic Line Items Container (Placed at the end before footer buttons) -->
                     <div id="purchaseItemsContainer"
-                        class="md:col-span-2 space-y-sm border border-outline-variant/80 rounded-xl p-md bg-surface-container-lowest">
+                        class="invoice-purchase-card md:col-span-2 space-y-sm rounded-xl p-md bg-surface-container-lowest">
                         <div class="flex items-center justify-between border-b border-outline-variant/40 pb-xs">
                             <div>
                                 <h4 class="font-bold text-sm text-on-surface">بنود الفاتورة والمشتريات</h4>
@@ -391,13 +393,16 @@
                             </button>
                         </div>
 
-                        <div id="invoiceLineRowsContainer" class="space-y-xs pt-xs">
+                        <div class="invoice-line-table-head" aria-hidden="true">
+                            <span>الكمية</span><span>الوحدة</span><span>الصنف</span><span>سعر الوحدة</span><span>الإجمالي</span><span></span>
+                        </div>
+                        <div id="invoiceLineRowsContainer" class="space-y-xs">
                             <!-- Dynamic Line Rows Rendered via JS -->
                         </div>
 
                         <!-- Other Services Section (أخري) -->
                         <div id="otherServicesContainer"
-                            class="space-y-sm border border-outline-variant/80 rounded-xl p-md bg-surface">
+                            class="invoice-services-card space-y-sm rounded-xl p-md bg-surface">
                             <div class="flex items-center justify-between border-b border-outline-variant/40 pb-xs">
                                 <div>
                                     <h4 class="font-bold text-sm text-on-surface">أخري — خدمات إضافية</h4>
@@ -416,7 +421,7 @@
                             </div>
 
                             <div
-                                class="flex items-center justify-between font-bold text-xs text-on-surface-variant border-t border-outline-variant/60 pt-sm">
+                                class="services-subtotal-row flex items-center justify-between font-bold text-xs text-on-surface-variant border-t border-outline-variant/60 pt-sm">
                                 <span>مجموع الخدمات:</span>
                                 <span id="servicesSubtotalText"
                                     class="text-on-surface text-sm font-bold dir-ltr">0.00
@@ -425,7 +430,7 @@
                         </div>
 
                         <!-- Subtotal, Discount & Final Total Footer -->
-                        <div class="space-y-xs border-t border-outline-variant/60 pt-sm">
+                        <div class="invoice-totals-card space-y-xs border-t border-outline-variant/60 pt-sm">
                             <div class="flex items-center justify-between font-bold text-xs text-on-surface-variant">
                                 <span>مجموع البنود:</span>
                                 <span id="itemsSubtotalText" class="text-on-surface text-sm font-bold dir-ltr">0.00
@@ -524,7 +529,8 @@
                         </div>
                     </div>
                 </div>
-                <div class="flex flex-col md:flex-row items-center gap-md pt-lg border-t border-outline-variant mt-xl">
+                </div>
+                <div class="invoice-modal-footer flex flex-col md:flex-row items-center gap-sm py-md px-md md:px-xl border-t border-outline-variant">
                     <button id="submitBtn"
                         class="w-full md:w-auto min-w-[160px] bg-primary text-on-primary h-14 rounded-full font-headline-sm text-headline-sm flex items-center justify-center gap-sm hover:opacity-90 active:scale-95 transition-all font-bold disabled:opacity-60 disabled:cursor-not-allowed"
                         type="submit">
@@ -1165,7 +1171,7 @@
 
             const rowId = `line_row_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
             const row = document.createElement('div');
-            row.className = 'invoice-line-row space-y-xs bg-surface p-xs rounded-xl border border-outline-variant/60';
+            row.className = 'invoice-line-row space-y-xs';
             row.id = rowId;
 
             const qty = itemData.quantity !== undefined ? itemData.quantity : 1;
@@ -1173,7 +1179,7 @@
             const total = itemData.lineTotal !== undefined ? itemData.lineTotal : (qty * price);
 
             row.innerHTML = `
-                <div class="flex items-center gap-xs flex-wrap sm:flex-nowrap">
+                <div class="invoice-line-grid">
                     <div class="w-24">
                         <label class="block text-[11px] font-bold text-secondary mb-1">الكمية <span class="text-error">*</span></label>
                         <input type="number" step="any" min="0.001" value="${escapeHtml(qty)}" class="line-qty-input w-full h-9 px-xs rounded-md bg-surface-container-low border border-outline-variant text-xs font-bold text-center dir-ltr focus:border-primary outline-none" placeholder="0" oninput="onLineInputsCalculated('${rowId}')" />
@@ -1503,11 +1509,11 @@
             const rowId = `line_row_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
 
             const row = document.createElement('div');
-            row.className = 'invoice-line-row space-y-xs bg-surface p-xs rounded-xl border border-outline-variant/60';
+            row.className = 'invoice-line-row space-y-xs';
             row.id = rowId;
 
             row.innerHTML = `
-                    <div class="flex items-start gap-xs flex-wrap sm:flex-nowrap">
+                    <div class="invoice-line-grid">
                         <!-- 1. Quantity Input -->
                         <div class="w-24">
                             <label class="block text-[11px] font-bold text-secondary mb-1">الكمية <span class="text-error">*</span></label>
@@ -1725,7 +1731,7 @@
             if (!container) return;
             const rowId = `svc_row_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
             const row = document.createElement('div');
-            row.className = 'service-row flex items-center gap-xs flex-wrap sm:flex-nowrap bg-surface p-xs rounded-xl border border-outline-variant/60';
+            row.className = 'service-row invoice-service-grid';
             row.id = rowId;
             row.innerHTML = `
                     <div class="flex-1 min-w-[140px]">

@@ -354,16 +354,17 @@
 </div>
 
 <!-- Invoice Modal -->
-<div class="fixed inset-0 z-[100] hidden items-center justify-center bg-black/50 p-4" id="invoiceModal">
-    <div class="bg-surface rounded-xl shadow-lg w-full max-w-3xl max-h-[90vh] overflow-y-auto p-md md:p-xl">
-        <div class="flex flex-row justify-between items-center mb-lg border-b border-outline-variant pb-sm">
+<div class="invoice-modal-overlay fixed inset-0 z-[100] hidden items-center justify-center bg-black/50 p-4" id="invoiceModal">
+    <div class="invoice-modal-panel bg-surface rounded-2xl shadow-lg w-full max-w-6xl max-h-[94vh] overflow-y-auto">
+        <div class="invoice-modal-header flex flex-row justify-between items-center border-b border-outline-variant px-md md:px-xl py-md">
             <h2 id="modalTitle" class="font-headline-md text-headline-md font-bold text-on-surface">إضافة فاتورة جديدة</h2>
             <button class="text-secondary hover:text-on-surface" onclick="closeInvoiceModal()" type="button">
                 <span class="material-symbols-outlined">close</span>
             </button>
         </div>
-        <form class="space-y-lg" id="invoiceForm" novalidate>
+        <form class="invoice-modal-form space-y-md px-md md:px-xl pt-md" id="invoiceForm" novalidate>
             <input type="hidden" id="endClientId">
+            <div class="invoice-modal-scroll space-y-md">
             <div class="flex flex-col gap-xs">
                 <label class="font-label-md text-label-md text-on-surface-variant mb-xs">تاريخ الفاتورة <span class="text-error">*</span></label>
                 <div class="relative">
@@ -432,7 +433,7 @@
             </div>
 
             <!-- Dynamic Line Items Container (Shown ONLY for purchase invoices) -->
-            <div id="purchaseItemsContainer" class="hidden space-y-sm border border-outline-variant/80 rounded-xl p-md bg-surface-container-lowest">
+            <div id="purchaseItemsContainer" class="invoice-purchase-card hidden space-y-sm rounded-xl p-md bg-surface-container-lowest">
                 <div class="flex items-center justify-between border-b border-outline-variant/40 pb-xs">
                     <div>
                         <h4 class="font-bold text-sm text-on-surface">بنود الفاتورة والمشتريات</h4>
@@ -444,12 +445,15 @@
                     </button>
                 </div>
 
-                <div id="invoiceLineRowsContainer" class="space-y-xs pt-xs">
+                <div class="invoice-line-table-head" aria-hidden="true">
+                    <span>الكمية</span><span>الوحدة</span><span>الصنف</span><span>سعر الوحدة</span><span>الإجمالي</span><span></span>
+                </div>
+                <div id="invoiceLineRowsContainer" class="space-y-xs">
                     <!-- Dynamic Line Rows Rendered via JS -->
                 </div>
 
                 <!-- Other Services Section (أخري) -->
-                <div id="otherServicesContainer" class="space-y-sm border border-outline-variant/80 rounded-xl p-md bg-surface">
+                <div id="otherServicesContainer" class="invoice-services-card space-y-sm rounded-xl p-md bg-surface">
                     <div class="flex items-center justify-between border-b border-outline-variant/40 pb-xs">
                         <div>
                             <h4 class="font-bold text-sm text-on-surface">أخري — خدمات إضافية</h4>
@@ -465,14 +469,14 @@
                         <!-- Dynamic Service Rows Rendered via JS -->
                     </div>
 
-                    <div class="flex items-center justify-between font-bold text-xs text-on-surface-variant border-t border-outline-variant/60 pt-sm">
+                    <div class="services-subtotal-row flex items-center justify-between font-bold text-xs text-on-surface-variant border-t border-outline-variant/60 pt-sm">
                         <span>مجموع الخدمات:</span>
                         <span id="servicesSubtotalText" class="text-on-surface text-sm font-bold dir-ltr">0.00 ج.م</span>
                     </div>
                 </div>
 
                 <!-- Subtotal, Discount & Final Total Footer -->
-                <div class="space-y-xs border-t border-outline-variant/60 pt-sm">
+                <div class="invoice-totals-card space-y-xs border-t border-outline-variant/60 pt-sm">
                     <div class="flex items-center justify-between font-bold text-xs text-on-surface-variant">
                         <span>مجموع البنود:</span>
                         <span id="itemsSubtotalText" class="text-on-surface text-sm font-bold dir-ltr">0.00 ج.م</span>
@@ -546,7 +550,8 @@
                 </div>
             </div>
 
-            <div class="flex flex-row gap-sm pt-md border-t border-outline-variant mt-lg">
+            </div>
+            <div class="invoice-modal-footer flex flex-col md:flex-row gap-sm py-md px-md md:px-xl border-t border-outline-variant">
                 <button class="flex-1 bg-surface-container-low text-on-surface rounded-full py-md font-label-md text-label-md hover:bg-surface-container transition-colors" onclick="closeInvoiceModal()" type="button">إلغاء</button>
                 <button id="submitBtn" class="flex-1 bg-primary text-on-primary rounded-full py-md font-label-md text-label-md hover:opacity-90 transition-opacity font-bold" type="submit">حفظ الفاتورة</button>
             </div>
@@ -2128,7 +2133,7 @@ function addPreloadedInvoiceLineRow(itemData) {
 
     const rowId = `line_row_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
     const row = document.createElement('div');
-    row.className = 'invoice-line-row space-y-xs bg-surface p-xs rounded-xl border border-outline-variant/60';
+    row.className = 'invoice-line-row space-y-xs';
     row.id = rowId;
 
     const qty = itemData.quantity !== undefined ? itemData.quantity : 1;
@@ -2136,7 +2141,7 @@ function addPreloadedInvoiceLineRow(itemData) {
     const total = itemData.lineTotal !== undefined ? itemData.lineTotal : (qty * price);
 
     row.innerHTML = `
-        <div class="flex items-center gap-xs flex-wrap sm:flex-nowrap">
+        <div class="invoice-line-grid">
             <div class="w-24">
                 <label class="block text-[11px] font-bold text-secondary mb-1">الكمية <span class="text-error">*</span></label>
                 <input type="number" step="any" min="0.001" value="${escapeHtml(qty)}" class="line-qty-input w-full h-9 px-xs rounded-md bg-surface-container-low border border-outline-variant text-xs font-bold text-center dir-ltr focus:border-primary outline-none" placeholder="0" oninput="onLineInputsCalculated('${rowId}')" />
@@ -2218,11 +2223,11 @@ function addInvoiceLineRow() {
     const rowId = `line_row_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
     
     const row = document.createElement('div');
-    row.className = 'invoice-line-row space-y-xs bg-surface p-xs rounded-xl border border-outline-variant/60';
+    row.className = 'invoice-line-row space-y-xs';
     row.id = rowId;
 
     row.innerHTML = `
-        <div class="flex items-center gap-xs flex-wrap sm:flex-nowrap">
+        <div class="invoice-line-grid">
             <!-- 1. Quantity Input -->
             <div class="w-24">
                 <label class="block text-[11px] font-bold text-secondary mb-1">الكمية <span class="text-error">*</span></label>
@@ -2438,7 +2443,7 @@ function addServiceRow(name = '', price = '') {
     if (!container) return;
     const rowId = `svc_row_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
     const row = document.createElement('div');
-    row.className = 'service-row flex items-center gap-xs flex-wrap sm:flex-nowrap bg-surface p-xs rounded-xl border border-outline-variant/60';
+    row.className = 'service-row invoice-service-grid';
     row.id = rowId;
     row.innerHTML = `
         <div class="flex-1 min-w-[140px]">
