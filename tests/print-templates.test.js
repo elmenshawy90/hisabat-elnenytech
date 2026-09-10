@@ -5,8 +5,10 @@ const ejs = require('ejs');
 
 const printDirectory = path.join(__dirname, '..', 'views', 'print');
 const common = {
+  toEnglishDigits: value => String(value ?? '').replace(/[٠-٩]/g, digit => String(digit.charCodeAt(0) - 0x660)),
   logoDataUri: 'data:image/svg+xml;base64,PHN2Zy8+',
   fontDataBase64: 'AA==',
+  boldFontDataBase64: 'AA==',
   printDate: '١٠/٩/٢٠٢٦',
   formatCurrency: value => `${Number(value).toFixed(2)} ج.م`,
   formatDate: () => '١٠/٩/٢٠٢٦'

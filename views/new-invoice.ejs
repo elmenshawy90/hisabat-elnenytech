@@ -944,7 +944,7 @@
             </td>
             <td class="p-md font-body-md text-secondary end-client-name">${highlightArabic(inv.endClientName || '', query) || '-'}</td>
             <td class="p-md font-body-md font-bold ${inv.type === 'payment' ? 'text-green-600' : 'text-primary'}">${inv.type === 'payment' ? '-' : ''}${formatCurrency(inv.amount)}</td>
-            <td class="p-md font-body-md text-secondary client-mobile" dir="ltr">${highlightArabic(inv.clientPhone || '', query) || '-'}</td>
+            <td class="p-md font-body-md text-secondary client-mobile" dir="ltr">${highlightArabic(toEnglishDigits(inv.clientPhone || ''), query) || '-'}</td>
             <td class="p-md font-body-md text-secondary">${formatDate(inv.date)}</td>
             <td class="p-md font-body-md text-secondary">${escapeHtml(inv.details || '-')}</td>
             <td class="p-md text-center">

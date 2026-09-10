@@ -413,7 +413,7 @@ function renderSuppliersTable() {
                     </div>
                 </td>
                 <td class="px-md py-md">
-                    <span class="dir-ltr inline-block font-bold text-on-surface">${escapeHtml(s.phone && s.phone !== '-' ? s.phone : '-')}</span>
+                    <span class="dir-ltr inline-block font-bold text-on-surface">${escapeHtml(toEnglishDigits(s.phone && s.phone !== '-' ? s.phone : '-'))}</span>
                 </td>
                 <td class="px-md py-md">
                     <span class="text-secondary text-sm">${escapeHtml(s.address || '-')}</span>

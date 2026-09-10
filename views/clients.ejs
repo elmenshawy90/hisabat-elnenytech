@@ -773,7 +773,7 @@ function renderClients(clients, resetPage = false) {
                         </div>
                     </div>
                 </td>
-                <td class="px-lg py-md font-body-md text-body-md text-secondary" dir="ltr">${highlightArabic(client.phone || '', query)}</td>
+                <td class="px-lg py-md font-body-md text-body-md text-secondary" dir="ltr">${highlightArabic(toEnglishDigits(client.phone || ''), query)}</td>
                 <td class="px-lg py-md font-body-md text-body-md text-secondary">
                     ${hasMatchedEndClients ? `
                         <span class="font-bold text-on-surface-variant">${matchedList.slice(0, 3).map(n => highlightArabic(n || '', query)).join('، ')}</span>${matchedCount > 3 ? `<span class="text-xs text-secondary font-bold"> (+${matchedCount - 3} آخرين)</span>` : ''}

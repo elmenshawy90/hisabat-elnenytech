@@ -1,6 +1,10 @@
 // Escape plain text for HTML text nodes and quoted attributes only.
+function toEnglishDigits(value) {
+  return String(value ?? '').replace(/[٠-٩۰-۹]/g, digit => String(digit.charCodeAt(0) - (digit <= '٩' ? 0x660 : 0x6f0)));
+}
+
 function escapeHtml(value) {
-  return String(value ?? '').replace(/[&<>"']/g, char => ({
+  return toEnglishDigits(value).replace(/[&<>"']/g, char => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
   })[char]);
 }
@@ -169,7 +173,7 @@ function hideLoading(container) {
 // ─── Format Currency ─────────────────────────────────────────
 function formatCurrency(amount) {
   const num = Number(amount) || 0;
-  return new Intl.NumberFormat('ar-EG', {
+  return new Intl.NumberFormat('ar-EG-u-nu-latn', {
     minimumFractionDigits: 0,
     maximumFractionDigits: 2
   }).format(num) + ' ج.م';
@@ -208,7 +212,7 @@ function formatBalanceLabel(balance) {
 function formatDate(dateStr) {
   if (!dateStr) return '-';
   const d = new Date(dateStr);
-  return d.toLocaleDateString('ar-EG', {
+  return d.toLocaleDateString('ar-EG-u-nu-latn', {
     timeZone: 'Africa/Cairo',
     year: 'numeric',
     month: 'long',
@@ -261,7 +265,7 @@ function setupPhoneValidation(inputId, errorId) {
 
   const validate = () => {
     // Strip non-numbers
-    let val = input.value.replace(/[^0-9]/g, '');
+    let val = toEnglishDigits(input.value).replace(/[^0-9]/g, '');
     input.value = val;
 
     let isError = false;
@@ -456,5 +460,3 @@ document.addEventListener('wheel', function (e) {
     e.preventDefault();
   }
 }, { passive: false });
-
-

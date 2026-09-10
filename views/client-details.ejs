@@ -1052,7 +1052,7 @@ async function loadClientDetails(skipAuth = false) {
         document.getElementById('clientInitials').textContent = initials;
         document.getElementById('clientName').textContent = client.name;
         document.getElementById('breadcrumbName').textContent = client.name;
-        document.getElementById('clientPhone').textContent = (client.phone && client.phone !== '-') ? client.phone : 'لا يوجد هاتف';
+        document.getElementById('clientPhone').textContent = (client.phone && client.phone !== '-') ? toEnglishDigits(client.phone) : 'لا يوجد هاتف';
         
         const addressEl = document.getElementById('clientAddress');
         const addressContainer = document.getElementById('clientAddressContainer');
@@ -3142,7 +3142,7 @@ document.getElementById('editClientForm').addEventListener('submit', async funct
         document.getElementById('clientInitials').textContent = initials;
         document.getElementById('clientName').textContent = updatedClient.name;
         document.getElementById('breadcrumbName').textContent = updatedClient.name;
-        document.getElementById('clientPhone').textContent = (updatedClient.phone && updatedClient.phone !== '-') ? updatedClient.phone : 'لا يوجد هاتف';
+        document.getElementById('clientPhone').textContent = (updatedClient.phone && updatedClient.phone !== '-') ? toEnglishDigits(updatedClient.phone) : 'لا يوجد هاتف';
         
         const addressEl = document.getElementById('clientAddress');
         const addressContainer = document.getElementById('clientAddressContainer');

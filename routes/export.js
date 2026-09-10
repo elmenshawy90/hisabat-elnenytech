@@ -63,10 +63,11 @@ let cachedPrintAssets = null;
 function getPrintAssets() {
   if (!cachedPrintAssets) {
     const logoPath = path.join(__dirname, '..', 'public', 'images', 'logo.svg');
-    const fontPath = path.join(__dirname, '..', 'public', 'fonts', 'Tahoma.ttf');
+    const fontPath = path.join(__dirname, '..', 'public', 'fonts', 'IBMPlexSansArabic-Regular.ttf');
     cachedPrintAssets = {
       logoDataUri: `data:image/svg+xml;base64,${fs.readFileSync(logoPath).toString('base64')}`,
-      fontDataBase64: fs.readFileSync(fontPath).toString('base64')
+      fontDataBase64: fs.readFileSync(fontPath).toString('base64'),
+      boldFontDataBase64: fs.readFileSync(path.join(__dirname, '..', 'public', 'fonts', 'IBMPlexSansArabic-Bold.ttf')).toString('base64')
     };
   }
   return cachedPrintAssets;
@@ -74,7 +75,12 @@ function getPrintAssets() {
 
 async function renderPrintTemplate(templateName, data) {
   const templatePath = path.join(__dirname, '..', 'views', 'print', `${templateName}.ejs`);
-  return ejs.renderFile(templatePath, { ...data, ...getPrintAssets() });
+  const html = await ejs.renderFile(templatePath, { ...data, ...getPrintAssets(), toEnglishDigits });
+  return toEnglishDigits(html);
+}
+
+function toEnglishDigits(value) {
+  return String(value ?? '').replace(/[٠-٩۰-۹]/g, digit => String(digit.charCodeAt(0) - (digit <= '٩' ? 0x660 : 0x6f0)));
 }
 
 const EXCEL_COLORS = {
@@ -114,9 +120,13 @@ function addExcelDocumentHeader(workbook, worksheet, { title, subtitle, lastColu
 }
 
 function styleExcelTable(worksheet, headerRowNumber, lastColumnNumber) {
+  worksheet.eachRow(row => row.eachCell(cell => {
+    cell.font = { ...cell.font, name: 'IBM Plex Sans Arabic' };
+    if (typeof cell.value === 'string') cell.value = toEnglishDigits(cell.value);
+  }));
   const headerRow = worksheet.getRow(headerRowNumber);
   headerRow.height = 26;
-  headerRow.font = { bold: true, color: { argb: EXCEL_COLORS.white } };
+  headerRow.font = { name: 'IBM Plex Sans Arabic', bold: true, color: { argb: EXCEL_COLORS.white } };
   headerRow.alignment = { horizontal: 'center', vertical: 'middle' };
   headerRow.eachCell({ includeEmpty: true }, (cell) => {
     cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: EXCEL_COLORS.brandDark } };
@@ -147,7 +157,7 @@ router.use(requireAuth);
 
 // Helper to format currency
 const formatCurrency = (amount) => {
-  return new Intl.NumberFormat('ar-EG', {
+  return new Intl.NumberFormat('ar-EG-u-nu-latn', {
     style: 'currency',
     currency: 'EGP'
   }).format(amount);
@@ -158,7 +168,7 @@ const formatDate = (d) => {
   if (!d) return '-';
   const date = new Date(d);
   if (isNaN(date.getTime())) return '-';
-  return date.toLocaleDateString('ar-EG', { timeZone: 'Africa/Cairo' });
+  return date.toLocaleDateString('ar-EG-u-nu-latn', { timeZone: 'Africa/Cairo' });
 };
 
 // GET /api/export/clients/excel - Export all clients
@@ -694,7 +704,7 @@ router.get('/client/:id/pdf', async (req, res) => {
     });
 
     // Prefer a font bundled with the project so Arabic text renders correctly in both local and serverless environments.
-    const projectFont = path.join(__dirname, '..', 'public', 'fonts', 'Tahoma.ttf');
+    const projectFont = path.join(__dirname, '..', 'public', 'fonts', 'IBMPlexSansArabic-Regular.ttf');
     const possibleFonts = [
       projectFont,
       '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',
