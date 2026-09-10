@@ -406,17 +406,17 @@ function renderSuppliersTable() {
                 <td class="px-md py-md">
                     <div class="flex flex-col">
                         <div class="flex items-center gap-2">
-                            <span class="font-bold text-on-surface text-base">${s.name}</span>
+                            <span class="font-bold text-on-surface text-base">${escapeHtml(s.name)}</span>
                             ${!isActive ? `<span class="bg-slate-200 text-slate-700 font-bold px-2 py-0.5 rounded-full text-[10px]">معطّل</span>` : ''}
                         </div>
-                        ${s.notes ? `<span class="text-xs text-secondary">${s.notes}</span>` : ''}
+                        ${s.notes ? `<span class="text-xs text-secondary">${escapeHtml(s.notes)}</span>` : ''}
                     </div>
                 </td>
                 <td class="px-md py-md">
-                    <span class="dir-ltr inline-block font-bold text-on-surface">${s.phone && s.phone !== '-' ? s.phone : '-'}</span>
+                    <span class="dir-ltr inline-block font-bold text-on-surface">${escapeHtml(s.phone && s.phone !== '-' ? s.phone : '-')}</span>
                 </td>
                 <td class="px-md py-md">
-                    <span class="text-secondary text-sm">${s.address || '-'}</span>
+                    <span class="text-secondary text-sm">${escapeHtml(s.address || '-')}</span>
                 </td>
                 <td class="px-md py-md">
                     <div class="flex flex-col gap-1">
@@ -718,7 +718,7 @@ async function openStatementModal(supplierId) {
                 <tr class="hover:bg-surface-container-high/50">
                     <td class="px-md py-sm font-mono text-secondary">${formatDate(t.date)}</td>
                     <td class="px-md py-sm">${badge}</td>
-                    <td class="px-md py-sm text-on-surface">${desc}</td>
+                    <td class="px-md py-sm text-on-surface">${escapeHtml(desc)}</td>
                     <td class="px-md py-sm font-bold dir-ltr text-right">${!isPayment ? formatCurrency(t.amount) : '-'}</td>
                     <td class="px-md py-sm font-bold dir-ltr text-right">${isPayment ? formatCurrency(t.amount) : '-'}</td>
                     <td class="px-md py-sm font-bold dir-ltr text-right ${balCls}">${formatCurrency(t.runningBalance || 0)}</td>

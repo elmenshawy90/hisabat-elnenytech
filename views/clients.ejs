@@ -456,12 +456,6 @@ let currentSortField = 'createdAt'; // 'createdAt', 'name', 'phone', or 'balance
 let currentSortOrder = 'desc'; // 'asc' or 'desc'
 let activeBalanceFilter = null; // null, 'credit', or 'debt'
 
-function escapeJsString(value = '') {
-    return String(value)
-        .replace(/\\/g, '\\\\')
-        .replace(/'/g, "\\'")
-        .replace(/\n/g, '\\n');
-}
 
 function sortClientsList(clients) {
     const list = [...clients];
@@ -773,7 +767,7 @@ function renderClients(clients, resetPage = false) {
             <tr onclick="window.location.href='/client-details?id=${client.id}'" class="cursor-pointer hover:bg-primary/10 transition-all duration-200 group" style="opacity:0;transform:translateY(10px);animation:fadeInRow 0.4s ease ${index * 0.05}s forwards;">
                 <td class="px-lg py-md">
                     <div class="flex items-center gap-md">
-                        <div class="w-10 h-10 rounded-full bg-secondary-container flex items-center justify-center text-on-secondary-container font-bold group-hover:scale-105 transition-transform">${initial}</div>
+                        <div class="w-10 h-10 rounded-full bg-secondary-container flex items-center justify-center text-on-secondary-container font-bold group-hover:scale-105 transition-transform">${escapeHtml(initial)}</div>
                         <div class="flex flex-col">
                             <span class="font-body-md text-body-md text-on-surface font-bold group-hover:text-primary transition-colors">${highlightArabic(clientName, query)}</span>
                         </div>
@@ -937,7 +931,7 @@ document.getElementById('searchInput').addEventListener('input', (e) => {
                     const encodedName = encodeURIComponent(item.endClientName);
                     const cardUrl = primaryContractorId ? `/client-details?id=${primaryContractorId}&filterEndClient=${encodedName}` : '#';
                     return `
-                    <div onclick="if ('${cardUrl}' !== '#') window.location.href='${cardUrl}'"
+                    <div onclick="if ('${escapeJsString(cardUrl)}' !== '#') window.location.href='${escapeJsString(cardUrl)}'"
                          class="bg-surface-container-lowest border border-outline-variant rounded-xl p-md shadow-sm flex flex-col gap-sm cursor-pointer hover:border-primary/60 hover:shadow-md transition-all">
                         <div class="flex items-center gap-sm border-b border-outline-variant/40 pb-xs">
                             <div class="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold">
@@ -950,7 +944,7 @@ document.getElementById('searchInput').addEventListener('input', (e) => {
                             <div class="flex flex-wrap gap-xs">
                                 ${item.contractors.map(c => `
                                     <a href="/client-details?id=${c.id}&filterEndClient=${encodedName}" onclick="event.stopPropagation();" class="inline-flex items-center gap-1 bg-surface-container-low hover:bg-primary/10 text-primary px-sm py-1 rounded-lg border border-outline-variant/60 transition-colors">
-                                        <span class="font-bold">${c.name}</span>
+                                        <span class="font-bold">${escapeHtml(c.name)}</span>
                                         <span class="text-secondary text-[11px]">(${c.invoiceCount} فاتورة)</span>
                                     </a>
                                 `).join('')}
@@ -1104,7 +1098,7 @@ async function updateNewClientSuggestions(rawVal) {
                                 <span>${highlightArabic(ec.endClientName, val)}</span>
                             </div>
                             <div class="flex items-center gap-xs text-[11px] text-secondary">
-                                ${primaryContractor ? `<span>عن طريق: ${primaryContractor.name}</span>` : ''}
+                                ${primaryContractor ? `<span>عن طريق: ${escapeHtml(primaryContractor.name)}</span>` : ''}
                                 <span class="material-symbols-outlined text-xs text-outline">open_in_new</span>
                             </div>
                         </a>

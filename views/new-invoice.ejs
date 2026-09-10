@@ -929,14 +929,14 @@
             <td class="p-md font-body-md text-on-surface client-name">
                 <div class="flex flex-col">
                     <span class="font-bold">${highlightArabic(inv.clientName, query)}</span>
-                    ${inv.invoiceCode ? `<span class="text-[11px] font-mono text-secondary font-medium">${inv.invoiceCode}</span>` : ''}
+                    ${inv.invoiceCode ? `<span class="text-[11px] font-mono text-secondary font-medium">${escapeHtml(inv.invoiceCode)}</span>` : ''}
                 </div>
             </td>
             <td class="p-md font-body-md text-secondary end-client-name">${highlightArabic(inv.endClientName || '', query) || '-'}</td>
             <td class="p-md font-body-md font-bold ${inv.type === 'payment' ? 'text-green-600' : 'text-primary'}">${inv.type === 'payment' ? '-' : ''}${formatCurrency(inv.amount)}</td>
             <td class="p-md font-body-md text-secondary client-mobile" dir="ltr">${highlightArabic(inv.clientPhone || '', query) || '-'}</td>
             <td class="p-md font-body-md text-secondary">${formatDate(inv.date)}</td>
-            <td class="p-md font-body-md text-secondary">${inv.details || '-'}</td>
+            <td class="p-md font-body-md text-secondary">${escapeHtml(inv.details || '-')}</td>
             <td class="p-md text-center">
                 <div class="flex items-center justify-center gap-xs group-hover:gap-sm transition-all">
                     <a href="/api/export/invoice/${inv._id || inv.id}/image" target="_blank" onclick="event.stopPropagation()" class="p-sm rounded-lg hover:bg-primary/20 text-secondary hover:text-primary transition-all active:scale-90 inline-flex items-center" title="تصدير إيصال الفاتورة كصورة">
@@ -1176,7 +1176,7 @@
                 <div class="flex items-center gap-xs flex-wrap sm:flex-nowrap">
                     <div class="w-24">
                         <label class="block text-[11px] font-bold text-secondary mb-1">الكمية <span class="text-error">*</span></label>
-                        <input type="number" step="any" min="0.001" value="${qty}" class="line-qty-input w-full h-9 px-xs rounded-md bg-surface-container-low border border-outline-variant text-xs font-bold text-center dir-ltr focus:border-primary outline-none" placeholder="0" oninput="onLineInputsCalculated('${rowId}')" />
+                        <input type="number" step="any" min="0.001" value="${escapeHtml(qty)}" class="line-qty-input w-full h-9 px-xs rounded-md bg-surface-container-low border border-outline-variant text-xs font-bold text-center dir-ltr focus:border-primary outline-none" placeholder="0" oninput="onLineInputsCalculated('${rowId}')" />
                     </div>
                     <div class="w-28">
                         <label class="block text-[11px] font-bold text-secondary mb-1">الوحدة <span class="text-error">*</span></label>
@@ -1193,7 +1193,7 @@
                     </div>
                     <div class="w-28">
                         <label class="block text-[11px] font-bold text-secondary mb-1">السعر (ج.م) <span class="text-error">*</span></label>
-                        <input type="number" step="any" min="0" value="${price}" class="line-price-input w-full h-9 px-xs rounded-md bg-surface-container-low border border-outline-variant text-xs font-bold text-center dir-ltr focus:border-primary outline-none" placeholder="0.00" oninput="onLineInputsCalculated('${rowId}')" />
+                        <input type="number" step="any" min="0" value="${escapeHtml(price)}" class="line-price-input w-full h-9 px-xs rounded-md bg-surface-container-low border border-outline-variant text-xs font-bold text-center dir-ltr focus:border-primary outline-none" placeholder="0.00" oninput="onLineInputsCalculated('${rowId}')" />
                     </div>
                     <div class="w-24 text-left">
                         <label class="block text-[11px] font-bold text-secondary mb-1">الإجمالي</label>
@@ -1223,7 +1223,7 @@
             itemSelect.innerHTML = '<option value="">-- اختر الصنف --</option>' + catalogWithItem.map(item => {
                 const idStr = String(item.id || item._id);
                 const isSel = idStr === String(targetItemId) ? 'selected' : '';
-                return `<option value="${idStr}" ${isSel}>${item.name}</option>`;
+                return `<option value="${idStr}" ${isSel}>${escapeHtml(item.name)}</option>`;
             }).join('');
 
             // Populate unit select
@@ -1231,11 +1231,11 @@
             if (selectedItem && Array.isArray(selectedItem.units)) {
                 unitSelect.innerHTML = selectedItem.units.map(u => {
                     const isSel = String(u.id) === String(itemData.itemUnitId) ? 'selected' : '';
-                    return `<option value="${u.id}" data-rate="${u.conversionRate}" ${isSel}>${u.name}${u.isBaseUnit ? ' (أساسية)' : ''}</option>`;
+                    return `<option value="${u.id}" data-rate="${u.conversionRate}" ${isSel}>${escapeHtml(u.name)}${u.isBaseUnit ? ' (أساسية)' : ''}</option>`;
                 }).join('');
                 unitSelect.disabled = false;
             } else if (itemData.itemUnit) {
-                unitSelect.innerHTML = `<option value="${itemData.itemUnit.id}" selected>${itemData.itemUnit.name}</option>`;
+                unitSelect.innerHTML = `<option value="${itemData.itemUnit.id}" selected>${escapeHtml(itemData.itemUnit.name)}</option>`;
                 unitSelect.disabled = false;
             }
         }
@@ -1294,12 +1294,12 @@
                     list.forEach(item => {
                         const idStr = String(item.id || item._id);
                         const isSelected = idStr === String(currentVal) ? 'selected' : '';
-                        options.push(`<option value="${idStr}" ${isSelected}>${item.name}</option>`);
+                        options.push(`<option value="${idStr}" ${isSelected}>${escapeHtml(item.name)}</option>`);
                     });
                     // حافظ على القيمة الحالية إن لم تعد ضمن القائمة المفلترة
                     if (currentVal && !list.some(it => String(it.id || it._id) === String(currentVal))) {
                         const kept = cachedActiveItems.find(it => String(it.id || it._id) === String(currentVal));
-                        if (kept) options.push(`<option value="${String(kept.id || kept._id)}" selected>${kept.name}</option>`);
+                        if (kept) options.push(`<option value="${String(kept.id || kept._id)}" selected>${escapeHtml(kept.name)}</option>`);
                     }
                     select.innerHTML = options.join('');
                     select.disabled = false;
@@ -1407,8 +1407,8 @@
             if (inv.items && inv.items.length > 0) {
                 itemsBody.innerHTML = inv.items.map(it => `
                         <tr>
-                            <td class="p-2 font-bold text-on-surface">${it.item ? it.item.name : 'صنف'}</td>
-                            <td class="p-2 text-secondary font-mono">${it.quantity} ${it.itemUnit ? it.itemUnit.name : ''}</td>
+                            <td class="p-2 font-bold text-on-surface">${escapeHtml(it.item ? it.item.name : 'صنف')}</td>
+                            <td class="p-2 text-secondary font-mono">${it.quantity} ${escapeHtml(it.itemUnit ? it.itemUnit.name : '')}</td>
                             <td class="p-2 text-secondary dir-ltr text-right">${formatCurrency(it.unitPrice)}</td>
                             <td class="p-2 font-bold text-primary dir-ltr text-right">${formatCurrency(it.lineTotal)}</td>
                         </tr>
@@ -1425,7 +1425,7 @@
                 if (inv.services && inv.services.length > 0) {
                     servicesBody.innerHTML = inv.services.map(s => `
                             <tr>
-                                <td class="p-2 font-bold text-on-surface">${s.name}</td>
+                                <td class="p-2 font-bold text-on-surface">${escapeHtml(s.name)}</td>
                                 <td class="p-2 font-bold text-primary dir-ltr text-right">${formatCurrency(s.price)}</td>
                             </tr>
                         `).join('');
@@ -1652,12 +1652,12 @@
                 html += cachedMasterUnits.map(u => {
                     const val = `m:${u.id}`;
                     const isSel = selMaster === val || sel === val ? 'selected' : '';
-                    return `<option value="${val}" data-master-id="${u.id}" data-unit-name="${u.name}" ${isSel}>${u.name}</option>`;
+                    return `<option value="${val}" data-master-id="${u.id}" data-unit-name="${escapeHtml(u.name)}" ${isSel}>${escapeHtml(u.name)}</option>`;
                 }).join('');
                 // قيمة رقمية قديمة (وحدة صنف غير مربوطة بالكتالوج) — حافظ عليها
                 if (sel && !sel.startsWith('m:') && !selMaster) {
                     const iu = findUnitById(sel);
-                    if (iu) html += `<option value="${iu.id}" data-unit-name="${iu.name}" selected>${iu.name} (خاصة بالصنف)</option>`;
+                    if (iu) html += `<option value="${iu.id}" data-unit-name="${escapeHtml(iu.name)}" selected>${escapeHtml(iu.name)} (خاصة بالصنف)</option>`;
                 }
                 return html;
             }
@@ -1666,9 +1666,9 @@
             (cachedActiveItems || []).forEach(item => {
                 if (!Array.isArray(item.units) || item.units.length === 0) return;
                 const itemName = item.name || '';
-                html += `<optgroup label="${itemName}">` + item.units.map(u => {
+                html += `<optgroup label="${escapeHtml(itemName)}">` + item.units.map(u => {
                     const isSel = String(u.id) === sel ? 'selected' : '';
-                    return `<option value="${u.id}" data-rate="${u.conversionRate}" data-unit-name="${u.name}" data-owner-item="${item.id || item._id}" ${isSel}>${u.name}${u.isBaseUnit ? ' (أساسية)' : ''}</option>`;
+                    return `<option value="${u.id}" data-rate="${u.conversionRate}" data-unit-name="${escapeHtml(u.name)}" data-owner-item="${item.id || item._id}" ${isSel}>${escapeHtml(u.name)}${u.isBaseUnit ? ' (أساسية)' : ''}</option>`;
                 }).join('') + '</optgroup>';
             });
             return html;
@@ -1697,7 +1697,7 @@
                     }
                     unitSelect.innerHTML = '<option value="">-- اختر الوحدة --</option>' + selectedItem.units.map(u => {
                         const isSel = targetUnitId && String(u.id) === targetUnitId ? 'selected' : '';
-                        return `<option value="${u.id}" data-rate="${u.conversionRate}" data-unit-name="${u.name}" ${u.unitId ? `data-master-id="${u.unitId}"` : ''} ${isSel}>${u.name}${u.isBaseUnit ? ' (أساسية)' : ''}</option>`;
+                        return `<option value="${u.id}" data-rate="${u.conversionRate}" data-unit-name="${escapeHtml(u.name)}" ${u.unitId ? `data-master-id="${u.unitId}"` : ''} ${isSel}>${escapeHtml(u.name)}${u.isBaseUnit ? ' (أساسية)' : ''}</option>`;
                     }).join('');
                     unitSelect.disabled = false;
                     return;
@@ -1734,7 +1734,7 @@
                     </div>
                     <div class="w-28">
                         <label class="block text-[11px] font-bold text-secondary mb-1">السعر (ج.م) <span class="text-error">*</span></label>
-                        <input type="number" step="any" min="0" value="${price === '' || price === null || price === undefined ? '' : price}" class="service-price-input w-full h-9 px-xs rounded-md bg-surface-container-low border border-outline-variant text-xs font-bold text-center dir-ltr focus:border-primary outline-none" placeholder="0.00" oninput="updateAllLineTotalsAndGrandTotal()" />
+                        <input type="number" step="any" min="0" value="${escapeHtml(price === '' || price === null || price === undefined ? '' : price)}" class="service-price-input w-full h-9 px-xs rounded-md bg-surface-container-low border border-outline-variant text-xs font-bold text-center dir-ltr focus:border-primary outline-none" placeholder="0.00" oninput="updateAllLineTotalsAndGrandTotal()" />
                     </div>
                     <div class="w-8 shrink-0 pt-4">
                         <button type="button" onclick="removeServiceRow('${rowId}')" class="w-8 h-8 flex items-center justify-center text-error hover:bg-error/10 rounded-md transition-colors cursor-pointer" title="حذف الخدمة">
@@ -1814,7 +1814,7 @@
                     if (compatible.length > 0 && compatible.length < (cachedActiveItems || []).length) {
                         const opts = ['<option value="">-- اختر الصنف --</option>'];
                         compatible.forEach(item => {
-                            opts.push(`<option value="${item.id || item._id}">${item.name}</option>`);
+                            opts.push(`<option value="${item.id || item._id}">${escapeHtml(item.name)}</option>`);
                         });
                         itemSelect.innerHTML = opts.join('');
                         itemSelect.disabled = false;
@@ -1969,10 +1969,10 @@
                     stockInfoEl.classList.remove('hidden');
                     if (qty > 0 && requestedBase > availableStock) {
                         stockInfoEl.className = 'line-stock-info text-[11px] font-medium px-sm py-1 rounded-md border bg-amber-500/10 border-amber-500/30 text-amber-800';
-                        stockInfoEl.innerHTML = `⚠️ <strong>الكمية المطلوبة (${requestedBase} ${baseUnitName}) أكبر من المتاح بالمخزون (${availableStock} ${baseUnitName})</strong> - سيتم القبول وتدوين العجز في المخزون`;
+                        stockInfoEl.innerHTML = `⚠️ <strong>الكمية المطلوبة (${requestedBase} ${escapeHtml(baseUnitName)}) أكبر من المتاح بالمخزون (${availableStock} ${escapeHtml(baseUnitName)})</strong> - سيتم القبول وتدوين العجز في المخزون`;
                     } else {
                         stockInfoEl.className = 'line-stock-info text-[11px] font-medium px-sm py-1 rounded-md border bg-primary/5 border-primary/10 text-primary';
-                        stockInfoEl.innerHTML = `المتاح حالياً في المخزون: <strong>${availableStock} ${baseUnitName}</strong>`;
+                        stockInfoEl.innerHTML = `المتاح حالياً في المخزون: <strong>${availableStock} ${escapeHtml(baseUnitName)}</strong>`;
                     }
                 }
             } else {
@@ -2135,7 +2135,7 @@
                         html += endClientMatches.map(ec => {
                             const primaryContractor = ec.contractors && ec.contractors[0];
                             const primaryContractorId = primaryContractor ? primaryContractor.id : '';
-                            const safeEndName = String(ec.endClientName || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                            const safeEndName = escapeJsString(ec.endClientName || '');
                             return `
                                     <div class="px-md py-sm hover:bg-tertiary/10 cursor-pointer border-b border-outline-variant/30 last:border-0 transition-colors flex items-center justify-between"
                                          onclick="selectEndClientFromSearch('${safeEndName}', '${primaryContractorId}')">
@@ -2143,7 +2143,7 @@
                                             <span class="material-symbols-outlined text-sm text-tertiary">person_pin</span>
                                             <span>${highlightArabic(ec.endClientName, val)}</span>
                                         </div>
-                                        ${primaryContractor ? `<div class="text-[11px] text-secondary">عن طريق: ${primaryContractor.name}</div>` : ''}
+                                        ${primaryContractor ? `<div class="text-[11px] text-secondary">عن طريق: ${escapeHtml(primaryContractor.name)}</div>` : ''}
                                     </div>
                                 `;
                         }).join('');
@@ -2213,14 +2213,14 @@
 
                 if (endClientMatches.length > 0) {
                     endClientDropdown.innerHTML = endClientMatches.map(ec => {
-                        const safeEndName = String(ec.endClientName || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                        const safeEndName = escapeJsString(ec.endClientName || '');
                         const primaryContractor = ec.contractors && ec.contractors[0];
                         const primaryContractorId = primaryContractor ? primaryContractor.id : '';
                         return `
                                 <div class="px-md py-sm hover:bg-primary/10 cursor-pointer border-b border-outline-variant/30 last:border-0 transition-colors flex items-center justify-between"
                                      onclick="selectEndClientFromSearch('${safeEndName}', '${primaryContractorId}')">
                                     <div class="font-body-md text-on-surface font-bold">${highlightArabic(ec.endClientName, val)}</div>
-                                    ${primaryContractor ? `<div class="font-label-sm text-secondary">عن طريق: ${primaryContractor.name}</div>` : ''}
+                                    ${primaryContractor ? `<div class="font-label-sm text-secondary">عن طريق: ${escapeHtml(primaryContractor.name)}</div>` : ''}
                                 </div>
                             `;
                     }).join('');

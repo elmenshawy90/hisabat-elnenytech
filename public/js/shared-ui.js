@@ -1,3 +1,18 @@
+// Escape plain text for HTML text nodes and quoted attributes only.
+function escapeHtml(value) {
+  return String(value ?? '').replace(/[&<>"']/g, char => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  })[char]);
+}
+
+// Encode string contents used inside quoted inline JavaScript attributes.
+// Unicode escapes prevent both HTML entity decoding and JS quote breakouts.
+function escapeJsString(value) {
+  return String(value ?? '').split('').map(char =>
+    '\\u' + char.charCodeAt(0).toString(16).padStart(4, '0')
+  ).join('');
+}
+
 // ─── Toast Notifications ─────────────────────────────────────
 function showToast(message, type = 'success') {
   // Remove existing toasts
@@ -17,7 +32,7 @@ function showToast(message, type = 'success') {
 
   toast.innerHTML = `
     <span class="material-symbols-outlined" style="font-size:20px;margin-left:8px;">${icon}</span>
-    <span>${message}</span>
+    <span>${escapeHtml(message)}</span>
   `;
 
   Object.assign(toast.style, {
@@ -78,7 +93,7 @@ function showConfirm(message) {
     dialog.innerHTML = `
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-direction:row-reverse;">
         <span class="material-symbols-outlined" style="color:#ba1a1a;font-size:28px;">warning</span>
-        <p style="font-size:16px;color:#141b2b;font-weight:500;text-align:right;">${message}</p>
+        <p style="font-size:16px;color:#141b2b;font-weight:500;text-align:right;">${escapeHtml(message)}</p>
       </div>
       <div style="display:flex;gap:12px;justify-content:flex-start;">
         <button id="confirmYes" style="background:#ba1a1a;color:#fff;border:none;padding:10px 24px;border-radius:9999px;cursor:pointer;font-family:'IBM Plex Sans Arabic',sans-serif;font-size:14px;font-weight:600;transition:opacity 0.2s;">نعم، احذف</button>
@@ -290,9 +305,9 @@ function normalizeArabic(text) {
 
 // ─── Text Highlighting ─────────────────────────────────────
 function highlightArabic(text, query) {
-    if (!query || !text) return text;
+    if (!query || !text) return escapeHtml(text);
     const rawTerms = query.toString().trim().split(/\s+/).filter(Boolean);
-    if (rawTerms.length === 0) return text;
+    if (rawTerms.length === 0) return escapeHtml(text);
 
     const patterns = rawTerms.map(term => {
         let escaped = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -305,9 +320,17 @@ function highlightArabic(text, query) {
 
     try {
         const regex = new RegExp(`(${patterns.join('|')})`, 'gi');
-        return text.toString().replace(regex, '<span class="bg-[#fef08a] text-black px-1 rounded-sm">$1</span>');
+        const source = String(text);
+        let result = '';
+        let cursor = 0;
+        for (const match of source.matchAll(regex)) {
+            result += escapeHtml(source.slice(cursor, match.index));
+            result += '<span class="bg-[#fef08a] text-black px-1 rounded-sm">' + escapeHtml(match[0]) + '</span>';
+            cursor = match.index + match[0].length;
+        }
+        return result + escapeHtml(source.slice(cursor));
     } catch(e) {
-        return text;
+        return escapeHtml(text);
     }
 }
 

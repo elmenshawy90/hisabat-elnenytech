@@ -327,8 +327,8 @@ function renderRecentTransactions(transactions) {
             <tr class="hover:bg-primary-container/5 transition-colors">
                 <td class="px-md py-md">
                     <div class="flex items-center gap-sm">
-                        <div class="w-8 h-8 rounded-full bg-surface-container-highest flex items-center justify-center text-[12px] font-bold">${initials}</div>
-                        <span class="text-on-surface font-medium text-sm">${tx.clientName}</span>
+                        <div class="w-8 h-8 rounded-full bg-surface-container-highest flex items-center justify-center text-[12px] font-bold">${escapeHtml(initials)}</div>
+                        <span class="text-on-surface font-medium text-sm">${escapeHtml(tx.clientName)}</span>
                     </div>
                 </td>
                 <td class="px-md py-md">
@@ -357,8 +357,8 @@ function renderTopDebtors(debtors) {
         return `
             <a href="/client-details?id=${debtor._id}" class="flex flex-row items-center justify-between p-sm border border-outline-variant/30 rounded-lg hover:border-primary/50 transition-colors block">
                 <div class="text-right">
-                    <p class="font-bold text-sm text-on-surface">${debtor.name}</p>
-                    <p class="text-[10px] text-secondary">${debtor.lastTransaction ? 'آخر معاملة: ' + formatDate(debtor.lastTransaction) : (debtor.phone[0] || '')}</p>
+                    <p class="font-bold text-sm text-on-surface">${escapeHtml(debtor.name)}</p>
+                    <p class="text-[10px] text-secondary">${escapeHtml(debtor.lastTransaction ? 'آخر معاملة: ' + formatDate(debtor.lastTransaction) : (debtor.phone[0] || ''))}</p>
                 </div>
                 <div class="text-left">
                     <p class="font-bold ${index < 2 ? 'text-error' : 'text-on-surface'} text-sm">${formatCurrency(debtor.balance)}</p>
@@ -389,8 +389,8 @@ function renderOverdueClients(clients) {
             <tr class="hover:bg-error/5 transition-colors">
                 <td class="px-md py-md">
                     <div class="flex items-center gap-sm">
-                        <div class="w-8 h-8 rounded-full bg-error-container/20 text-error flex items-center justify-center text-[12px] font-bold">${initials}</div>
-                        <a href="/client-details?id=${client._id || client.id}" class="text-on-surface font-bold text-sm hover:text-primary hover:underline">${client.name}</a>
+                        <div class="w-8 h-8 rounded-full bg-error-container/20 text-error flex items-center justify-center text-[12px] font-bold">${escapeHtml(initials)}</div>
+                        <a href="/client-details?id=${client._id || client.id}" class="text-on-surface font-bold text-sm hover:text-primary hover:underline">${escapeHtml(client.name)}</a>
                     </div>
                 </td>
                 <td class="px-md py-md text-sm font-bold text-left text-error">${formatCurrency(client.balance)}</td>

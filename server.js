@@ -3,14 +3,11 @@ const express = require('express');
 const path = require('path');
 const cookieParser = require('cookie-parser');
 const jwt = require('jsonwebtoken');
+const { getSessionSecret } = require('./lib/auth-config');
+const sessionSecret = getSessionSecret();
 
 console.log('[server] Starting app initialization...');
 
-// Ensure SESSION_SECRET fallback
-if (!process.env.SESSION_SECRET) {
-  console.warn('[server] SESSION_SECRET is not set. Using default secret fallback.');
-  process.env.SESSION_SECRET = 'hisabat-production-fallback-secret-2026';
-}
 if (!process.env.DATABASE_URL) {
   console.error('[server] WARNING: DATABASE_URL environment variable is missing in Vercel settings.');
 }
@@ -53,7 +50,7 @@ app.use((req, res, next) => {
     return next();
   }
   try {
-    const decoded = jwt.verify(token, process.env.SESSION_SECRET);
+    const decoded = jwt.verify(token, sessionSecret);
     req.user = decoded;
   } catch (err) {
     req.user = null;

@@ -1,7 +1,6 @@
 const fs = require('fs').promises;
 const path = require('path');
 const dotenv = require('dotenv');
-const bcrypt = require('bcrypt');
 const { PrismaClient } = require('@prisma/client');
 
 // Load env vars
@@ -17,20 +16,7 @@ async function seedData() {
     console.log('🗑️  Clearing existing data...');
     await prisma.invoice.deleteMany();
     await prisma.client.deleteMany();
-    await prisma.user.deleteMany();
-    // Assuming you have a Session model, you could clear it too, but not required here.
-
-    // Create default admin
-    const hashedPassword = await bcrypt.hash('password123', 10);
-    const admin = await prisma.user.create({
-      data: {
-        username: 'admin',
-        password: hashedPassword,
-        displayName: 'المدير',
-        role: 'admin'
-      }
-    });
-    console.log('✅ Admin user created (admin / password123)');
+    // Preserve existing accounts. Provision the first admin with npm run setup:admin.
 
     // Read JSON data
     let clientsData = [];

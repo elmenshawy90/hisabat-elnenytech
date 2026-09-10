@@ -3,6 +3,8 @@ const router = express.Router();
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const prisma = require('../lib/prisma');
+const { getSessionSecret } = require('../lib/auth-config');
+const sessionSecret = getSessionSecret();
 
 // Configuration for account lockout
 const MAX_LOGIN_ATTEMPTS = 5;
@@ -12,30 +14,12 @@ const LOCK_TIME_MINUTES = 30;
 router.post('/login', async (req, res) => {
   const { username, password } = req.body;
   
-  if (!username || !password) {
+  if (typeof username !== 'string' || !username.trim() || typeof password !== 'string' || !password) {
     return res.status(400).json({ error: 'اسم المستخدم وكلمة المرور مطلوبان' });
   }
 
   try {
-    let user = await prisma.user.findUnique({ where: { username: username.toLowerCase() } });
-    
-    // Create default admin if it doesn't exist
-    if (!user && username.toLowerCase() === 'admin' && password === 'password123') {
-      const userCount = await prisma.user.count();
-      if (userCount === 0) {
-        const hashedPassword = await bcrypt.hash('password123', 10);
-        user = await prisma.user.create({
-          data: {
-            username: 'admin',
-            password: hashedPassword,
-            displayName: 'المدير',
-            role: 'admin',
-            failedLoginAttempts: 0,
-            lockedUntil: null
-          }
-        });
-      }
-    }
+    const user = await prisma.user.findUnique({ where: { username: username.toLowerCase() } });
     
     if (!user) {
       return res.status(401).json({ error: 'بيانات الدخول غير صحيحة' });
@@ -114,7 +98,7 @@ router.post('/login', async (req, res) => {
 
     const token = jwt.sign(
       { userId: user.id, username: user.username, role: user.role },
-      process.env.SESSION_SECRET || 'fallback-secret-for-dev',
+      sessionSecret,
       { expiresIn: '7d' }
     );
 

@@ -567,13 +567,13 @@ function renderItemsTable() {
         
         const unitsBadges = (item.units || []).map(u => {
             if (u.isBaseUnit) {
-                return `<span class="bg-primary/10 text-primary px-2 py-0.5 rounded-full font-bold text-[11px]">${u.name} (أساسية)</span>`;
+                return `<span class="bg-primary/10 text-primary px-2 py-0.5 rounded-full font-bold text-[11px]">${escapeHtml(u.name)} (أساسية)</span>`;
             }
             const rate = Number(u.conversionRate);
             // Show inverted: "1 base = X this unit"
             const invertedRate = rate > 0 ? (1 / rate) : 0;
             const formattedInverted = Number(invertedRate.toFixed(4));
-            return `<span class="bg-surface-container text-secondary px-2 py-0.5 rounded-full font-bold text-[11px]">${u.name} (1 ${baseUnitName} = ${formattedInverted})</span>`;
+            return `<span class="bg-surface-container text-secondary px-2 py-0.5 rounded-full font-bold text-[11px]">${escapeHtml(u.name)} (1 ${escapeHtml(baseUnitName)} = ${formattedInverted})</span>`;
         }).join(' ');
 
         const stockNum = Number(item.currentStock) || 0;
@@ -588,14 +588,14 @@ function renderItemsTable() {
                 <td class="px-md py-md">
                     <div class="flex flex-col">
                         <div class="flex items-center gap-2">
-                            <span class="font-bold text-on-surface text-base">${item.name}</span>
+                            <span class="font-bold text-on-surface text-base">${escapeHtml(item.name)}</span>
                             ${!isActive ? `<span class="bg-slate-200 text-slate-700 font-bold px-2 py-0.5 rounded-full text-[10px]">معطّل</span>` : ''}
                         </div>
-                        ${item.notes ? `<span class="text-xs text-secondary">${item.notes}</span>` : ''}
+                        ${item.notes ? `<span class="text-xs text-secondary">${escapeHtml(item.notes)}</span>` : ''}
                     </div>
                 </td>
                 <td class="px-md py-md">
-                    <span class="px-2 py-1 bg-primary-container text-on-primary-container rounded-lg font-bold text-xs">${baseUnitName}</span>
+                    <span class="px-2 py-1 bg-primary-container text-on-primary-container rounded-lg font-bold text-xs">${escapeHtml(baseUnitName)}</span>
                 </td>
                 <td class="px-md py-md">
                     <div class="flex flex-wrap gap-1">
@@ -603,7 +603,7 @@ function renderItemsTable() {
                     </div>
                 </td>
                 <td class="px-md py-md">
-                    <span class="text-base dir-ltr inline-block ${stockColorClass}">${formatCurrency(stockNum).replace(' ج.م', '')} ${baseUnitName}</span>
+                    <span class="text-base dir-ltr inline-block ${stockColorClass}">${formatCurrency(stockNum).replace(' ج.م', '')} ${escapeHtml(baseUnitName)}</span>
                 </td>
                 <td class="px-md py-md">
                     <div class="flex items-center justify-center gap-1 flex-wrap">
@@ -715,7 +715,7 @@ function appendUnitRowToDOM(unitObj = {}, idx, isProtected = false) {
 
                 <div class="w-28">
                     <label class="unit-qty-label block text-[11px] font-bold text-secondary mb-1">الكمية</label>
-                    <input type="number" step="any" min="0.000001" value="${unitObj._displayQty || ''}" ${isRowProtected ? 'readonly' : ''} class="unit-qty-input w-full h-9 px-sm rounded-md bg-surface-container-low border border-outline-variant text-xs font-bold text-center dir-ltr focus:border-primary outline-none" placeholder="مثال: 20" oninput="onUnitFormChanged()" />
+                    <input type="number" step="any" min="0.000001" value="${escapeHtml(unitObj._displayQty || '')}" ${isRowProtected ? 'readonly' : ''} class="unit-qty-input w-full h-9 px-sm rounded-md bg-surface-container-low border border-outline-variant text-xs font-bold text-center dir-ltr focus:border-primary outline-none" placeholder="مثال: 20" oninput="onUnitFormChanged()" />
                 </div>
             </div>
 
@@ -872,7 +872,7 @@ function updateAllRelativeDropdownsAndPreviews() {
                     const otherName = unitNames[otherIdx];
                     if (!otherName) continue; // Skip units without a name
                     const displayName = otherName || `وحدة ${otherIdx + 1}`;
-                    optionsHTML += `<option value="${otherIdx}" ${String(otherIdx) === String(currentSelectedVal) ? 'selected' : ''}>${displayName}</option>`;
+                    optionsHTML += `<option value="${otherIdx}" ${String(otherIdx) === String(currentSelectedVal) ? 'selected' : ''}>${escapeHtml(displayName)}</option>`;
                 }
                 select.innerHTML = optionsHTML;
             }
@@ -894,7 +894,7 @@ function updateAllRelativeDropdownsAndPreviews() {
             if (previewEl) {
                 if (userQty > 0 && currentRawRef > 0 && baseRawRef > 0) {
                     // Show "1 [reference] = X [current unit]" (natural direction)
-                    previewEl.innerHTML = `✓ 1 <strong>${selectedRefName}</strong> = <strong class="text-primary underline dir-ltr inline-block">${userQty}</strong> ${unitName} — (معامل التحويل للأساسية: <span class="dir-ltr inline-block">${Number(conversionRate.toFixed(6))}</span>)`;
+                    previewEl.innerHTML = `✓ 1 <strong>${escapeHtml(selectedRefName)}</strong> = <strong class="text-primary underline dir-ltr inline-block">${userQty}</strong> ${escapeHtml(unitName)} — (معامل التحويل للأساسية: <span class="dir-ltr inline-block">${Number(conversionRate.toFixed(6))}</span>)`;
                 } else {
                     previewEl.innerHTML = `أدخل الكمية لربط هذه الوحدة`;
                 }
@@ -975,14 +975,14 @@ function renderUnitsTable() {
         const isActive = unit.isActive !== false;
         const items = unit.items || [];
         const itemsBadges = items.length > 0
-            ? items.map(it => `<span class="bg-primary/10 text-primary px-2 py-0.5 rounded-full font-bold text-[11px]">${it.name}</span>`).join(' ')
+            ? items.map(it => `<span class="bg-primary/10 text-primary px-2 py-0.5 rounded-full font-bold text-[11px]">${escapeHtml(it.name)}</span>`).join(' ')
             : '<span class="text-secondary text-xs">غير مرتبطة بأي صنف بعد</span>';
         const rowClass = isActive ? 'hover:bg-primary/5 transition-colors' : 'bg-surface-container-low/60 opacity-70 hover:opacity-100 transition-opacity';
         return `
             <tr class="${rowClass}">
                 <td class="px-md py-md">
                     <div class="flex items-center gap-2">
-                        <span class="font-bold text-on-surface text-base">${unit.name}</span>
+                        <span class="font-bold text-on-surface text-base">${escapeHtml(unit.name)}</span>
                         ${!isActive ? `<span class="bg-slate-200 text-slate-700 font-bold px-2 py-0.5 rounded-full text-[10px]">معطّلة</span>` : ''}
                     </div>
                 </td>
@@ -1033,11 +1033,11 @@ function buildMasterUnitNameOptions(selectedName) {
     active.forEach(u => {
         seen.add(String(u.name).trim());
         const isSel = sel === String(u.name).trim() ? 'selected' : '';
-        html += `<option value="${u.name}" ${isSel}>${u.name}</option>`;
+        html += `<option value="${escapeHtml(u.name)}" ${isSel}>${escapeHtml(u.name)}</option>`;
     });
     // قيمة قديمة غير موجودة في الكتالوج (قبل البناء) — اعرضها كخيار للحفاظ عليها
     if (sel && !seen.has(sel)) {
-        html += `<option value="${sel}" selected>${sel} (غير مربوطة بالكتالوج)</option>`;
+        html += `<option value="${escapeHtml(sel)}" selected>${escapeHtml(sel)} (غير مربوطة بالكتالوج)</option>`;
     }
     html += `<option value="__new__">＋ وحدة جديدة...</option>`;
     return html;
@@ -1192,7 +1192,7 @@ function renderMapItemsList() {
             <label class="flex items-center justify-between gap-sm px-md py-2.5 hover:bg-primary/5 transition-colors ${linked ? 'opacity-70' : 'cursor-pointer'}">
                 <span class="flex items-center gap-sm">
                     <input type="checkbox" value="${item.id}" ${linked ? 'checked disabled' : ''} class="map-item-checkbox w-4 h-4 text-primary rounded border-outline focus:ring-primary ${linked ? '' : 'cursor-pointer'}" />
-                    <span class="font-bold text-sm text-on-surface">${item.name}</span>
+                    <span class="font-bold text-sm text-on-surface">${escapeHtml(item.name)}</span>
                 </span>
                 ${linked ? `
                     <span class="flex items-center gap-1">
@@ -1433,7 +1433,7 @@ function openRestockModal(itemId) {
     select.innerHTML = (item.units || []).map(u => {
         const rate = Number(u.conversionRate);
         const invertedRate = rate > 0 ? Number((1 / rate).toFixed(4)) : 0;
-        return `<option value="${u.id}">${u.name} ${u.isBaseUnit ? '(الوحدة الأساسية)' : `(1 ${item.baseUnit?.name || ''} = ${invertedRate})`}</option>`;
+        return `<option value="${u.id}">${escapeHtml(u.name)} ${u.isBaseUnit ? '(الوحدة الأساسية)' : `(1 ${escapeHtml(item.baseUnit?.name || '')} = ${invertedRate})`}</option>`;
     }).join('');
 
     // تعبئة قائمة الموردين النشطين (اختياري)
@@ -1445,7 +1445,7 @@ function openRestockModal(itemId) {
             .then(json => {
                 const list = json.data || [];
                 list.forEach(s => {
-                    supplierSelect.innerHTML += `<option value="${s.id}">${s.name}</option>`;
+                    supplierSelect.innerHTML += `<option value="${s.id}">${escapeHtml(s.name)}</option>`;
                 });
             })
             .catch(err => console.error('فشل جلب الموردين:', err));
@@ -1559,10 +1559,10 @@ async function openStockLogModal(itemId) {
                 <tr class="hover:bg-surface-container-high/50">
                     <td class="px-md py-sm font-mono text-secondary">${formatDate(log.createdAt)}</td>
                     <td class="px-md py-sm">${typeBadge}</td>
-                    <td class="px-md py-sm font-bold text-on-surface dir-ltr inline-block">${qtySign}${qtyVal} ${baseUnitName}</td>
-                    <td class="px-md py-sm font-bold text-primary dir-ltr inline-block">${log.balanceAfter} ${baseUnitName}</td>
-                    <td class="px-md py-sm font-bold text-on-surface">${log.supplier ? log.supplier.name : '-'}</td>
-                    <td class="px-md py-sm text-secondary">${log.notes || '-'}</td>
+                    <td class="px-md py-sm font-bold text-on-surface dir-ltr inline-block">${qtySign}${qtyVal} ${escapeHtml(baseUnitName)}</td>
+                    <td class="px-md py-sm font-bold text-primary dir-ltr inline-block">${log.balanceAfter} ${escapeHtml(baseUnitName)}</td>
+                    <td class="px-md py-sm font-bold text-on-surface">${escapeHtml(log.supplier ? log.supplier.name : '-')}</td>
+                    <td class="px-md py-sm text-secondary">${escapeHtml(log.notes || '-')}</td>
                 </tr>
             `;
         }).join('');

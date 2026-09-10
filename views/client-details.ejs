@@ -1197,12 +1197,12 @@ function renderEndClientBreakdown(invoices) {
 
         return `
             <div onclick="toggleEndClientFilterByIndex(${index})"
-                 data-name="${normalizeArabic(item.name)}"
+                 data-name="${escapeHtml(normalizeArabic(item.name))}"
                  class="end-client-card w-full text-right rounded-xl p-md shadow-sm flex flex-col justify-between gap-sm transition-all active:scale-[0.99] cursor-pointer select-none ${cardBorderClass}">
                 <div class="flex items-center justify-between border-b border-outline-variant/50 pb-xs">
                     <div class="flex items-center gap-xs font-bold text-on-surface font-body-md">
                         <span class="material-symbols-outlined text-primary text-lg">person_pin</span>
-                        <span class="truncate max-w-[140px]" title="${item.name}">${item.name}</span>
+                        <span class="truncate max-w-[140px]" title="${escapeHtml(item.name)}">${escapeHtml(item.name)}</span>
                     </div>
                     <div class="flex items-center gap-1">
                         ${isSelected ? `<span class="bg-primary text-white text-[11px] px-2 py-0.5 rounded-full font-bold">محدد</span>` : ''}
@@ -1496,12 +1496,12 @@ function renderTransactions(invoices, resetPage = false) {
                 <td class="px-md py-md font-body-md text-body-md">
                     <div class="flex flex-col">
                         <span>${formatDate(inv.date)}</span>
-                        ${inv.invoiceCode ? `<span class="text-[11px] font-mono text-secondary font-medium">${inv.invoiceCode}</span>` : ''}
+                        ${inv.invoiceCode ? `<span class="text-[11px] font-mono text-secondary font-medium">${escapeHtml(inv.invoiceCode)}</span>` : ''}
                     </div>
                 </td>
                 <td class="px-md py-md">${typeBadge}</td>
-                <td class="px-md py-md font-body-md text-body-md">${inv.details || '-'}</td>
-                <td class="px-md py-md font-body-md text-body-md text-secondary">${inv.endClientName || '-'}</td>
+                <td class="px-md py-md font-body-md text-body-md">${escapeHtml(inv.details || '-')}</td>
+                <td class="px-md py-md font-body-md text-body-md text-secondary">${escapeHtml(inv.endClientName || '-')}</td>
                 <td class="px-md py-md font-body-md text-body-md ${amountClass}">${amountPrefix}${formatCurrency(inv.amount)}</td>
                 <td class="px-md py-md font-body-md text-body-md">${balanceBadge}</td>
                 <td class="px-md py-md text-center" onclick="event.stopPropagation()">
@@ -1659,11 +1659,11 @@ function populateItemDropdowns() {
             list.forEach(item => {
                 const idStr = String(item.id || item._id);
                 const isSelected = idStr === String(currentVal) ? 'selected' : '';
-                options.push(`<option value="${idStr}" ${isSelected}>${item.name}</option>`);
+                options.push(`<option value="${idStr}" ${isSelected}>${escapeHtml(item.name)}</option>`);
             });
             if (currentVal && !list.some(it => String(it.id || it._id) === String(currentVal))) {
                 const kept = cachedActiveItems.find(it => String(it.id || it._id) === String(currentVal));
-                if (kept) options.push(`<option value="${String(kept.id || kept._id)}" selected>${kept.name}</option>`);
+                if (kept) options.push(`<option value="${String(kept.id || kept._id)}" selected>${escapeHtml(kept.name)}</option>`);
             }
             select.innerHTML = options.join('');
             select.disabled = false;
@@ -1785,8 +1785,8 @@ function openTransactionDetails(id) {
     if (inv.items && inv.items.length > 0) {
         itemsBody.innerHTML = inv.items.map(it => `
             <tr>
-                <td class="p-2 font-bold text-on-surface">${it.item ? it.item.name : 'صنف'}</td>
-                <td class="p-2 text-secondary font-mono">${it.quantity} ${it.itemUnit ? it.itemUnit.name : ''}</td>
+                <td class="p-2 font-bold text-on-surface">${escapeHtml(it.item ? it.item.name : 'صنف')}</td>
+                <td class="p-2 text-secondary font-mono">${it.quantity} ${escapeHtml(it.itemUnit ? it.itemUnit.name : '')}</td>
                 <td class="p-2 text-secondary dir-ltr text-right">${formatCurrency(it.unitPrice)}</td>
                 <td class="p-2 font-bold text-primary dir-ltr text-right">${formatCurrency(it.lineTotal)}</td>
             </tr>
@@ -1803,7 +1803,7 @@ function openTransactionDetails(id) {
         if (inv.services && inv.services.length > 0) {
             servicesBody.innerHTML = inv.services.map(s => `
                 <tr>
-                    <td class="p-2 font-bold text-on-surface">${s.name}</td>
+                    <td class="p-2 font-bold text-on-surface">${escapeHtml(s.name)}</td>
                     <td class="p-2 font-bold text-primary dir-ltr text-right">${formatCurrency(s.price)}</td>
                 </tr>
             `).join('');
@@ -2139,7 +2139,7 @@ function addPreloadedInvoiceLineRow(itemData) {
         <div class="flex items-center gap-xs flex-wrap sm:flex-nowrap">
             <div class="w-24">
                 <label class="block text-[11px] font-bold text-secondary mb-1">الكمية <span class="text-error">*</span></label>
-                <input type="number" step="any" min="0.001" value="${qty}" class="line-qty-input w-full h-9 px-xs rounded-md bg-surface-container-low border border-outline-variant text-xs font-bold text-center dir-ltr focus:border-primary outline-none" placeholder="0" oninput="onLineInputsCalculated('${rowId}')" />
+                <input type="number" step="any" min="0.001" value="${escapeHtml(qty)}" class="line-qty-input w-full h-9 px-xs rounded-md bg-surface-container-low border border-outline-variant text-xs font-bold text-center dir-ltr focus:border-primary outline-none" placeholder="0" oninput="onLineInputsCalculated('${rowId}')" />
             </div>
             <div class="w-28">
                 <label class="block text-[11px] font-bold text-secondary mb-1">الوحدة <span class="text-error">*</span></label>
@@ -2156,7 +2156,7 @@ function addPreloadedInvoiceLineRow(itemData) {
             </div>
             <div class="w-28">
                 <label class="block text-[11px] font-bold text-secondary mb-1">السعر (ج.م) <span class="text-error">*</span></label>
-                <input type="number" step="any" min="0" value="${price}" class="line-price-input w-full h-9 px-xs rounded-md bg-surface-container-low border border-outline-variant text-xs font-bold text-center dir-ltr focus:border-primary outline-none" placeholder="0.00" oninput="onLineInputsCalculated('${rowId}')" />
+                <input type="number" step="any" min="0" value="${escapeHtml(price)}" class="line-price-input w-full h-9 px-xs rounded-md bg-surface-container-low border border-outline-variant text-xs font-bold text-center dir-ltr focus:border-primary outline-none" placeholder="0.00" oninput="onLineInputsCalculated('${rowId}')" />
             </div>
             <div class="w-24 text-left">
                 <label class="block text-[11px] font-bold text-secondary mb-1">الإجمالي</label>
@@ -2186,7 +2186,7 @@ function addPreloadedInvoiceLineRow(itemData) {
     itemSelect.innerHTML = '<option value="">-- اختر الصنف --</option>' + catalogWithItem.map(item => {
         const idStr = String(item.id || item._id);
         const isSel = idStr === String(targetItemId) ? 'selected' : '';
-        return `<option value="${idStr}" ${isSel}>${item.name}</option>`;
+        return `<option value="${idStr}" ${isSel}>${escapeHtml(item.name)}</option>`;
     }).join('');
 
     // Populate unit select
@@ -2194,11 +2194,11 @@ function addPreloadedInvoiceLineRow(itemData) {
     if (selectedItem && Array.isArray(selectedItem.units)) {
         unitSelect.innerHTML = selectedItem.units.map(u => {
             const isSel = String(u.id) === String(itemData.itemUnitId) ? 'selected' : '';
-            return `<option value="${u.id}" data-rate="${u.conversionRate}" ${isSel}>${u.name}${u.isBaseUnit ? ' (أساسية)' : ''}</option>`;
+            return `<option value="${u.id}" data-rate="${u.conversionRate}" ${isSel}>${escapeHtml(u.name)}${u.isBaseUnit ? ' (أساسية)' : ''}</option>`;
         }).join('');
         unitSelect.disabled = false;
     } else if (itemData.itemUnit) {
-        unitSelect.innerHTML = `<option value="${itemData.itemUnit.id}" selected>${itemData.itemUnit.name}</option>`;
+        unitSelect.innerHTML = `<option value="${itemData.itemUnit.id}" selected>${escapeHtml(itemData.itemUnit.name)}</option>`;
         unitSelect.disabled = false;
     }
 }
@@ -2367,12 +2367,12 @@ function buildAllUnitsOptions(selectedValue) {
         html += cachedMasterUnits.map(u => {
             const val = `m:${u.id}`;
             const isSel = selMaster === val || sel === val ? 'selected' : '';
-            return `<option value="${val}" data-master-id="${u.id}" data-unit-name="${u.name}" ${isSel}>${u.name}</option>`;
+            return `<option value="${val}" data-master-id="${u.id}" data-unit-name="${escapeHtml(u.name)}" ${isSel}>${escapeHtml(u.name)}</option>`;
         }).join('');
         // قيمة رقمية قديمة (وحدة صنف غير مربوطة بالكتالوج) — حافظ عليها
         if (sel && !sel.startsWith('m:') && !selMaster) {
             const iu = findUnitById(sel);
-            if (iu) html += `<option value="${iu.id}" data-unit-name="${iu.name}" selected>${iu.name} (خاصة بالصنف)</option>`;
+            if (iu) html += `<option value="${iu.id}" data-unit-name="${escapeHtml(iu.name)}" selected>${escapeHtml(iu.name)} (خاصة بالصنف)</option>`;
         }
         return html;
     }
@@ -2381,9 +2381,9 @@ function buildAllUnitsOptions(selectedValue) {
     (cachedActiveItems || []).forEach(item => {
         if (!Array.isArray(item.units) || item.units.length === 0) return;
         const itemName = item.name || '';
-        html += `<optgroup label="${itemName}">` + item.units.map(u => {
+        html += `<optgroup label="${escapeHtml(itemName)}">` + item.units.map(u => {
             const isSel = String(u.id) === sel ? 'selected' : '';
-            return `<option value="${u.id}" data-rate="${u.conversionRate}" data-unit-name="${u.name}" data-owner-item="${item.id || item._id}" ${isSel}>${u.name}${u.isBaseUnit ? ' (أساسية)' : ''}</option>`;
+            return `<option value="${u.id}" data-rate="${u.conversionRate}" data-unit-name="${escapeHtml(u.name)}" data-owner-item="${item.id || item._id}" ${isSel}>${escapeHtml(u.name)}${u.isBaseUnit ? ' (أساسية)' : ''}</option>`;
         }).join('') + '</optgroup>';
     });
     return html;
@@ -2411,7 +2411,7 @@ function populateUnitDropdownForRow(row, preserveValue) {
             }
             unitSelect.innerHTML = '<option value="">-- اختر الوحدة --</option>' + selectedItem.units.map(u => {
                 const isSel = targetUnitId && String(u.id) === targetUnitId ? 'selected' : '';
-                return `<option value="${u.id}" data-rate="${u.conversionRate}" data-unit-name="${u.name}" ${u.unitId ? `data-master-id="${u.unitId}"` : ''} ${isSel}>${u.name}${u.isBaseUnit ? ' (أساسية)' : ''}</option>`;
+                return `<option value="${u.id}" data-rate="${u.conversionRate}" data-unit-name="${escapeHtml(u.name)}" ${u.unitId ? `data-master-id="${u.unitId}"` : ''} ${isSel}>${escapeHtml(u.name)}${u.isBaseUnit ? ' (أساسية)' : ''}</option>`;
             }).join('');
             unitSelect.disabled = false;
             return;
@@ -2447,7 +2447,7 @@ function addServiceRow(name = '', price = '') {
         </div>
         <div class="w-28">
             <label class="block text-[11px] font-bold text-secondary mb-1">السعر (ج.م) <span class="text-error">*</span></label>
-            <input type="number" step="any" min="0" value="${price === '' || price === null || price === undefined ? '' : price}" class="service-price-input w-full h-9 px-xs rounded-md bg-surface-container-low border border-outline-variant text-xs font-bold text-center dir-ltr focus:border-primary outline-none" placeholder="0.00" oninput="updateAllLineTotalsAndGrandTotal()" />
+            <input type="number" step="any" min="0" value="${escapeHtml(price === '' || price === null || price === undefined ? '' : price)}" class="service-price-input w-full h-9 px-xs rounded-md bg-surface-container-low border border-outline-variant text-xs font-bold text-center dir-ltr focus:border-primary outline-none" placeholder="0.00" oninput="updateAllLineTotalsAndGrandTotal()" />
         </div>
         <div class="w-8 shrink-0 pt-4">
             <button type="button" onclick="removeServiceRow('${rowId}')" class="w-8 h-8 flex items-center justify-center text-error hover:bg-error/10 rounded-md transition-colors cursor-pointer" title="حذف الخدمة">
@@ -2527,7 +2527,7 @@ function onLineUnitChanged(rowId) {
             if (compatible.length > 0 && compatible.length < (cachedActiveItems || []).length) {
                 const opts = ['<option value="">-- اختر الصنف --</option>'];
                 compatible.forEach(item => {
-                    opts.push(`<option value="${item.id || item._id}">${item.name}</option>`);
+                    opts.push(`<option value="${item.id || item._id}">${escapeHtml(item.name)}</option>`);
                 });
                 itemSelect.innerHTML = opts.join('');
                 itemSelect.disabled = false;
@@ -2676,10 +2676,10 @@ function onLineInputsCalculated(rowId) {
             stockInfoEl.classList.remove('hidden');
             if (qty > 0 && requestedBase > availableStock) {
                 stockInfoEl.className = 'line-stock-info text-[11px] font-medium px-sm py-1 rounded-md border bg-amber-500/10 border-amber-500/30 text-amber-800';
-                stockInfoEl.innerHTML = `⚠️ <strong>الكمية المطلوبة (${requestedBase} ${baseUnitName}) أكبر من المتاح بالمخزون (${availableStock} ${baseUnitName})</strong> - سيتم القبول وتدوين العجز في المخزون`;
+                stockInfoEl.innerHTML = `⚠️ <strong>الكمية المطلوبة (${requestedBase} ${escapeHtml(baseUnitName)}) أكبر من المتاح بالمخزون (${availableStock} ${escapeHtml(baseUnitName)})</strong> - سيتم القبول وتدوين العجز في المخزون`;
             } else {
                 stockInfoEl.className = 'line-stock-info text-[11px] font-medium px-sm py-1 rounded-md border bg-primary/5 border-primary/10 text-primary';
-                stockInfoEl.innerHTML = `المتاح حالياً في المخزون: <strong>${availableStock} ${baseUnitName}</strong>`;
+                stockInfoEl.innerHTML = `المتاح حالياً في المخزون: <strong>${availableStock} ${escapeHtml(baseUnitName)}</strong>`;
             }
         }
     } else {
@@ -2835,7 +2835,7 @@ endClientNameInput.addEventListener('input', (e) => {
     if (matches.length > 0) {
         endClientDropdown.innerHTML = matches.map(ec => {
             const id = String(ec.id || ec._id);
-            const safeName = (ec.name || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+            const safeName = escapeJsString(ec.name || '');
             return `
         <div class="px-md py-sm hover:bg-surface-container-highest cursor-pointer border-b border-outline-variant/30 last:border-0 transition-colors"
              onclick="selectEndClient('${id}', '${safeName}')">
