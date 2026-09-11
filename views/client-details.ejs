@@ -14,6 +14,8 @@
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ar.js"></script>
 <link href="css/styles.css" rel="stylesheet"/>
+<link rel="stylesheet" href="/css/client-details.css">
+<script defer src="/js/client-details-layout.js"></script>
 </head>
 <body class="bg-background text-on-surface min-h-screen overflow-x-hidden">
 
@@ -29,122 +31,37 @@
 <div style="width:40px;height:40px;border:3px solid #becabf;border-top-color:#006840;border-radius:50%;animation:spin 0.8s linear infinite;"></div>
 <span class="text-secondary">جاري تحميل بيانات العميل...</span>
 </div>
-<!-- Customer Profile Header (hidden until loaded) -->
-<div class="hidden" id="clientContent">
-<!-- Breadcrumb & Edit Button -->
-<div class="flex items-center justify-between gap-sm mb-lg flex-wrap">
-<div class="flex items-center gap-sm flex-row">
-<a href="/clients" class="text-secondary hover:text-primary transition-colors font-body-md text-body-md">العملاء</a>
-<span class="material-symbols-outlined text-outline text-sm">chevron_left</span>
-<span class="font-bold text-on-surface font-body-md text-body-md" id="breadcrumbName">تفاصيل العميل</span>
-</div>
-<button onclick="openEditClientDetailsModal()" class="px-md py-sm border border-outline-variant bg-surface hover:bg-surface-container-high text-on-surface rounded-full font-label-md text-label-md hover:text-primary transition-all flex items-center justify-center gap-xs shadow-xs active:scale-95 cursor-pointer" title="تعديل بيانات العميل">
-<span class="material-symbols-outlined text-primary text-xl">edit</span>
-<span>تعديل بيانات العميل</span>
-</button>
-</div>
-<!-- Profile Header -->
-<div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-md mb-lg">
-<div class="flex items-center gap-md flex-row">
-<div class="w-16 h-16 rounded-full bg-primary-fixed flex items-center justify-center text-primary font-bold text-headline-md" id="clientInitials">--</div>
-<div class="text-right">
-<h2 class="font-headline-md text-headline-md text-on-surface" id="clientName">--</h2>
-<div class="flex items-center gap-md justify-end text-secondary font-body-md text-body-md flex-wrap mt-0.5">
-<p class="flex items-center gap-xs">
-<span id="clientPhone">--</span>
-<span class="material-symbols-outlined text-sm">call</span>
-</p>
-<p id="clientAddressContainer" class="hidden flex items-center gap-xs">
-<span id="clientAddress">--</span>
-<span class="material-symbols-outlined text-sm">location_on</span>
-</p>
-</div>
-</div>
-</div>
-<div class="flex flex-wrap items-center gap-xs sm:gap-sm mt-sm md:mt-0">
-<div class="relative" id="exportDropdownContainer">
-<button id="exportDropdownBtn" onclick="toggleExportDropdown(event)" type="button" class="px-md py-sm border border-outline-variant bg-surface hover:bg-surface-container-high text-on-surface rounded-full font-bold text-sm transition-all flex items-center justify-center gap-xs shadow-xs cursor-pointer" title="تصدير كشف الحساب">
-<span class="material-symbols-outlined text-primary text-xl">download</span>
-<span>تصدير</span>
-<span class="material-symbols-outlined text-outline text-base transition-transform duration-200" id="exportDropdownArrow">expand_more</span>
-</button>
-<div id="exportDropdownMenu" class="hidden absolute top-[calc(100%+8px)] right-0 w-44 bg-surface border border-outline-variant/80 rounded-xl shadow-xl z-50 py-1.5 overflow-hidden transition-all duration-150 transform opacity-0 scale-95 origin-top">
-<a href="#" onclick="exportClientExcel(event)" class="w-full px-sm py-2 flex items-center gap-2 text-xs hover:bg-primary/10 transition-colors text-right font-medium text-on-surface">
-<span class="material-symbols-outlined text-green-600 text-base">description</span>
-<span>Excel</span>
-</a>
-<a href="#" onclick="exportClientPdf(event)" class="w-full px-sm py-2 flex items-center gap-2 text-xs hover:bg-primary/10 transition-colors text-right font-medium text-on-surface">
-<span class="material-symbols-outlined text-error text-base">picture_as_pdf</span>
-<span>PDF</span>
-</a>
-<a href="#" onclick="exportClientImage(event)" class="w-full px-sm py-2 flex items-center gap-2 text-xs hover:bg-primary/10 transition-colors text-right font-medium text-on-surface">
-<span class="material-symbols-outlined text-blue-600 text-base">image</span>
-<span>صورة (Image)</span>
-</a>
-</div>
-</div>
-
-<a href="#" onclick="event.preventDefault(); openAdjustmentModal();" class="px-md py-sm bg-slate-700 hover:bg-slate-800 text-white rounded-full font-bold text-sm transition-all flex items-center justify-center gap-xs shadow-sm active:scale-95" title="تسجيل تصحيح أو تسوية يدوية للرصيد">
-<span class="material-symbols-outlined text-xl">tune</span>
-<span>تسوية رصيد</span>
-</a>
-<a href="#" onclick="event.preventDefault(); openInvoiceModal('payment');" class="px-md py-sm bg-green-600 hover:bg-green-700 text-white rounded-full font-bold text-sm transition-all flex items-center justify-center gap-xs shadow-sm active:scale-95">
-<span class="material-symbols-outlined text-xl">payments</span>
-<span>تسديد دفعة</span>
-</a>
-<a href="#" onclick="event.preventDefault(); openInvoiceModal('purchase');" class="px-md py-sm bg-primary hover:bg-primary-container text-white rounded-full font-bold text-sm transition-all flex items-center justify-center gap-xs shadow-sm active:scale-95">
-<span class="material-symbols-outlined text-xl">add_circle</span>
-<span>إضافة فاتورة</span>
-</a>
-</div>
-
-
-
-</div>
-</div>
-<!-- Bento Layout -->
-<div class="grid grid-cols-1 md:grid-cols-3 gap-md">
-<!-- Outstanding Balance Card -->
-<div class="md:col-span-2 bg-white rounded-xl border border-outline-variant p-lg shadow-sm flex flex-col justify-between relative overflow-hidden">
-<div class="absolute -left-8 -top-8 w-32 h-32 bg-primary/5 rounded-full blur-3xl"></div>
-<div class="relative z-10">
-<div class="flex justify-between items-start mb-lg">
-<div class="text-right">
-<span class="font-label-md text-label-md text-secondary uppercase tracking-wider">الرصيد المستحق الحالي</span>
-<div class="font-display-lg text-display-lg text-secondary mt-xs" id="clientBalance">جاري التحميل...</div>
-</div>
-<span class="bg-error-container text-on-error-container px-md py-xs rounded-full font-label-sm text-label-sm" id="clientStatus">--</span>
-</div>
-<div class="grid grid-cols-2 gap-md border-t border-outline-variant pt-md">
-<div>
-<span class="font-label-sm text-label-sm text-secondary">آخر معاملة</span>
-<p class="font-body-md text-body-md" id="clientLastTx">--</p>
-</div>
-<div class="text-left">
-<span class="font-label-sm text-label-sm text-secondary">إجمالي المعاملات</span>
-<p class="font-body-md text-body-md" id="clientTotalTx">--</p>
-</div>
-</div>
-</div>
-</div>
-<!-- Quick Stats -->
-<div class="bg-surface-container-high rounded-xl p-lg flex flex-col gap-md">
-<h3 class="font-headline-sm text-headline-sm text-on-surface">إحصاءات سريعة</h3>
-<div class="space-y-sm">
-<div class="flex justify-between items-center p-sm bg-white/50 rounded-lg">
-<span class="font-label-md text-label-md text-secondary">عدد العمليات</span>
-<span class="font-label-md text-label-md font-bold text-on-surface" id="statTxCount">--</span>
-</div>
-<div class="flex justify-between items-center p-sm bg-white/50 rounded-lg">
-<span class="font-label-md text-label-md text-secondary">إجمالي المشتريات</span>
-<span class="font-label-md text-label-md font-bold text-on-surface" id="statPurchases">--</span>
-</div>
-<div class="flex justify-between items-center p-sm bg-white/50 rounded-lg">
-<span class="font-label-md text-label-md text-secondary">إجمالي المدفوعات</span>
-<span class="font-label-md text-label-md font-bold text-primary" id="statPayments">--</span>
-</div>
-</div>
-</div>
+<!-- Customer overview -->
+<div class="hidden client-overview" id="clientContent">
+  <nav class="client-breadcrumb" aria-label="مسار الصفحة">
+    <a href="/clients">العملاء</a><span class="material-symbols-outlined">chevron_left</span><span id="breadcrumbName">تفاصيل العميل</span>
+  </nav>
+  <div class="client-identity">
+    <div id="clientInitials" class="client-avatar">--</div>
+    <div class="client-identity-text">
+      <h2 id="clientName">--</h2>
+      <p class="client-contact"><span class="material-symbols-outlined">call</span><span id="clientPhone" dir="auto">--</span></p>
+      <p id="clientAddressContainer" class="hidden client-contact"><span class="material-symbols-outlined">location_on</span><span id="clientAddress">--</span></p>
+    </div>
+    <details class="client-more" id="clientMoreMenu">
+      <summary aria-label="المزيد من إجراءات العميل" title="المزيد من الإجراءات"><span class="material-symbols-outlined">more_vert</span></summary>
+      <div class="client-more-panel">
+        <button type="button" onclick="document.getElementById('clientMoreMenu').open=false; openEditClientDetailsModal()"><span class="material-symbols-outlined">edit</span>تعديل بيانات العميل</button>
+        <button type="button" onclick="document.getElementById('clientMoreMenu').open=false; openAdjustmentModal()"><span class="material-symbols-outlined">tune</span>تسوية رصيد</button>
+      </div>
+    </details>
+  </div>
+  <div class="client-primary-actions">
+    <button type="button" class="client-action-primary" onclick="openInvoiceModal('purchase')"><span class="material-symbols-outlined">add_circle</span>إضافة فاتورة</button>
+    <button type="button" class="client-action-secondary" onclick="openInvoiceModal('payment')"><span class="material-symbols-outlined">payments</span>تسجيل دفعة</button>
+  </div>
+  <section class="client-balance-card" aria-label="رصيد العميل">
+    <div class="client-balance-heading"><span>الرصيد المستحق الحالي</span><span id="clientStatus">--</span></div>
+    <div id="clientBalance">جاري التحميل...</div>
+    <div class="client-balance-meta"><div><span>آخر معاملة</span><p id="clientLastTx">--</p></div><div><span>إجمالي المعاملات</span><p id="clientTotalTx">--</p></div></div>
+  </section>
+  <section class="client-stat-card client-purchases"><span class="material-symbols-outlined">shopping_bag</span><span>إجمالي المشتريات</span><strong id="statPurchases">--</strong></section>
+  <section class="client-stat-card client-payments"><span class="material-symbols-outlined">payments</span><span>إجمالي المدفوعات</span><strong id="statPayments">--</strong></section>
 </div>
 <!-- End Clients Breakdown Section (computed dynamically) -->
 <div id="endClientsBreakdownContainer" class="hidden bg-surface-container-high rounded-xl p-lg flex flex-col gap-md mt-lg">
@@ -172,13 +89,34 @@
 
 
 <!-- Transaction History Table -->
-<div class="bg-white rounded-xl border border-outline-variant overflow-hidden shadow-sm mt-lg">
-<div class="p-md border-b border-outline-variant flex flex-col sm:flex-row justify-between items-start sm:items-center gap-sm">
-    <div class="flex items-center gap-xs">
+<div class="client-history bg-white rounded-xl border border-outline-variant shadow-sm mt-lg">
+<div class="client-history-header">
+    <div class="client-history-title">
         <span class="material-symbols-outlined text-primary text-xl">receipt_long</span>
         <h3 class="font-headline-sm text-headline-sm font-bold text-on-surface">سجل المعاملات</h3>
     </div>
-    <div class="flex items-center gap-xs">
+    <div class="client-history-tools">
+<div class="relative" id="exportDropdownContainer">
+<button id="exportDropdownBtn" onclick="toggleExportDropdown(event)" type="button" class="px-md py-sm border border-outline-variant bg-surface hover:bg-surface-container-high text-on-surface rounded-full font-bold text-sm transition-all flex items-center justify-center gap-xs shadow-xs cursor-pointer" title="تصدير كشف الحساب">
+<span class="material-symbols-outlined text-primary text-xl">download</span>
+<span>تصدير</span>
+<span class="material-symbols-outlined text-outline text-base transition-transform duration-200" id="exportDropdownArrow">expand_more</span>
+</button>
+<div id="exportDropdownMenu" class="hidden absolute top-[calc(100%+8px)] right-0 w-44 bg-surface border border-outline-variant/80 rounded-xl shadow-xl z-50 py-1.5 overflow-hidden transition-all duration-150 transform opacity-0 scale-95 origin-top">
+<a href="#" onclick="exportClientExcel(event)" class="w-full px-sm py-2 flex items-center gap-2 text-xs hover:bg-primary/10 transition-colors text-right font-medium text-on-surface">
+<span class="material-symbols-outlined text-green-600 text-base">description</span>
+<span>Excel</span>
+</a>
+<a href="#" onclick="exportClientPdf(event)" class="w-full px-sm py-2 flex items-center gap-2 text-xs hover:bg-primary/10 transition-colors text-right font-medium text-on-surface">
+<span class="material-symbols-outlined text-error text-base">picture_as_pdf</span>
+<span>PDF</span>
+</a>
+<a href="#" onclick="exportClientImage(event)" class="w-full px-sm py-2 flex items-center gap-2 text-xs hover:bg-primary/10 transition-colors text-right font-medium text-on-surface">
+<span class="material-symbols-outlined text-blue-600 text-base">image</span>
+<span>صورة (Image)</span>
+</a>
+</div>
+</div>
         <!-- Custom Tx Sort Dropdown -->
         <div class="relative" id="txSortDropdownContainer">
             <button id="txSortDropdownBtn" type="button" class="h-9 px-sm bg-surface-container-low border border-outline-variant hover:border-primary/60 focus:border-primary rounded-lg flex items-center justify-between gap-xs text-on-surface text-xs transition-all shadow-sm active:scale-98">
@@ -1101,7 +1039,7 @@ async function loadClientDetails(skipAuth = false) {
         clientInvoices = client.invoices || [];
         const invoices = clientInvoices;
         document.getElementById('clientTotalTx').textContent = invoices.length + ' معاملة';
-        document.getElementById('statTxCount').textContent = invoices.length;
+
 
         const totalPurchases = invoices.filter(i => i.type === 'purchase').reduce((s, i) => s + i.amount, 0);
         const totalPayments = invoices.filter(i => i.type === 'payment').reduce((s, i) => s + i.amount, 0);
