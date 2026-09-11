@@ -212,7 +212,7 @@
                 <label class="block text-xs font-bold text-on-surface-variant">سعر البيع الافتراضي (بالوحدة الأساسية) (اختياري)</label>
                 <div class="relative">
                     <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline text-sm">payments</span>
-                    <input type="number" step="any" min="0" id="itemDefaultPrice" class="w-full h-11 pr-9 pl-md rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none text-right font-bold text-on-surface" placeholder="مثال: 150.00" />
+                    <input type="number" step="1" min="0" id="itemDefaultPrice" class="w-full h-11 pr-9 pl-md rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none text-right font-bold text-on-surface" placeholder="مثال: 150" />
                 </div>
             </div>
 
@@ -295,7 +295,7 @@
 
             <div class="space-y-xs">
                 <label class="block text-xs font-bold text-on-surface-variant">إجمالي سعر التوريد (اختياري)</label>
-                <input type="number" step="any" min="0" id="restockTotalCost" class="w-full h-11 px-md rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary outline-none text-right font-bold text-on-surface dir-ltr" placeholder="0.00" />
+                <input type="number" step="1" min="0" id="restockTotalCost" class="w-full h-11 px-md rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary outline-none text-right font-bold text-on-surface dir-ltr" placeholder="0" />
                 <p class="text-[11px] text-secondary">عند إدخال التكلفة مع تحديد المورد تُسجَّل تلقائيًا كمستحق له في حسابه.</p>
             </div>
 

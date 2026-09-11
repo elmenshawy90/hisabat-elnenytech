@@ -203,7 +203,7 @@ router.post('/', async (req, res) => {
     let createdInvoice = null;
 
     if (hasOpeningBalance) {
-      const parsedAmount = Math.round((Number(openingBalance) + Number.EPSILON) * 100) / 100;
+      const parsedAmount = Math.round(Number(openingBalance));
       const balanceEffect = openingBalanceType === 'debit' ? 'increase' : 'decrease';
       const detailsText = openingBalanceType === 'debit' ? 'رصيد افتتاحي (عليه)' : 'رصيد افتتاحي (له)';
 
@@ -304,7 +304,7 @@ router.put('/:id', async (req, res) => {
       });
 
       if (hasOpeningBalance) {
-        const parsedAmount = Math.round((Number(openingBalance) + Number.EPSILON) * 100) / 100;
+        const parsedAmount = Math.round(Number(openingBalance));
         const balanceEffect = openingBalanceType === 'debit' ? 'increase' : 'decrease';
         const detailsText = openingBalanceType === 'debit' ? 'رصيد افتتاحي (عليه)' : 'رصيد افتتاحي (له)';
 

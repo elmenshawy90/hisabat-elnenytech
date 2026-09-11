@@ -316,7 +316,7 @@
                 <label class="block text-xs font-bold text-on-surface-variant">المبلغ (ج.م) <span class="text-error">*</span></label>
                 <div class="relative">
                     <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline">payments</span>
-                    <input class="w-full h-12 pr-10 pl-md rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary outline-none transition-all text-right font-bold text-primary text-base dir-ltr" id="adjAmount" placeholder="0.00" type="number" step="any" min="0.01" required />
+                    <input class="w-full h-12 pr-10 pl-md rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary outline-none transition-all text-right font-bold text-primary text-base dir-ltr" id="adjAmount" placeholder="0" type="number" step="1" min="1" required />
                 </div>
             </div>
 
@@ -387,7 +387,7 @@
                 <label id="invoiceAmountLabel" class="font-label-md text-label-md text-on-surface-variant mb-xs">المبلغ المستحق <span class="text-error">*</span></label>
                 <div class="relative">
                     <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline">payments</span>
-                    <input class="w-full h-12 pr-10 pl-md rounded-xl bg-surface-container-low border border-outline-variant form-input-focus transition-all text-right font-bold text-primary" id="invoiceAmount" placeholder="0.00" type="number" step="any" oninput="if(currentTransactionType === 'payment') updatePaymentCalculations();" required />
+                    <input class="w-full h-12 pr-10 pl-md rounded-xl bg-surface-container-low border border-outline-variant form-input-focus transition-all text-right font-bold text-primary" id="invoiceAmount" placeholder="0" type="number" step="1" oninput="if(currentTransactionType === 'payment') updatePaymentCalculations();" required />
                 </div>
             </div>
 
@@ -413,7 +413,7 @@
                 </div>
                 <div class="flex items-center justify-between pt-xs font-bold text-xs border-t border-outline-variant/40">
                     <span class="text-on-surface-variant">المبلغ الصافي المسدد:</span>
-                    <span id="paymentNetTotalText" class="text-primary text-sm font-bold dir-ltr">0.00 ج.م</span>
+                    <span id="paymentNetTotalText" class="text-primary text-sm font-bold dir-ltr">0 ج.م</span>
                 </div>
             </div>
 
@@ -471,7 +471,7 @@
 
                     <div class="services-subtotal-row flex items-center justify-between font-bold text-xs text-on-surface-variant border-t border-outline-variant/60 pt-sm">
                         <span>مجموع الخدمات:</span>
-                        <span id="servicesSubtotalText" class="text-on-surface text-sm font-bold dir-ltr">0.00 ج.م</span>
+                        <span id="servicesSubtotalText" class="text-on-surface text-sm font-bold dir-ltr">0 ج.م</span>
                     </div>
                 </div>
 
@@ -479,7 +479,7 @@
                 <div class="invoice-totals-card space-y-xs border-t border-outline-variant/60 pt-sm">
                     <div class="flex items-center justify-between font-bold text-xs text-on-surface-variant">
                         <span>مجموع البنود:</span>
-                        <span id="itemsSubtotalText" class="text-on-surface text-sm font-bold dir-ltr">0.00 ج.م</span>
+                        <span id="itemsSubtotalText" class="text-on-surface text-sm font-bold dir-ltr">0 ج.م</span>
                     </div>
                     <div class="flex items-center justify-between gap-sm pt-xs">
                         <div class="flex items-center gap-xs">
@@ -501,11 +501,11 @@
                     </div>
                     <div class="flex items-center justify-between font-bold text-xs text-on-surface-variant">
                         <span>مجموع الخدمات (أخري):</span>
-                        <span id="itemsServicesTotalText" class="text-on-surface text-sm font-bold dir-ltr">0.00 ج.م</span>
+                        <span id="itemsServicesTotalText" class="text-on-surface text-sm font-bold dir-ltr">0 ج.م</span>
                     </div>
                     <div class="flex items-center justify-between pt-xs font-bold text-sm border-t border-outline-variant/40">
                         <span class="text-on-surface font-bold">الإجمالي الكلي بعد الخصم والخدمات:</span>
-                        <span id="itemsGrandTotalText" class="text-primary text-base font-bold dir-ltr">0.00 ج.م</span>
+                        <span id="itemsGrandTotalText" class="text-primary text-base font-bold dir-ltr">0 ج.م</span>
                     </div>
 
                     <!-- Payment Fields Section (Shown for purchase invoices) -->
@@ -514,7 +514,7 @@
                             <div class="flex flex-col gap-1">
                                 <label class="text-xs font-bold text-on-surface-variant">المبلغ المدفوع الآن (اختياري)</label>
                                 <div class="relative">
-                                    <input type="number" step="any" min="0" id="paidAmount" placeholder="0.00" oninput="updateAllLineTotalsAndGrandTotal()" class="w-full h-10 px-sm rounded-lg bg-surface-container-low border border-outline-variant text-xs font-bold text-right dir-ltr focus:border-primary outline-none" />
+                                    <input type="number" step="1" min="0" id="paidAmount" placeholder="0" oninput="updateAllLineTotalsAndGrandTotal()" class="w-full h-10 px-sm rounded-lg bg-surface-container-low border border-outline-variant text-xs font-bold text-right dir-ltr focus:border-primary outline-none" />
                                 </div>
                             </div>
                             <div class="flex flex-col gap-1">
@@ -535,7 +535,7 @@
                         <!-- Remaining after Paid -->
                         <div class="flex items-center justify-between pt-xs font-bold text-sm border-t border-outline-variant/40">
                             <span class="text-on-surface font-bold">المتبقي بعد المدفوع:</span>
-                            <span id="itemsRemainingAfterPaidText" class="text-primary text-base font-bold dir-ltr">0.00 ج.م</span>
+                            <span id="itemsRemainingAfterPaidText" class="text-primary text-base font-bold dir-ltr">0 ج.م</span>
                         </div>
                     </div>
                 </div>
@@ -719,7 +719,7 @@
                         <label class="font-label-md text-xs font-bold text-on-surface-variant">المبلغ (ج.م)</label>
                         <div class="relative">
                             <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline text-sm">payments</span>
-                            <input type="number" step="any" min="0" id="editClientOpeningBalance" placeholder="0.00" class="w-full h-10 pr-9 pl-md rounded-lg bg-white border border-outline-variant text-xs font-bold text-right outline-none focus:border-primary" />
+                            <input type="number" step="1" min="0" id="editClientOpeningBalance" placeholder="0" class="w-full h-10 pr-9 pl-md rounded-lg bg-white border border-outline-variant text-xs font-bold text-right outline-none focus:border-primary" />
                         </div>
                     </div>
                     <div class="flex flex-col gap-xs">
@@ -2183,7 +2183,7 @@ function addPreloadedInvoiceLineRow(itemData) {
             </div>
             <div class="w-28">
                 <label class="block text-[11px] font-bold text-secondary mb-1">السعر (ج.م) <span class="text-error">*</span></label>
-                <input type="number" step="any" min="0" value="${escapeHtml(price)}" class="line-price-input w-full h-9 px-xs rounded-md bg-surface-container-low border border-outline-variant text-xs font-bold text-center dir-ltr focus:border-primary outline-none" placeholder="0.00" oninput="onLineInputsCalculated('${rowId}')" />
+                <input type="number" step="1" min="0" value="${escapeHtml(price)}" class="line-price-input w-full h-9 px-xs rounded-md bg-surface-container-low border border-outline-variant text-xs font-bold text-center dir-ltr focus:border-primary outline-none" placeholder="0" oninput="onLineInputsCalculated('${rowId}')" />
             </div>
             <div class="w-24 text-left">
                 <label class="block text-[11px] font-bold text-secondary mb-1">الإجمالي</label>
@@ -2276,13 +2276,13 @@ function addInvoiceLineRow() {
             <!-- 4. Unit Price Input -->
             <div class="w-28">
                 <label class="block text-[11px] font-bold text-secondary mb-1">السعر (ج.م) <span class="text-error">*</span></label>
-                <input type="number" step="any" min="0" class="line-price-input w-full h-9 px-xs rounded-md bg-surface-container-low border border-outline-variant text-xs font-bold text-center dir-ltr focus:border-primary outline-none" placeholder="0.00" oninput="onLineInputsCalculated('${rowId}')" />
+                <input type="number" step="1" min="0" class="line-price-input w-full h-9 px-xs rounded-md bg-surface-container-low border border-outline-variant text-xs font-bold text-center dir-ltr focus:border-primary outline-none" placeholder="0" oninput="onLineInputsCalculated('${rowId}')" />
             </div>
 
             <!-- 5. Line Total Display -->
             <div class="w-24 text-left">
                 <label class="block text-[11px] font-bold text-secondary mb-1">الإجمالي</label>
-                <span class="line-total-text text-xs font-bold text-primary dir-ltr block pt-1">0.00 ج.م</span>
+                <span class="line-total-text text-xs font-bold text-primary dir-ltr block pt-1">0 ج.م</span>
             </div>
 
             <!-- Delete Row Button -->
@@ -2474,7 +2474,7 @@ function addServiceRow(name = '', price = '') {
         </div>
         <div class="w-28">
             <label class="block text-[11px] font-bold text-secondary mb-1">السعر (ج.م) <span class="text-error">*</span></label>
-            <input type="number" step="any" min="0" value="${escapeHtml(price === '' || price === null || price === undefined ? '' : price)}" class="service-price-input w-full h-9 px-xs rounded-md bg-surface-container-low border border-outline-variant text-xs font-bold text-center dir-ltr focus:border-primary outline-none" placeholder="0.00" oninput="updateAllLineTotalsAndGrandTotal()" />
+            <input type="number" step="1" min="0" value="${escapeHtml(price === '' || price === null || price === undefined ? '' : price)}" class="service-price-input w-full h-9 px-xs rounded-md bg-surface-container-low border border-outline-variant text-xs font-bold text-center dir-ltr focus:border-primary outline-none" placeholder="0" oninput="updateAllLineTotalsAndGrandTotal()" />
         </div>
         <div class="w-8 shrink-0 pt-4">
             <button type="button" onclick="removeServiceRow('${rowId}')" class="w-8 h-8 flex items-center justify-center text-error hover:bg-error/10 rounded-md transition-colors cursor-pointer" title="حذف الخدمة">
@@ -2495,9 +2495,9 @@ function removeServiceRow(rowId) {
 function getServicesTotal() {
     let total = 0;
     document.querySelectorAll('#serviceRowsContainer .service-price-input').forEach(inp => {
-        total += parseFloat(inp.value) || 0;
+        total += Math.round(parseFloat(inp.value) || 0);
     });
-    return Math.round((total + Number.EPSILON) * 100) / 100;
+    return Math.round(total);
 }
 
 function collectServicesPayload() {
@@ -2512,7 +2512,7 @@ function collectServicesPayload() {
         if (!name && (priceRaw === '' || isNaN(price) || price <= 0)) continue;
         if (!name) return { error: `الرجاء إدخال اسم الخدمه للخدمة رقم ${i + 1} (قسم أخري)` };
         if (isNaN(price) || price <= 0) return { error: `الرجاء إدخال سعر صحيح للخدمة "${name}"` };
-        services.push({ name, price: Math.round((price + Number.EPSILON) * 100) / 100 });
+        services.push({ name, price: Math.round(price) });
     }
     return { services };
 }
@@ -2635,7 +2635,7 @@ function tryAutoFillDefaultPrice(rowId) {
 
     if (!isNaN(rate) && rate > 0) {
         const calculatedPrice = selectedItem.defaultSellingPrice * rate;
-        priceInput.value = Math.round((calculatedPrice + Number.EPSILON) * 100) / 100;
+        priceInput.value = Math.round(calculatedPrice);
     }
 }
 
@@ -2683,8 +2683,8 @@ function onLineInputsCalculated(rowId) {
 
     const itemId = itemSelect && itemSelect.value ? String(itemSelect.value) : null;
     const qty = qtyInput ? parseFloat(qtyInput.value) || 0 : 0;
-    const price = priceInput ? parseFloat(priceInput.value) || 0 : 0;
-    const lineTotal = Math.round((qty * price + Number.EPSILON) * 100) / 100;
+    const price = priceInput ? Math.round(parseFloat(priceInput.value) || 0) : 0;
+    const lineTotal = Math.round(qty * price);
 
     if (lineTotalEl) {
         lineTotalEl.textContent = formatCurrency(lineTotal);
@@ -2724,11 +2724,11 @@ function updateAllLineTotalsAndGrandTotal() {
         const qtyInput = row.querySelector('.line-qty-input');
         const priceInput = row.querySelector('.line-price-input');
         const qty = qtyInput ? parseFloat(qtyInput.value) || 0 : 0;
-        const price = priceInput ? parseFloat(priceInput.value) || 0 : 0;
-        subtotal += qty * price;
+        const price = priceInput ? Math.round(parseFloat(priceInput.value) || 0) : 0;
+        subtotal += Math.round(qty * Math.round(price));
     });
 
-    subtotal = Math.round((subtotal + Number.EPSILON) * 100) / 100;
+    subtotal = Math.round(subtotal);
 
     const discountTypeRadio = document.querySelector('input[name="discountType"]:checked');
     const discountType = discountTypeRadio ? discountTypeRadio.value : 'percentage';
@@ -2739,16 +2739,16 @@ function updateAllLineTotalsAndGrandTotal() {
     if (discountVal > 0) {
         if (discountType === 'percentage') {
             const pct = Math.min(Math.max(discountVal, 0), 100);
-            discountAmount = Math.round((subtotal * (pct / 100) + Number.EPSILON) * 100) / 100;
+            discountAmount = Math.round(subtotal * (pct / 100));
         } else if (discountType === 'fixed') {
-            discountAmount = Math.round((discountVal + Number.EPSILON) * 100) / 100;
+            discountAmount = Math.round(discountVal);
         }
     }
 
     discountAmount = Math.min(discountAmount, subtotal);
     // خدمات (أخري) تُضاف بعد الخصم
     const servicesTotal = getServicesTotal();
-    const grandTotal = Math.round((subtotal - discountAmount + servicesTotal + Number.EPSILON) * 100) / 100;
+    const grandTotal = Math.round(subtotal - discountAmount + servicesTotal);
 
     const subtotalEl = document.getElementById('itemsSubtotalText');
     const grandTotalEl = document.getElementById('itemsGrandTotalText');
@@ -2765,8 +2765,8 @@ function updateAllLineTotalsAndGrandTotal() {
     }
 
     const paidInput = document.getElementById('paidAmount');
-    const paidVal = paidInput ? parseFloat(paidInput.value) || 0 : 0;
-    const remainingAfterPaid = Math.round((Math.max(0, grandTotal - paidVal) + Number.EPSILON) * 100) / 100;
+    const paidVal = paidInput ? Math.round(parseFloat(paidInput.value) || 0) : 0;
+    const remainingAfterPaid = Math.round(Math.max(0, grandTotal - paidVal));
     const remainingEl = document.getElementById('itemsRemainingAfterPaidText');
     if (remainingEl) {
         remainingEl.textContent = formatCurrency(remainingAfterPaid);
@@ -2775,7 +2775,7 @@ function updateAllLineTotalsAndGrandTotal() {
 
 function updatePaymentCalculations() {
     const amountInput = document.getElementById('invoiceAmount');
-    const rawAmount = amountInput ? parseFloat(amountInput.value) || 0 : 0;
+    const rawAmount = amountInput ? Math.round(parseFloat(amountInput.value) || 0) : 0;
     const discountTypeRadio = document.querySelector('input[name="paymentDiscountType"]:checked');
     const discountType = discountTypeRadio ? discountTypeRadio.value : 'percentage';
     const discountValInput = document.getElementById('paymentDiscountValue');
@@ -2785,13 +2785,13 @@ function updatePaymentCalculations() {
     if (discountVal > 0) {
         if (discountType === 'percentage') {
             const pct = Math.min(Math.max(discountVal, 0), 100);
-            discountAmount = Math.round((rawAmount * (pct / 100) + Number.EPSILON) * 100) / 100;
+            discountAmount = Math.round(rawAmount * (pct / 100));
         } else if (discountType === 'fixed') {
-            discountAmount = Math.round((discountVal + Number.EPSILON) * 100) / 100;
+            discountAmount = Math.round(discountVal);
         }
     }
     discountAmount = Math.min(discountAmount, rawAmount);
-    const netTotal = Math.round((rawAmount - discountAmount + Number.EPSILON) * 100) / 100;
+    const netTotal = Math.round(rawAmount - discountAmount);
 
     const netTotalEl = document.getElementById('paymentNetTotalText');
     if (netTotalEl) netTotalEl.textContent = formatCurrency(netTotal);
@@ -2918,7 +2918,7 @@ document.getElementById('invoiceForm').addEventListener('submit', async function
             const itemId = itemSelect ? parseInt(itemSelect.value) : 0;
             const rawUnitVal = unitSelect ? unitSelect.value : '';
             const quantity = qtyInput ? parseFloat(qtyInput.value) || 0 : 0;
-            const unitPrice = priceInput ? parseFloat(priceInput.value) || 0 : 0;
+            const unitPrice = priceInput ? Math.round(parseFloat(priceInput.value) || 0) : 0;
 
             // صف فارغ تمامًا: تجاوزه — لكن وحدة بلا صنف خطأ صريح
             if (!itemId) {

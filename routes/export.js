@@ -159,7 +159,9 @@ router.use(requireAuth);
 const formatCurrency = (amount) => {
   return new Intl.NumberFormat('ar-EG-u-nu-latn', {
     style: 'currency',
-    currency: 'EGP'
+    currency: 'EGP',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0
   }).format(amount);
 };
 
@@ -208,7 +210,7 @@ router.get('/clients/excel', async (req, res) => {
       });
     });
     styleExcelTable(worksheet, 4, 5);
-    worksheet.getColumn(3).numFmt = '#,##0.00 "ج.م"';
+    worksheet.getColumn(3).numFmt = '#,##0 "ج.م"';
 
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     res.setHeader('Content-Disposition', 'attachment; filename="clients.xlsx"');
@@ -359,7 +361,7 @@ router.get('/invoices/excel', async (req, res) => {
       });
     });
     styleExcelTable(worksheet, 4, 6);
-    worksheet.getColumn(5).numFmt = '#,##0.00 "ج.م"';
+    worksheet.getColumn(5).numFmt = '#,##0 "ج.م"';
 
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     res.setHeader('Content-Disposition', 'attachment; filename="invoices.xlsx"');
@@ -577,8 +579,8 @@ router.get('/client/:id/excel', async (req, res) => {
       }
     });
     styleExcelTable(worksheet, headerRowNumber, 6);
-    worksheet.getColumn(3).numFmt = '#,##0.00 "ج.م"';
-    worksheet.getColumn(6).numFmt = '#,##0.00 "ج.م"';
+    worksheet.getColumn(3).numFmt = '#,##0 "ج.م"';
+    worksheet.getColumn(6).numFmt = '#,##0 "ج.م"';
 
     const safeName = (client.name || 'client').replace(/[\\/:*?"<>|]/g, '_');
     const filename = `client-statement-${safeName}.xlsx`;

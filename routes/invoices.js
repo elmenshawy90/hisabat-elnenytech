@@ -40,10 +40,10 @@ function parseServicesInput(raw) {
     if (isEmptyRow) continue;
     if (!name) throw new Error(`اسم الخدمة مطلوب للخدمة رقم ${i + 1} (قسم أخري)`);
     if (isNaN(price) || price < 0) throw new Error(`سعر الخدمة غير صالح للخدمة "${name}"`);
-    const rounded = Math.round((price + Number.EPSILON) * 100) / 100;
+    const rounded = Math.round(price);
     if (rounded <= 0) throw new Error(`سعر الخدمة يجب أن يكون أكبر من صفر للخدمة "${name}"`);
     services.push({ name, price: rounded });
-    total = Math.round((total + rounded + Number.EPSILON) * 100) / 100;
+    total = Math.round(total + rounded);
   }
   return { services, total };
 }
@@ -244,12 +244,13 @@ router.post('/', async (req, res) => {
         const itemId = Number(itemInput.itemId);
         const itemUnitId = Number(itemInput.itemUnitId);
         const quantity = Number(itemInput.quantity);
-        const unitPrice = Number(itemInput.unitPrice);
+        let unitPrice = Number(itemInput.unitPrice);
 
         if (isNaN(itemId) || isNaN(itemUnitId) || isNaN(quantity) || quantity <= 0 || isNaN(unitPrice) || unitPrice < 0) {
           return res.status(400).json({ error: `بيانات البند ${i + 1} غير صالحة` });
         }
 
+        unitPrice = Math.round(unitPrice);
         const unit = await prisma.itemUnit.findUnique({
           where: { id: itemUnitId },
           include: { item: true }
@@ -260,7 +261,7 @@ router.post('/', async (req, res) => {
         }
 
         const quantityBase = quantity * Number(unit.conversionRate);
-        const lineTotal = Math.round((quantity * unitPrice + Number.EPSILON) * 100) / 100;
+        const lineTotal = Math.round(quantity * unitPrice);
         finalAmount += lineTotal;
 
         // Stock availability warning check
@@ -285,7 +286,7 @@ router.post('/', async (req, res) => {
         });
       }
 
-      finalAmount = Math.round((finalAmount + Number.EPSILON) * 100) / 100;
+      finalAmount = Math.round(finalAmount);
 
       // Calculate discount amount if provided
       const discountType = data.discountType; // 'percentage' or 'fixed'
@@ -293,16 +294,16 @@ router.post('/', async (req, res) => {
       if (!isNaN(discountVal) && discountVal > 0) {
         if (discountType === 'percentage') {
           const pct = Math.min(Math.max(discountVal, 0), 100);
-          discountAmount = Math.round((finalAmount * (pct / 100) + Number.EPSILON) * 100) / 100;
+          discountAmount = Math.round(finalAmount * (pct / 100));
         } else if (discountType === 'fixed') {
-          discountAmount = Math.round((discountVal + Number.EPSILON) * 100) / 100;
+          discountAmount = Math.round(discountVal);
         }
       }
       discountAmount = Math.min(discountAmount, finalAmount);
-      finalAmount = Math.round((finalAmount - discountAmount + Number.EPSILON) * 100) / 100;
+      finalAmount = Math.round(finalAmount - discountAmount);
     } else {
       const rawAmount = isNaN(parseFloat(data.amount)) ? 0 : parseFloat(data.amount);
-      let baseAmount = Math.round((rawAmount + Number.EPSILON) * 100) / 100;
+      let baseAmount = Math.round(rawAmount);
       if (baseAmount < 0) {
         return res.status(400).json({ error: 'المبلغ لا يمكن أن يكون سالباً' });
       }
@@ -323,13 +324,13 @@ router.post('/', async (req, res) => {
         if (!isNaN(discountVal) && discountVal > 0) {
           if (discountType === 'percentage') {
             const pct = Math.min(Math.max(discountVal, 0), 100);
-            discountAmount = Math.round((baseAmount * (pct / 100) + Number.EPSILON) * 100) / 100;
+            discountAmount = Math.round(baseAmount * (pct / 100));
           } else if (discountType === 'fixed') {
-            discountAmount = Math.round((discountVal + Number.EPSILON) * 100) / 100;
+            discountAmount = Math.round(discountVal);
           }
         }
         discountAmount = Math.min(discountAmount, baseAmount);
-        finalAmount = Math.round((baseAmount - discountAmount + Number.EPSILON) * 100) / 100;
+        finalAmount = Math.round(baseAmount - discountAmount);
       } else {
         finalAmount = baseAmount;
       }
@@ -344,12 +345,12 @@ router.post('/', async (req, res) => {
         discountAmount = 0;
         finalAmount = parsedServices.total;
       } else if (parsedServices.total > 0) {
-        finalAmount = Math.round((finalAmount + parsedServices.total + Number.EPSILON) * 100) / 100;
+        finalAmount = Math.round(finalAmount + parsedServices.total);
       }
     }
 
     const paidAmount = data.paidAmount !== undefined && data.paidAmount !== null && !isNaN(parseFloat(data.paidAmount)) 
-      ? Math.round((parseFloat(data.paidAmount) + Number.EPSILON) * 100) / 100 
+      ? Math.round(parseFloat(data.paidAmount))
       : 0;
     const paymentMethod = data.paymentMethod === 'transfer' ? 'transfer' : 'cash';
     const invoiceNotes = data.notes ? String(data.notes).trim() : '';
@@ -615,12 +616,13 @@ router.put('/:id', async (req, res) => {
       const iId = parseInt(rawItem.itemId);
       const uId = parseInt(rawItem.itemUnitId);
       const qty = parseFloat(rawItem.quantity);
-      const uPrice = parseFloat(rawItem.unitPrice);
+      let uPrice = parseFloat(rawItem.unitPrice);
 
       if (!iId || !uId || isNaN(qty) || qty <= 0 || isNaN(uPrice) || uPrice < 0) {
         return res.status(400).json({ error: 'بيانات بنود الفاتورة غير صالحة' });
       }
 
+      uPrice = Math.round(uPrice);
       const dbItem = itemMap.get(iId);
       const dbUnit = unitMap.get(uId);
       if (!dbItem || !dbUnit || dbUnit.itemId !== iId) {
@@ -629,7 +631,7 @@ router.put('/:id', async (req, res) => {
 
       const conversionRate = Number(dbUnit.conversionRate) || 1.0;
       const quantityBase = Math.round((qty * conversionRate + Number.EPSILON) * 10000) / 10000;
-      const lineTotal = Math.round((qty * uPrice + Number.EPSILON) * 100) / 100;
+      const lineTotal = Math.round(qty * uPrice);
       calculatedSubtotal += lineTotal;
 
       newPreparedItems.push({
@@ -643,7 +645,7 @@ router.put('/:id', async (req, res) => {
       });
     }
 
-    calculatedSubtotal = Math.round((calculatedSubtotal + Number.EPSILON) * 100) / 100;
+    calculatedSubtotal = Math.round(calculatedSubtotal);
 
     // Calculate discount
     let discountAmount = 0;
@@ -652,20 +654,20 @@ router.put('/:id', async (req, res) => {
     if (!isNaN(discountVal) && discountVal > 0) {
       if (discountType === 'percentage') {
         const pct = Math.min(Math.max(discountVal, 0), 100);
-        discountAmount = Math.round((calculatedSubtotal * (pct / 100) + Number.EPSILON) * 100) / 100;
+        discountAmount = Math.round(calculatedSubtotal * (pct / 100));
       } else if (discountType === 'fixed') {
-        discountAmount = Math.round((discountVal + Number.EPSILON) * 100) / 100;
+        discountAmount = Math.round(discountVal);
       }
     }
     discountAmount = Math.min(discountAmount, calculatedSubtotal);
-    let finalAmount = Math.round((calculatedSubtotal - discountAmount + Number.EPSILON) * 100) / 100;
+    let finalAmount = Math.round(calculatedSubtotal - discountAmount);
     // خدمات (أخري) تُضاف بعد الخصم
     if (parsedServices.total > 0) {
-      finalAmount = Math.round((finalAmount + parsedServices.total + Number.EPSILON) * 100) / 100;
+      finalAmount = Math.round(finalAmount + parsedServices.total);
     }
 
     const paidAmount = data.paidAmount !== undefined && data.paidAmount !== null && !isNaN(parseFloat(data.paidAmount))
-      ? Math.round((parseFloat(data.paidAmount) + Number.EPSILON) * 100) / 100
+      ? Math.round(parseFloat(data.paidAmount))
       : 0;
     const paymentMethod = data.paymentMethod === 'transfer' ? 'transfer' : 'cash';
 
@@ -892,7 +894,7 @@ router.patch('/:id', async (req, res) => {
       if (isNaN(rawAmount) || rawAmount < 0) {
         return res.status(400).json({ error: 'المبلغ لا يمكن أن يكون سالباً' });
       }
-      updateData.amount = Math.round((rawAmount + Number.EPSILON) * 100) / 100;
+      updateData.amount = Math.round(rawAmount);
     }
 
     if (data.details !== undefined) {

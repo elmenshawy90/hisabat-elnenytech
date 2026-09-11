@@ -175,7 +175,7 @@ function formatCurrency(amount) {
   const num = Number(amount) || 0;
   return new Intl.NumberFormat('ar-EG-u-nu-latn', {
     minimumFractionDigits: 0,
-    maximumFractionDigits: 2
+    maximumFractionDigits: 0
   }).format(num) + ' ج.م';
 }
 

@@ -71,7 +71,7 @@
                 <span class="text-[10px] bg-green-100 text-green-800 font-bold px-2 py-0.5 rounded-full">(رصيدهم ≤ 0)</span>
             </div>
             <div class="flex items-baseline gap-sm">
-                <span class="font-headline-md text-headline-md text-green-700 font-bold" id="statCreditTotal">0.00 ج.م</span>
+                <span class="font-headline-md text-headline-md text-green-700 font-bold" id="statCreditTotal">0 ج.م</span>
                 <span class="text-xs text-secondary font-bold" id="statCreditCount">(0 عميل)</span>
             </div>
         </div>
@@ -88,7 +88,7 @@
                 <span class="text-[10px] bg-tertiary/10 text-tertiary font-bold px-2 py-0.5 rounded-full">(رصيدهم > 0)</span>
             </div>
             <div class="flex items-baseline gap-sm">
-                <span class="font-headline-md text-headline-md text-tertiary font-bold" id="statDebtTotal">0.00 ج.م</span>
+                <span class="font-headline-md text-headline-md text-tertiary font-bold" id="statDebtTotal">0 ج.م</span>
                 <span class="text-xs text-secondary font-bold" id="statDebtCount">(0 عميل)</span>
             </div>
         </div>
@@ -105,7 +105,7 @@
                 <span id="statNetBadge" class="text-[10px] bg-surface-container font-bold px-2 py-0.5 rounded-full text-secondary">صافي الفرق</span>
             </div>
             <div class="flex items-baseline gap-sm">
-                <span class="font-headline-md text-headline-md font-bold text-primary" id="statNetTotal">0.00 ج.م</span>
+                <span class="font-headline-md text-headline-md font-bold text-primary" id="statNetTotal">0 ج.م</span>
             </div>
             <span class="text-xs font-bold" id="statNetDirection">جاري الحساب...</span>
         </div>
@@ -344,7 +344,7 @@
 <label class="font-label-md text-xs font-bold text-on-surface-variant">المبلغ (ج.م)</label>
 <div class="relative">
 <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline text-sm">payments</span>
-<input type="number" step="any" min="0" id="newClientOpeningBalance" placeholder="0.00" class="w-full h-10 pr-9 pl-md rounded-lg bg-white border border-outline-variant text-xs font-bold text-right outline-none focus:border-primary" />
+<input type="number" step="1" min="0" id="newClientOpeningBalance" placeholder="0" class="w-full h-10 pr-9 pl-md rounded-lg bg-white border border-outline-variant text-xs font-bold text-right outline-none focus:border-primary" />
 </div>
 </div>
 <div class="flex flex-col gap-xs">
@@ -422,7 +422,7 @@
 <label class="font-label-md text-xs font-bold text-on-surface-variant">المبلغ (ج.م)</label>
 <div class="relative">
 <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline text-sm">payments</span>
-<input type="number" step="any" min="0" id="editClientOpeningBalance" placeholder="0.00" class="w-full h-10 pr-9 pl-md rounded-lg bg-white border border-outline-variant text-xs font-bold text-right outline-none focus:border-primary" />
+<input type="number" step="1" min="0" id="editClientOpeningBalance" placeholder="0" class="w-full h-10 pr-9 pl-md rounded-lg bg-white border border-outline-variant text-xs font-bold text-right outline-none focus:border-primary" />
 </div>
 </div>
 <div class="flex flex-col gap-xs">
@@ -574,7 +574,7 @@ function updateStats(responseData) {
         }
         if (statNetDirectionEl) {
             statNetDirectionEl.className = "text-xs font-bold text-secondary";
-            statNetDirectionEl.textContent = "الرصيد متوازن (0.00 ج.م)";
+            statNetDirectionEl.textContent = "الرصيد متوازن (0 ج.م)";
         }
         if (iconNetCardEl) iconNetCardEl.className = "w-12 h-12 rounded-xl bg-surface-container text-secondary flex items-center justify-center shrink-0";
     }

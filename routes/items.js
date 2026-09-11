@@ -308,7 +308,7 @@ router.post('/', async (req, res) => {
     const trimmedName = String(name).trim();
     const normName = normalize(trimmedName);
 
-    const parsedPrice = defaultSellingPrice !== undefined && defaultSellingPrice !== null && defaultSellingPrice !== '' && !isNaN(Number(defaultSellingPrice)) ? Number(defaultSellingPrice) : null;
+    const parsedPrice = defaultSellingPrice !== undefined && defaultSellingPrice !== null && defaultSellingPrice !== '' && !isNaN(Number(defaultSellingPrice)) ? Math.round(Number(defaultSellingPrice)) : null;
 
     // Duplicate name check
     const existingItems = await prisma.item.findMany({ select: { id: true, name: true } });
@@ -386,7 +386,7 @@ router.put('/:id', async (req, res) => {
 
     const trimmedName = String(name).trim();
     const normName = normalize(trimmedName);
-    const parsedPrice = defaultSellingPrice !== undefined && defaultSellingPrice !== null && defaultSellingPrice !== '' && !isNaN(Number(defaultSellingPrice)) ? Number(defaultSellingPrice) : null;
+    const parsedPrice = defaultSellingPrice !== undefined && defaultSellingPrice !== null && defaultSellingPrice !== '' && !isNaN(Number(defaultSellingPrice)) ? Math.round(Number(defaultSellingPrice)) : null;
 
     const existingItems = await prisma.item.findMany({ select: { id: true, name: true } });
     const duplicate = existingItems.find(i => i.id !== id && normalize(i.name) === normName);
@@ -579,7 +579,7 @@ router.post('/:id/restock', async (req, res) => {
     // تكلفة التوريد الإجمالية (اختيارية) — تُسجل كمستحق للمورد وتتطلب تحديد المورد
     let restockCost = 0;
     if (totalCost !== undefined && totalCost !== null && totalCost !== '') {
-      restockCost = Math.round((Number(totalCost) + Number.EPSILON) * 100) / 100;
+      restockCost = Math.round(Number(totalCost));
       if (isNaN(restockCost) || restockCost < 0) {
         return res.status(400).json({ error: 'تكلفة التوريد يجب أن تكون رقمًا موجبًا' });
       }
