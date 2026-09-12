@@ -1159,7 +1159,7 @@
                         addPreloadedInvoiceLineRow(it);
                     });
                 } else {
-                    addInvoiceLineRow();
+                    for (let i = 0; i < 3; i++) addInvoiceLineRow();
                 }
             }
 
@@ -1520,7 +1520,7 @@
             const container = document.getElementById('invoiceLineRowsContainer');
             if (!container) return;
             container.innerHTML = '';
-            addInvoiceLineRow();
+            for (let i = 0; i < 3; i++) addInvoiceLineRow();
             renderServiceRows([]);
             const discountValInput = document.getElementById('discountValue');
             if (discountValInput) discountValInput.value = '';
