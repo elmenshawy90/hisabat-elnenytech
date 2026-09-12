@@ -16,7 +16,7 @@ model User {
   username              String   @unique
   password              String
   displayName           String   @default("مستخدم")
-  role                  String   @default("user") // 'admin' or 'user'
+  role                  String   @default("user") // 'admin' (full access) | 'editor' (read + write, no user management) | 'viewer' (read-only)
   failedLoginAttempts   Int      @default(0)
   lockedUntil           DateTime?
   createdAt             DateTime @default(now())

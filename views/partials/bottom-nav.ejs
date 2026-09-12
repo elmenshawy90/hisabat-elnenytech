@@ -19,4 +19,8 @@
 <span class="material-symbols-outlined <%= active === 'suppliers' ? 'filled' : '' %>">local_shipping</span>
 <span class="text-[10px] font-label-sm">الموردين</span>
 </a>
+<a data-requires-admin class="flex flex-col items-center gap-xs <%= active === 'users' ? 'text-primary' : 'text-secondary' %>" href="/users">
+<span class="material-symbols-outlined <%= active === 'users' ? 'filled' : '' %>">manage_accounts</span>
+<span class="text-[10px] font-label-sm">المستخدمون</span>
+</a>
 </nav>

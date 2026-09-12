@@ -1,12 +1,13 @@
 const express = require('express');
 const router = express.Router();
 const prisma = require('../lib/prisma');
-const { requireAuth } = require('../middleware/auth');
+const { requireAuth, requireEditor } = require('../middleware/auth');
 const { normalize } = require('../lib/normalize');
 const { getClientBalance } = require('../lib/balance');
 
 // Apply auth middleware to all routes
 router.use(requireAuth);
+router.use(requireEditor); // viewer role is read-only
 
 // GET /api/end-clients/check-name-match?name=... - Search Client table for matching independent client name
 router.get('/check-name-match', async (req, res) => {

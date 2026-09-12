@@ -1,11 +1,12 @@
 const express = require('express');
 const router = express.Router();
 const prisma = require('../lib/prisma');
-const { requireAuth } = require('../middleware/auth');
+const { requireAuth, requireEditor } = require('../middleware/auth');
 const { normalize } = require('../lib/normalize');
 
 // Apply auth middleware to all routes
 router.use(requireAuth);
+router.use(requireEditor); // viewer role is read-only
 
 /**
  * ربط اسم وحدة بالكتالوج الرئيسي (Unit): بحث بالاسم المطابق ثم المطبّع، ثم إنشاء عند الحاجة.

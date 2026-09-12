@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>سجل الديون - المستخدمون</title>
+<meta name="description" content="إدارة مستخدمي النظام وصلاحياتهم"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script src="js/tailwind-config.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="css/styles.css" rel="stylesheet"/>
+</head>
+<body class="bg-background text-on-surface overflow-hidden max-w-[100vw]">
+<!-- Shell Container -->
+<div class="flex h-screen w-full">
+<%- include('partials/aside', { active: 'users' }) %>
+<!-- Main Content Area -->
+<main class="flex-1 min-w-0 flex flex-col md:mr-64 h-full relative">
+
+<!-- Page Canvas -->
+<div class="flex-1 overflow-y-auto p-container-margin pb-24 md:pb-xl md:p-xl custom-scrollbar">
+<%- include('partials/header', { title: 'المستخدمون' }) %>
+
+<!-- Access Denied (non-admin) -->
+<div id="accessDenied" class="hidden py-xl text-center text-secondary space-y-sm">
+    <span class="material-symbols-outlined text-5xl text-outline">lock</span>
+    <p class="font-bold text-on-surface">غير مصرح لك بعرض هذه الصفحة</p>
+    <p class="text-xs">إدارة المستخدمين متاحة للمديرين فقط.</p>
+</div>
+
+<div id="usersContent">
+<!-- Content Header -->
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-md mb-xl">
+    <div class="flex flex-col">
+        <h2 class="font-headline-md text-headline-md text-on-surface font-bold">المستخدمون</h2>
+        <p class="font-body-md text-body-md text-secondary">إدارة حسابات النظام: مدير (تحكم كامل)، محرر (قراءة وكتابة)، مشاهد (قراءة فقط)</p>
+    </div>
+    <div class="flex flex-wrap items-center gap-xs sm:gap-sm">
+        <button onclick="openAddUserModal()" class="px-md py-sm bg-primary hover:bg-primary-container text-white rounded-full flex items-center justify-center gap-xs font-bold text-sm shadow-sm transition-all active:scale-95 cursor-pointer">
+            <span class="material-symbols-outlined text-xl">person_add</span>
+            <span>مستخدم جديد</span>
+        </button>
+    </div>
+</div>
+
+<!-- Stats Row -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-md mb-xl">
+    <div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-md flex items-center justify-between shadow-sm select-none">
+        <div class="flex flex-col gap-xs">
+            <span class="font-label-md text-label-md text-secondary font-bold">المديرون</span>
+            <div class="flex items-baseline gap-sm">
+                <span class="font-headline-md text-headline-md text-primary font-bold" id="statAdmins">--</span>
+                <span class="text-xs text-secondary font-bold">مستخدم</span>
+            </div>
+        </div>
+        <div class="w-12 h-12 rounded-xl bg-primary-fixed flex items-center justify-center text-on-primary-fixed shrink-0">
+            <span class="material-symbols-outlined text-2xl">admin_panel_settings</span>
+        </div>
+    </div>
+    <div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-md flex items-center justify-between shadow-sm select-none">
+        <div class="flex flex-col gap-xs">
+            <span class="font-label-md text-label-md text-secondary font-bold">المحررون</span>
+            <div class="flex items-baseline gap-sm">
+                <span class="font-headline-md text-headline-md text-green-700 font-bold" id="statEditors">--</span>
+                <span class="text-xs text-secondary font-bold">مستخدم</span>
+            </div>
+        </div>
+        <div class="w-12 h-12 rounded-xl bg-green-500/10 text-green-700 flex items-center justify-center shrink-0">
+            <span class="material-symbols-outlined text-2xl">edit_note</span>
+        </div>
+    </div>
+    <div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-md flex items-center justify-between shadow-sm select-none">
+        <div class="flex flex-col gap-xs">
+            <span class="font-label-md text-label-md text-secondary font-bold">المشاهدون</span>
+            <div class="flex items-baseline gap-sm">
+                <span class="font-headline-md text-headline-md text-tertiary font-bold" id="statViewers">--</span>
+                <span class="text-xs text-secondary font-bold">مستخدم</span>
+            </div>
+        </div>
+        <div class="w-12 h-12 rounded-xl bg-tertiary-fixed text-on-tertiary-fixed flex items-center justify-center shrink-0">
+            <span class="material-symbols-outlined text-2xl">visibility</span>
+        </div>
+    </div>
+</div>
+
+<!-- Users Table Container -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-2xl shadow-sm overflow-hidden mb-xl">
+    <div class="overflow-x-auto">
+        <table class="w-full text-right border-collapse">
+            <thead>
+                <tr class="bg-surface-container-low border-b border-outline-variant text-secondary font-label-md text-xs">
+                    <th class="px-md py-md font-bold">اسم المستخدم</th>
+                    <th class="px-md py-md font-bold">الاسم المعروض</th>
+                    <th class="px-md py-md font-bold">الدور</th>
+                    <th class="px-md py-md font-bold">تاريخ الإنشاء</th>
+                    <th class="px-md py-md font-bold text-center">الإجراءات</th>
+                </tr>
+            </thead>
+            <tbody id="usersTableBody" class="divide-y divide-outline-variant/60 font-body-md text-sm">
+                <!-- Loaded via JS -->
+            </tbody>
+        </table>
+    </div>
+    <div id="usersLoading" class="py-xl text-center text-secondary">
+        <div class="flex flex-col items-center justify-center gap-sm">
+            <div class="w-8 h-8 border-3 border-outline-variant border-t-primary rounded-full animate-spin"></div>
+            <span>جاري تحميل المستخدمين...</span>
+        </div>
+    </div>
+    <div id="usersEmpty" class="hidden py-xl text-center text-secondary space-y-xs">
+        <span class="material-symbols-outlined text-4xl text-outline">manage_accounts</span>
+        <p class="font-bold">لا يوجد مستخدمون مسجلون</p>
+    </div>
+</div>
+
+</div><!-- /usersContent -->
+</div>
+<%- include('partials/bottom-nav', { active: 'users' }) %>
+</main>
+</div>
+
+<!-- User Form Modal (Add & Edit) -->
+<div class="fixed inset-0 z-[120] hidden items-center justify-center bg-black/50 p-4" id="userModal">
+    <div class="bg-surface rounded-2xl shadow-2xl w-full max-w-lg p-lg space-y-md border border-outline-variant/60 max-h-[90vh] overflow-y-auto custom-scrollbar">
+        <div class="flex items-center justify-between border-b border-outline-variant/60 pb-sm">
+            <div class="flex items-center gap-sm text-primary">
+                <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                    <span class="material-symbols-outlined text-2xl" id="userModalIcon">person_add</span>
+                </div>
+                <h3 class="font-headline-sm font-bold text-on-surface" id="userModalTitle">إضافة مستخدم جديد</h3>
+            </div>
+            <button type="button" onclick="closeUserModal()" class="text-secondary hover:text-on-surface">
+                <span class="material-symbols-outlined">close</span>
+            </button>
+        </div>
+
+        <form id="userForm" onsubmit="submitUserForm(event)" class="space-y-md">
+            <input type="hidden" id="userModalId" value="" />
+
+            <div class="space-y-xs" id="usernameFieldWrap">
+                <label class="block text-xs font-bold text-on-surface-variant">اسم المستخدم (للدخول) <span class="text-error">*</span></label>
+                <input type="text" id="userUsername" dir="ltr" placeholder="username" autocomplete="off"
+                    class="w-full h-11 px-sm rounded-xl bg-surface-container-low border border-outline-variant text-sm font-bold text-left outline-none focus:border-primary" />
+            </div>
+
+            <div class="space-y-xs">
+                <label class="block text-xs font-bold text-on-surface-variant">الاسم المعروض</label>
+                <input type="text" id="userDisplayName" placeholder="مثال: أحمد المحاسب" autocomplete="off"
+                    class="w-full h-11 px-sm rounded-xl bg-surface-container-low border border-outline-variant text-sm font-bold text-right outline-none focus:border-primary" />
+            </div>
+
+            <div class="space-y-xs">
+                <label class="block text-xs font-bold text-on-surface-variant">الدور <span class="text-error">*</span></label>
+                <div class="grid grid-cols-3 gap-xs" id="roleSelectGrid">
+                    <label class="flex flex-col items-center gap-1 p-2 rounded-xl border border-outline-variant cursor-pointer hover:bg-surface-container-low transition-colors has-[:checked]:border-primary has-[:checked]:bg-primary/5">
+                        <input type="radio" name="userRole" value="admin" class="accent-primary" />
+                        <span class="material-symbols-outlined text-primary text-xl">admin_panel_settings</span>
+                        <span class="text-xs font-bold">مدير</span>
+                        <span class="text-[10px] text-secondary text-center">تحكم كامل</span>
+                    </label>
+                    <label class="flex flex-col items-center gap-1 p-2 rounded-xl border border-outline-variant cursor-pointer hover:bg-surface-container-low transition-colors has-[:checked]:border-primary has-[:checked]:bg-primary/5">
+                        <input type="radio" name="userRole" value="editor" class="accent-primary" checked />
+                        <span class="material-symbols-outlined text-green-700 text-xl">edit_note</span>
+                        <span class="text-xs font-bold">محرر</span>
+                        <span class="text-[10px] text-secondary text-center">قراءة وكتابة</span>
+                    </label>
+                    <label class="flex flex-col items-center gap-1 p-2 rounded-xl border border-outline-variant cursor-pointer hover:bg-surface-container-low transition-colors has-[:checked]:border-primary has-[:checked]:bg-primary/5">
+                        <input type="radio" name="userRole" value="viewer" class="accent-primary" />
+                        <span class="material-symbols-outlined text-tertiary text-xl">visibility</span>
+                        <span class="text-xs font-bold">مشاهد</span>
+                        <span class="text-[10px] text-secondary text-center">قراءة فقط</span>
+                    </label>
+                </div>
+                <p id="selfRoleHint" class="hidden text-[11px] font-bold text-secondary">لا يمكنك تغيير دور حسابك الحالي — يمكنك فقط تعديل الاسم أو كلمة المرور.</p>
+            </div>
+
+            <div class="space-y-xs">
+                <label class="block text-xs font-bold text-on-surface-variant" id="passwordLabel">كلمة المرور <span class="text-error">*</span></label>
+                <input type="password" id="userPassword" dir="ltr" placeholder="8 أحرف على الأقل" autocomplete="new-password"
+                    class="w-full h-11 px-sm rounded-xl bg-surface-container-low border border-outline-variant text-sm font-bold text-left outline-none focus:border-primary" />
+                <p class="text-[11px] text-secondary" id="passwordHint">تُستخدم لتسجيل الدخول لأول مرة.</p>
+            </div>
+
+            <div class="flex items-center gap-sm pt-sm border-t border-outline-variant/60">
+                <button type="submit" id="userSubmitBtn" class="flex-1 h-11 bg-primary text-white rounded-full font-bold text-sm hover:opacity-90 active:scale-95 transition-all">حفظ</button>
+                <button type="button" onclick="closeUserModal()" class="h-11 px-lg border border-outline-variant rounded-full font-bold text-sm hover:bg-surface-container-low transition-all">إلغاء</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script src="/js/shared-ui.js"></script>
+<script>
+let allUsers = [];
+let currentUserId = null;
+
+const ROLE_LABELS = {
+    admin: { text: 'مدير', cls: 'bg-primary/10 text-primary' },
+    editor: { text: 'محرر', cls: 'bg-green-500/10 text-green-700' },
+    viewer: { text: 'مشاهد', cls: 'bg-tertiary/10 text-tertiary' }
+};
+
+document.addEventListener('DOMContentLoaded', async () => {
+    const user = await checkAuth();
+    if (!user) return;
+    if (user.role !== 'admin') {
+        document.getElementById('usersContent').classList.add('hidden');
+        document.getElementById('accessDenied').classList.remove('hidden');
+        document.getElementById('usersLoading').classList.add('hidden');
+        return;
+    }
+    currentUserId = user.username;
+    await loadUsers();
+});
+
+async function loadUsers() {
+    const tableBody = document.getElementById('usersTableBody');
+    const loading = document.getElementById('usersLoading');
+    const empty = document.getElementById('usersEmpty');
+    loading.classList.remove('hidden');
+    empty.classList.add('hidden');
+    tableBody.innerHTML = '';
+    try {
+        const res = await fetch('/api/users');
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.error || 'فشل في تحميل المستخدمين');
+        }
+        allUsers = await res.json();
+        renderUsers();
+    } catch (err) {
+        console.error(err);
+        showToast(err.message || 'فشل في تحميل المستخدمين', 'error');
+    } finally {
+        loading.classList.add('hidden');
+    }
+}
+
+function renderUsers() {
+    const tableBody = document.getElementById('usersTableBody');
+    const empty = document.getElementById('usersEmpty');
+    const admins = allUsers.filter(u => u.role === 'admin').length;
+    const editors = allUsers.filter(u => u.role === 'editor').length;
+    const viewers = allUsers.filter(u => u.role === 'viewer').length;
+    document.getElementById('statAdmins').textContent = admins;
+    document.getElementById('statEditors').textContent = editors;
+    document.getElementById('statViewers').textContent = viewers;
+
+    if (!allUsers.length) {
+        empty.classList.remove('hidden');
+        return;
+    }
+    empty.classList.add('hidden');
+    tableBody.innerHTML = allUsers.map(u => {
+        const role = ROLE_LABELS[u.role] || { text: u.role, cls: 'bg-surface-container-high text-secondary' };
+        const isSelf = u.username === currentUserId;
+        return `
+            <tr class="hover:bg-surface-container-high/50">
+                <td class="px-md py-sm font-mono font-bold text-on-surface" dir="ltr" style="text-align:right">${escapeHtml(u.username)}${isSelf ? ' <span class="text-[10px] bg-primary/10 text-primary font-bold px-2 py-0.5 rounded-full font-sans">(أنت)</span>' : ''}</td>
+                <td class="px-md py-sm text-on-surface">${escapeHtml(u.displayName || '-')}</td>
+                <td class="px-md py-sm"><span class="text-[11px] font-bold px-2 py-1 rounded-full ${role.cls}">${role.text}</span></td>
+                <td class="px-md py-sm text-secondary text-xs">${formatDate(u.createdAt)}</td>
+                <td class="px-md py-sm">
+                    <div class="flex items-center justify-center gap-xs">
+                        <button onclick="openEditUserModal(${u.id})" class="w-8 h-8 flex items-center justify-center text-primary hover:bg-primary/10 rounded-md transition-colors cursor-pointer" title="تعديل">
+                            <span class="material-symbols-outlined text-base">edit</span>
+                        </button>
+                        ${isSelf ? '' : `<button onclick="deleteUser(${u.id})" class="w-8 h-8 flex items-center justify-center text-error hover:bg-error/10 rounded-md transition-colors cursor-pointer" title="حذف">
+                            <span class="material-symbols-outlined text-base">delete</span>
+                        </button>`}
+                    </div>
+                </td>
+            </tr>`;
+    }).join('');
+}
+
+function openAddUserModal() {
+    document.getElementById('userForm').reset();
+    document.getElementById('userModalId').value = '';
+    document.getElementById('userModalTitle').textContent = 'إضافة مستخدم جديد';
+    document.getElementById('userModalIcon').textContent = 'person_add';
+    document.getElementById('usernameFieldWrap').classList.remove('hidden');
+    document.getElementById('userUsername').disabled = false;
+    document.querySelector('input[name="userRole"][value="editor"]').checked = true;
+    document.querySelectorAll('input[name="userRole"]').forEach(r => { r.disabled = false; });
+    document.getElementById('selfRoleHint').classList.add('hidden');
+    document.getElementById('passwordLabel').innerHTML = 'كلمة المرور <span class="text-error">*</span>';
+    document.getElementById('passwordHint').textContent = 'تُستخدم لتسجيل الدخول لأول مرة.';
+    document.getElementById('userSubmitBtn').textContent = 'إضافة المستخدم';
+    openModal();
+}
+
+function openEditUserModal(id) {
+    const u = allUsers.find(x => x.id === id);
+    if (!u) return;
+    document.getElementById('userForm').reset();
+    document.getElementById('userModalId').value = u.id;
+    document.getElementById('userModalTitle').textContent = `تعديل: ${u.username}`;
+    document.getElementById('userModalIcon').textContent = 'manage_accounts';
+    document.getElementById('usernameFieldWrap').classList.add('hidden');
+    document.getElementById('userDisplayName').value = u.displayName || '';
+    document.getElementById('userPassword').value = '';
+    const radio = document.querySelector(`input[name="userRole"][value="${u.role}"]`);
+    if (radio) radio.checked = true;
+    const isSelf = u.username === currentUserId;
+    document.querySelectorAll('input[name="userRole"]').forEach(r => { r.disabled = isSelf; });
+    document.getElementById('selfRoleHint').classList.toggle('hidden', !isSelf);
+    document.getElementById('passwordLabel').textContent = 'كلمة مرور جديدة (اختياري)';
+    document.getElementById('passwordHint').textContent = 'اتركها فارغة للإبقاء على كلمة المرور الحالية.';
+    document.getElementById('userSubmitBtn').textContent = 'حفظ التعديلات';
+    openModal();
+}
+
+function openModal() {
+    const modal = document.getElementById('userModal');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeUserModal() {
+    const modal = document.getElementById('userModal');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+    document.body.style.overflow = '';
+    document.getElementById('userForm').reset();
+}
+
+async function submitUserForm(e) {
+    e.preventDefault();
+    const id = document.getElementById('userModalId').value;
+    const isEdit = Boolean(id);
+    const displayName = document.getElementById('userDisplayName').value.trim();
+    const password = document.getElementById('userPassword').value;
+    const roleEl = document.querySelector('input[name="userRole"]:checked');
+    const role = roleEl ? roleEl.value : null;
+
+    if (!role) {
+        showToast('الرجاء اختيار الدور', 'warning');
+        return;
+    }
+    if (!isEdit) {
+        const username = document.getElementById('userUsername').value.trim();
+        if (!username) {
+            showToast('الرجاء إدخال اسم المستخدم', 'warning');
+            return;
+        }
+        if (!password || password.length < 8) {
+            showToast('كلمة المرور يجب أن تكون 8 أحرف على الأقل', 'warning');
+            return;
+        }
+        try {
+            const res = await fetch('/api/users', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password, displayName, role })
+            });
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                throw new Error(err.error || 'فشل في إضافة المستخدم');
+            }
+            showToast('تمت إضافة المستخدم بنجاح', 'success');
+            closeUserModal();
+            await loadUsers();
+        } catch (err) {
+            showToast(err.message, 'error');
+        }
+        return;
+    }
+    if (password && password.length < 8) {
+        showToast('كلمة المرور يجب أن تكون 8 أحرف على الأقل', 'warning');
+        return;
+    }
+    try {
+        const res = await fetch(`/api/users/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ displayName, role, ...(password ? { password } : {}) })
+        });
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.error || 'فشل في حفظ التعديلات');
+        }
+        showToast('تم حفظ التعديلات بنجاح', 'success');
+        closeUserModal();
+        await loadUsers();
+    } catch (err) {
+        showToast(err.message, 'error');
+    }
+}
+
+async function deleteUser(id) {
+    const u = allUsers.find(x => x.id === id);
+    const name = u ? u.username : `#${id}`;
+    if (!confirm(`حذف المستخدم "${name}" نهائياً؟`)) return;
+    try {
+        const res = await fetch(`/api/users/${id}`, { method: 'DELETE' });
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.error || 'فشل في حذف المستخدم');
+        }
+        showToast('تم حذف المستخدم بنجاح', 'success');
+        await loadUsers();
+    } catch (err) {
+        showToast(err.message, 'error');
+    }
+}
+
+document.getElementById('userModal').addEventListener('click', function(e) {
+    if (e.target === this) closeUserModal();
+});
+</script>
+</body>
+</html>

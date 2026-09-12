@@ -1,11 +1,12 @@
 const express = require('express');
 const router = express.Router();
 const prisma = require('../lib/prisma');
-const { requireAuth } = require('../middleware/auth');
+const { requireAuth, requireEditor } = require('../middleware/auth');
 const { getAllClientBalances } = require('../lib/balance');
 
 // Apply auth middleware
 router.use(requireAuth);
+router.use(requireEditor); // viewer role is read-only
 
 // GET /api/dashboard/settings - Get settings
 router.get('/settings', async (req, res) => {

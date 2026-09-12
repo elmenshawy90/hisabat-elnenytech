@@ -4,6 +4,7 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const prisma = require('../lib/prisma');
 const { getSessionSecret } = require('../lib/auth-config');
+const { requireAuth } = require('../middleware/auth');
 const sessionSecret = getSessionSecret();
 
 // Configuration for account lockout
@@ -144,6 +145,41 @@ router.get('/me', (req, res) => {
     });
   } else {
     res.json({ authenticated: false });
+  }
+});
+
+// POST /api/auth/change-password - change own password (any authenticated user)
+router.post('/change-password', requireAuth, async (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+
+  if (typeof newPassword !== 'string' || newPassword.length < 8) {
+    return res.status(400).json({ error: 'كلمة المرور الجديدة يجب أن تكون 8 أحرف على الأقل' });
+  }
+  if (Buffer.byteLength(newPassword, 'utf8') > 72) {
+    return res.status(400).json({ error: 'كلمة المرور الجديدة طويلة جداً' });
+  }
+
+  try {
+    const user = await prisma.user.findUnique({ where: { id: req.user.userId } });
+    if (!user) return res.status(404).json({ error: 'المستخدم غير موجود' });
+
+    const ok = await bcrypt.compare(currentPassword || '', user.password);
+    if (!ok) {
+      return res.status(401).json({ error: 'كلمة المرور الحالية غير صحيحة' });
+    }
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        password: await bcrypt.hash(newPassword, 10),
+        failedLoginAttempts: 0,
+        lockedUntil: null
+      }
+    });
+    res.json({ message: 'تم تغيير كلمة المرور بنجاح' });
+  } catch (err) {
+    console.error('Change password error:', err);
+    res.status(500).json({ error: 'خطأ في الخادم' });
   }
 });
 

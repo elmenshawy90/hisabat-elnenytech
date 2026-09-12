@@ -460,3 +460,121 @@ document.addEventListener('wheel', function (e) {
     e.preventDefault();
   }
 }, { passive: false });
+
+// ─── Role Gating ─────────────────────────────────────────────────
+// Exposes window.currentUserRole and removes admin-only nav entries
+// ([data-requires-admin]) for non-admin users. Runs on every page.
+if (typeof window !== 'undefined') {
+window.currentUserRole = null;
+}
+if (typeof document !== 'undefined') {
+document.addEventListener('DOMContentLoaded', async () => {
+  if (window.location.pathname === '/login') return;
+  try {
+    const res = await fetch('/api/auth/me');
+    if (!res.ok) return;
+    const data = await res.json();
+    if (!data.authenticated) return;
+    window.currentUserRole = data.user.role;
+    if (data.user.role !== 'admin') {
+      document.querySelectorAll('[data-requires-admin]').forEach((el) => el.remove());
+    }
+  } catch (err) {
+    console.error('Role gating failed:', err);
+  }
+});
+}
+
+// ─── Change Own Password ─────────────────────────────────────
+// Available to every logged-in user (any role). Modal is injected
+// lazily so no per-page markup is needed.
+function openPasswordModal() {
+  if (typeof document === 'undefined') return;
+  if (!document.getElementById('passwordModal')) {
+    document.body.insertAdjacentHTML('beforeend', `
+<div class="fixed inset-0 z-[130] hidden items-center justify-center bg-black/50 p-4" id="passwordModal">
+  <div class="bg-surface rounded-2xl shadow-2xl w-full max-w-sm p-lg space-y-md border border-outline-variant/60">
+    <div class="flex items-center justify-between border-b border-outline-variant/60 pb-sm">
+      <div class="flex items-center gap-sm text-primary">
+        <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+          <span class="material-symbols-outlined text-2xl">key</span>
+        </div>
+        <h3 class="font-headline-sm font-bold text-on-surface">تغيير كلمة المرور</h3>
+      </div>
+      <button type="button" onclick="closePasswordModal()" class="text-secondary hover:text-on-surface">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+    <form id="passwordForm" onsubmit="submitPasswordForm(event)" class="space-y-md">
+      <div class="space-y-xs">
+        <label class="block text-xs font-bold text-on-surface-variant">كلمة المرور الحالية <span class="text-error">*</span></label>
+        <input type="password" id="currentPassword" dir="ltr" autocomplete="current-password"
+          class="w-full h-11 px-sm rounded-xl bg-surface-container-low border border-outline-variant text-sm font-bold text-left outline-none focus:border-primary" />
+      </div>
+      <div class="space-y-xs">
+        <label class="block text-xs font-bold text-on-surface-variant">كلمة المرور الجديدة <span class="text-error">*</span></label>
+        <input type="password" id="newPassword" dir="ltr" placeholder="8 أحرف على الأقل" autocomplete="new-password"
+          class="w-full h-11 px-sm rounded-xl bg-surface-container-low border border-outline-variant text-sm font-bold text-left outline-none focus:border-primary" />
+      </div>
+      <div class="space-y-xs">
+        <label class="block text-xs font-bold text-on-surface-variant">تأكيد كلمة المرور الجديدة <span class="text-error">*</span></label>
+        <input type="password" id="confirmPassword" dir="ltr" autocomplete="new-password"
+          class="w-full h-11 px-sm rounded-xl bg-surface-container-low border border-outline-variant text-sm font-bold text-left outline-none focus:border-primary" />
+      </div>
+      <div class="flex items-center gap-sm pt-sm border-t border-outline-variant/60">
+        <button type="submit" class="flex-1 h-11 bg-primary text-white rounded-full font-bold text-sm hover:opacity-90 active:scale-95 transition-all">حفظ</button>
+        <button type="button" onclick="closePasswordModal()" class="h-11 px-lg border border-outline-variant rounded-full font-bold text-sm hover:bg-surface-container-low transition-all">إلغاء</button>
+      </div>
+    </form>
+  </div>
+</div>`);
+    document.getElementById('passwordModal').addEventListener('click', function (e) {
+      if (e.target === this) closePasswordModal();
+    });
+  }
+  const modal = document.getElementById('passwordModal');
+  document.getElementById('passwordForm').reset();
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+  document.body.style.overflow = 'hidden';
+}
+
+function closePasswordModal() {
+  const modal = document.getElementById('passwordModal');
+  if (!modal) return;
+  modal.classList.add('hidden');
+  modal.classList.remove('flex');
+  document.body.style.overflow = '';
+}
+
+async function submitPasswordForm(e) {
+  e.preventDefault();
+  const currentPassword = document.getElementById('currentPassword').value;
+  const newPassword = document.getElementById('newPassword').value;
+  const confirmPassword = document.getElementById('confirmPassword').value;
+  if (!currentPassword) {
+    showToast('الرجاء إدخال كلمة المرور الحالية', 'warning');
+    return;
+  }
+  if (!newPassword || newPassword.length < 8) {
+    showToast('كلمة المرور الجديدة يجب أن تكون 8 أحرف على الأقل', 'warning');
+    return;
+  }
+  if (newPassword !== confirmPassword) {
+    showToast('تأكيد كلمة المرور غير متطابق', 'warning');
+    return;
+  }
+  try {
+    const res = await fetch('/api/auth/change-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ currentPassword, newPassword })
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || 'فشل في تغيير كلمة المرور');
+    showToast(data.message || 'تم تغيير كلمة المرور بنجاح', 'success');
+    closePasswordModal();
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
+}
