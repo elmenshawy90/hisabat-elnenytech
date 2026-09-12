@@ -412,34 +412,6 @@
 <input class="w-full h-12 pr-10 pl-md rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all text-right" id="editClientAddress" placeholder="الحي، الشارع..." type="text"/>
 </div>
 </div>
-<div class="border-t border-outline-variant/60 pt-sm space-y-sm">
-<div class="flex items-center gap-xs text-xs font-bold text-primary">
-<span class="material-symbols-outlined text-base">account_balance_wallet</span>
-<span>إضافة رصيد افتتاحي</span>
-</div>
-<div class="p-sm bg-surface-container-low rounded-xl border border-outline-variant/60 space-y-sm">
-<div class="flex flex-col gap-xs">
-<label class="font-label-md text-xs font-bold text-on-surface-variant">المبلغ (ج.م)</label>
-<div class="relative">
-<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline text-sm">payments</span>
-<input type="number" step="1" min="0" id="editClientOpeningBalance" placeholder="0" class="w-full h-10 pr-9 pl-md rounded-lg bg-white border border-outline-variant text-xs font-bold text-right outline-none focus:border-primary" />
-</div>
-</div>
-<div class="flex flex-col gap-xs">
-<label class="font-label-md text-xs font-bold text-on-surface-variant">نوع الرصيد <span class="text-error">*</span></label>
-<div class="grid grid-cols-2 gap-xs">
-<label class="flex items-center justify-center gap-xs p-2 rounded-lg border border-outline-variant cursor-pointer hover:bg-surface transition-colors">
-<input type="radio" name="editOpeningBalanceType" value="debit" class="text-primary focus:ring-primary" />
-<span class="text-xs font-bold text-tertiary">عليه (مدين)</span>
-</label>
-<label class="flex items-center justify-center gap-xs p-2 rounded-lg border border-outline-variant cursor-pointer hover:bg-surface transition-colors">
-<input type="radio" name="editOpeningBalanceType" value="credit" class="text-primary focus:ring-primary" />
-<span class="text-xs font-bold text-green-700">له (دائن)</span>
-</label>
-</div>
-<p id="editOpeningBalanceTypeError" class="hidden text-error text-[11px] font-bold mt-0.5">الرجاء اختيار نوع الرصيد (له أو عليه)</p>
-</div>
-</div>
 </div>
 <div class="flex flex-col md:flex-row items-center gap-md pt-md border-t border-outline-variant">
 <button class="w-full md:w-auto bg-primary text-on-primary h-12 px-xl rounded-full font-label-md text-label-md hover:opacity-90 active:scale-95 transition-all" type="submit">حفظ التعديلات</button>
@@ -1230,8 +1202,6 @@ function openEditClientModal(clientId, clientName, clientPhone, clientAddress, c
     editClientNameInput.classList.remove('border-error');
     editClientPhoneError.classList.add('hidden');
     editClientPhoneInput.classList.remove('border-error');
-    const editObErr = document.getElementById('editOpeningBalanceTypeError');
-    if (editObErr) editObErr.classList.add('hidden');
     setTimeout(() => editClientNameInput.focus(), 50);
 }
 
@@ -1245,8 +1215,6 @@ function closeEditClientModal() {
     editClientNameInput.classList.remove('border-error');
     editClientPhoneError.classList.add('hidden');
     editClientPhoneInput.classList.remove('border-error');
-    const editObErrClose = document.getElementById('editOpeningBalanceTypeError');
-    if (editObErrClose) editObErrClose.classList.add('hidden');
 }
 
 async function submitEditClientForm(e) {
@@ -1286,22 +1254,6 @@ async function submitEditClientForm(e) {
         return;
     }
 
-    const obInput = document.getElementById('editClientOpeningBalance');
-    const obVal = obInput ? obInput.value.trim() : '';
-    const obNum = parseFloat(obVal);
-    const hasOb = !isNaN(obNum) && obNum > 0;
-
-    const obTypeEl = document.querySelector('input[name="editOpeningBalanceType"]:checked');
-    const obType = obTypeEl ? obTypeEl.value : null;
-
-    if (hasOb && !obType) {
-        showToast('الرجاء اختيار نوع الرصيد الافتتاحي (له أو عليه)', 'warning');
-        const obErr = document.getElementById('editOpeningBalanceTypeError');
-        if (obErr) obErr.classList.remove('hidden');
-        if (obInput) obInput.focus();
-        return;
-    }
-
     const editSubmitBtn = document.querySelector('#editClientForm button[type="submit"]');
     const originalEditBtnHtml = editSubmitBtn ? editSubmitBtn.innerHTML : 'حفظ التعديلات';
     if (editSubmitBtn) {
@@ -1317,8 +1269,7 @@ async function submitEditClientForm(e) {
                 name,
                 phone: phone || '-',
                 address: address || '',
-                pageNumber: pageNumber === '' ? 0 : Number(pageNumber),
-                ...(hasOb && obType ? { openingBalance: obNum, openingBalanceType: obType } : {})
+                pageNumber: pageNumber === '' ? 0 : Number(pageNumber)
             })
         });
 
