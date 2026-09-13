@@ -242,3 +242,21 @@ model Role {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
+
+// سجل مهام النسخ الاحتياطي — تُدار من صفحة حالة النظام (تبويب النسخ الاحتياطي)
+// payload يحمل التفريغ الكامل لقاعدة البيانات بصيغة JSON (يُسترجع عند التنزيل فقط)
+model BackupJob {
+  id          Int       @id @default(autoincrement())
+  status      String    @default("running") // 'running' | 'success' | 'failed'
+  trigger     String    @default("manual") // 'manual' | 'scheduled'
+  tableCounts Json?
+  recordCount Int       @default(0)
+  sizeBytes   Int       @default(0)
+  payload     String?   @db.Text
+  error       String    @default("")
+  createdBy   String    @default("")
+  createdAt   DateTime  @default(now())
+  completedAt DateTime?
+
+  @@index([createdAt])
+}

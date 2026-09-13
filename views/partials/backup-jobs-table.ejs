@@ -1,0 +1,87 @@
+<% /*
+  Backup jobs table — shared between server render and empty-state fallback.
+  Expects: jobs (array of BackupJob summaries), canManage (bool).
+  Uses the page-local formatArabicDateTime helper when available.
+*/ %>
+<% if (!jobs || jobs.length === 0) { %>
+    <div class="p-lg bg-surface-container-low rounded-xl border border-outline-variant/40 text-center space-y-sm">
+        <div class="w-12 h-12 mx-auto rounded-full bg-secondary/10 text-secondary flex items-center justify-center">
+            <span class="material-symbols-outlined text-2xl">cloud_off</span>
+        </div>
+        <h3 class="font-bold text-on-surface text-sm">لا توجد نسخ احتياطية بعد</h3>
+        <p class="text-xs text-secondary">شغّل أول نسخة يدويًا أو فعّل الجدولة التلقائية أعلاه.</p>
+    </div>
+<% } else { %>
+    <%
+        const fmtDate = (typeof formatArabicDateTime === 'function')
+            ? formatArabicDateTime
+            : (iso) => { try { return new Date(iso).toLocaleString('ar-EG-u-nu-latn', { timeZone: 'Africa/Cairo' }); } catch(e) { return iso; } };
+        const fmtSize = (n) => {
+            n = Number(n) || 0;
+            if (n < 1024) return n + ' بايت';
+            if (n < 1024 * 1024) return (n / 1024).toFixed(1) + ' ك.ب';
+            return (n / (1024 * 1024)).toFixed(2) + ' م.ب';
+        };
+    %>
+    <div class="overflow-x-auto rounded-xl border border-outline-variant/40">
+        <table class="ui-table">
+            <thead>
+                <tr class="bg-surface-container-low text-secondary border-b border-outline-variant/40 font-bold">
+                    <th class="py-sm px-md">التاريخ والوقت</th>
+                    <th class="py-sm px-md text-center">النوع</th>
+                    <th class="py-sm px-md text-center">الحالة</th>
+                    <th class="py-sm px-md text-center">السجلات</th>
+                    <th class="py-sm px-md text-center">الحجم</th>
+                    <th class="py-sm px-md text-center">إجراءات</th>
+                </tr>
+            </thead>
+            <tbody>
+                <% jobs.forEach((job, idx) => { %>
+                    <tr class="hover:bg-surface-container-lowest transition-colors <%= idx === 0 ? 'bg-emerald-50/40' : '' %>">
+                        <td class="py-sm px-md font-medium text-on-surface text-xs">
+                            <%= fmtDate(job.createdAt) %>
+                            <% if (idx === 0) { %><span class="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.5 rounded mr-1">الأحدث</span><% } %>
+                            <% if (job.status === 'failed' && job.error) { %>
+                                <div class="text-[11px] text-red-700 font-mono mt-1"><%= job.error %></div>
+                            <% } %>
+                        </td>
+                        <td class="py-sm px-md text-center text-xs">
+                            <%= job.trigger === 'scheduled' ? 'مجدولة' : 'يدوية' %><% if (job.createdBy) { %> — <%= job.createdBy %><% } %>
+                        </td>
+                        <td class="py-sm px-md text-center">
+                            <% if (job.status === 'success') { %>
+                                <span class="inline-flex items-center gap-1 px-sm py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-300">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>ناجحة
+                                </span>
+                            <% } else if (job.status === 'running') { %>
+                                <span class="inline-flex items-center gap-1 px-sm py-0.5 rounded-full text-xs font-bold bg-amber-50 text-amber-800 border border-amber-300">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>جارية
+                                </span>
+                            <% } else { %>
+                                <span class="inline-flex items-center gap-1 px-sm py-0.5 rounded-full text-xs font-bold bg-red-50 text-red-800 border border-red-300">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-red-600"></span>فاشلة
+                                </span>
+                            <% } %>
+                        </td>
+                        <td class="py-sm px-md text-center text-xs font-bold"><%= Number(job.recordCount || 0).toLocaleString('en') %></td>
+                        <td class="py-sm px-md text-center text-xs"><%= fmtSize(job.sizeBytes) %></td>
+                        <td class="py-sm px-md text-center">
+                            <% if (job.status === 'success' && canManage) { %>
+                                <div class="flex items-center justify-center gap-xs">
+                                    <a href="/status/backup/<%= job.id %>/download" class="p-1.5 rounded-lg text-primary hover:bg-primary/10 transition-colors" title="تنزيل النسخة">
+                                        <span class="material-symbols-outlined text-xl">download</span>
+                                    </a>
+                                    <button type="button" onclick="deleteBackup(<%= job.id %>)" class="p-1.5 rounded-lg text-red-600 hover:bg-red-50 transition-colors cursor-pointer" title="حذف النسخة">
+                                        <span class="material-symbols-outlined text-xl">delete</span>
+                                    </button>
+                                </div>
+                            <% } else { %>
+                                <span class="text-secondary">—</span>
+                            <% } %>
+                        </td>
+                    </tr>
+                <% }); %>
+            </tbody>
+        </table>
+    </div>
+<% } %>

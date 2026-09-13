@@ -111,6 +111,27 @@ app.use((err, req, res, next) => {
 
 console.log('[server] App initialization complete');
 
+// Scheduled database backups (managed from the Backup sub-tab under /status).
+// Ticks hourly; lib/backup decides whether a backup is actually due (Cairo time).
+// Safe on serverless: a tick is a single cheap due-check, and run-due only
+// ever executes when a stored schedule says so.
+function startBackupScheduler() {
+  const tick = async () => {
+    try {
+      const backup = require('./lib/backup');
+      const job = await backup.checkAndRunDueBackup(require('./lib/prisma'), new Date());
+      if (job) {
+        console.log(`[backup] Scheduled backup completed (id=${job.id}, records=${job.recordCount})`);
+      }
+    } catch (err) {
+      console.error('[backup] Scheduled backup tick failed:', err.message);
+    }
+  };
+  const timer = setInterval(tick, 60 * 60 * 1000);
+  if (typeof timer.unref === 'function') timer.unref();
+}
+startBackupScheduler();
+
 // Start Server when run directly
 if (require.main === module) {
   const PORT = process.env.PORT || 3000;

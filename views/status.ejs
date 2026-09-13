@@ -1,4 +1,15 @@
 <%- include('partials/page-head', { title: 'حالة النظام - حسابات', description: 'عرض حالة النظام وسجل عمليات النشر وقاعدة البيانات' }) %>
+<% /* Page-level Cairo date formatter (usable from every tab, even with zero deployments) */ %>
+<% function formatStatusDateTime(isoStr) {
+    try {
+        const d = new Date(isoStr);
+        if (isNaN(d.getTime())) return isoStr;
+        return d.toLocaleString('ar-EG-u-nu-latn', {
+            timeZone: 'Africa/Cairo', year: 'numeric', month: 'long', day: 'numeric',
+            hour: 'numeric', minute: '2-digit', hour12: true
+        });
+    } catch(e) { return isoStr; }
+} %>
 <body class="bg-background text-on-surface min-h-screen overflow-x-hidden">
 
 <!-- Side Navigation (Desktop Only) -->
@@ -25,6 +36,32 @@
                 تحديث
             </button>
         </div>
+
+        <!-- Sub-tabs: System status / Backups -->
+        <div class="bg-white rounded-xl border border-outline-variant px-md pt-sm shadow-sm">
+            <div class="flex gap-xs" role="tablist" aria-label="أقسام حالة النظام">
+                <button type="button" role="tab" id="tabBtnSystem" onclick="switchStatusTab('system')"
+                    class="px-lg py-sm font-bold text-sm rounded-t-xl border-b-2 transition-all cursor-pointer">
+                    <span class="flex items-center gap-xs">
+                        <span class="material-symbols-outlined text-lg">monitor_heart</span>
+                        حالة النظام
+                    </span>
+                </button>
+                <button type="button" role="tab" id="tabBtnBackup" onclick="switchStatusTab('backup')"
+                    class="px-lg py-sm font-bold text-sm rounded-t-xl border-b-2 transition-all cursor-pointer">
+                    <span class="flex items-center gap-xs">
+                        <span class="material-symbols-outlined text-lg">backup</span>
+                        النسخ الاحتياطي
+                        <% if (typeof backupJobs !== 'undefined' && backupJobs && backupJobs.length > 0) { %>
+                            <span class="text-[11px] bg-surface-container px-2 py-0.5 rounded-full border border-outline-variant/40"><%= backupJobs.length %></span>
+                        <% } %>
+                    </span>
+                </button>
+            </div>
+        </div>
+
+        <!-- ═══════════ TAB: System status ═══════════ -->
+        <div id="tabPanelSystem" role="tabpanel" class="space-y-lg">
 
         <!-- 1. Overall System Status Banner -->
         <% if (systemStatus.healthy) { %>
@@ -165,8 +202,8 @@
                         </p>
                     </div>
                 <% } else { %>
-                    <% 
-                        const displayedLogs = deployments.slice(0, 20); 
+                    <%
+                        const displayedLogs = deployments.slice(0, 20);
                         function formatArabicDateTime(isoStr) {
                             try {
                                 const d = new Date(isoStr);
@@ -230,6 +267,129 @@
             </div>
 
         </div>
+        </div><!-- /tabPanelSystem -->
+
+        <!-- ═══════════ TAB: Backups ═══════════ -->
+        <div id="tabPanelBackup" role="tabpanel" class="space-y-lg" hidden>
+
+            <div class="bg-amber-50 border border-amber-200 text-amber-900 rounded-xl p-md flex items-start gap-sm text-xs leading-relaxed">
+                <span class="material-symbols-outlined text-amber-600 text-xl flex-shrink-0">lock</span>
+                <p>النسخة الاحتياطية تفريغ كامل لبيانات النظام بصيغة JSON (تشمل بيانات الدخول المشفّرة) — احتفظ بملفاتها في مكان آمن ولا تشاركها. متاحة فقط للمستخدمين المصرّح لهم بإدارة الإعدادات.</p>
+            </div>
+
+            <% if (canManageBackups) { %>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-lg">
+                <!-- Manual trigger card -->
+                <div class="bg-white rounded-xl border border-outline-variant p-lg shadow-sm space-y-md">
+                    <div class="flex items-center gap-sm border-b border-outline-variant/40 pb-md">
+                        <div class="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold">
+                            <span class="material-symbols-outlined text-xl">play_circle</span>
+                        </div>
+                        <div>
+                            <h2 class="font-headline-sm text-headline-sm font-bold text-on-surface">نسخ يدوي فوري</h2>
+                            <p class="text-xs text-secondary">تشغيل مهمة نسخ احتياطي الآن وتنزيلها فور اكتمالها</p>
+                        </div>
+                    </div>
+                    <div id="lastBackupSummary" class="text-xs text-secondary">
+                        <% if (backupJobs && backupJobs.length > 0 && backupJobs[0].status === 'success') { %>
+                            آخر نسخة ناجحة: <span class="font-bold text-on-surface"><%= formatStatusDateTime(backupJobs[0].createdAt) %></span>
+                            (<%= (backupJobs[0].recordCount || 0).toLocaleString('en') %> سجل)
+                        <% } else { %>
+                            لم يتم إنشاء أي نسخة ناجحة بعد.
+                        <% } %>
+                    </div>
+                    <button id="runBackupBtn" type="button" onclick="runBackupNow()"
+                        class="w-full px-lg py-sm bg-primary text-on-primary rounded-full font-bold text-sm hover:opacity-90 active:scale-[0.98] transition-all flex items-center justify-center gap-xs cursor-pointer disabled:opacity-50">
+                        <span class="material-symbols-outlined text-lg">backup</span>
+                        تشغيل نسخة احتياطية الآن
+                    </button>
+                </div>
+
+                <!-- Schedule card -->
+                <div class="bg-white rounded-xl border border-outline-variant p-lg shadow-sm space-y-md">
+                    <div class="flex items-center gap-sm border-b border-outline-variant/40 pb-md">
+                        <div class="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold">
+                            <span class="material-symbols-outlined text-xl">schedule</span>
+                        </div>
+                        <div>
+                            <h2 class="font-headline-sm text-headline-sm font-bold text-on-surface">جدولة تلقائية</h2>
+                            <p class="text-xs text-secondary">نسخة دورية بتوقيت القاهرة — تُنفَّذ عبر مجدول الخادم</p>
+                        </div>
+                    </div>
+                    <form id="backupScheduleForm" onsubmit="return saveBackupSchedule(event)" class="space-y-md">
+                        <label class="flex items-center justify-between gap-sm text-sm font-bold cursor-pointer">
+                            <span>تفعيل النسخ التلقائي</span>
+                            <input id="schedEnabled" type="checkbox" class="w-5 h-5 accent-[#006840]" <%= backupSchedule && backupSchedule.enabled ? 'checked' : '' %> />
+                        </label>
+                        <div class="grid grid-cols-2 gap-md">
+                            <label class="space-y-1 text-xs font-bold text-secondary">
+                                <span>التكرار</span>
+                                <select id="schedFrequency" onchange="toggleWeekdayRow()" class="w-full border border-outline-variant rounded-lg px-sm py-2 text-sm text-on-surface bg-white">
+                                    <option value="daily" <%= !backupSchedule || backupSchedule.frequency !== 'weekly' ? 'selected' : '' %>>يومي</option>
+                                    <option value="weekly" <%= backupSchedule && backupSchedule.frequency === 'weekly' ? 'selected' : '' %>>أسبوعي</option>
+                                </select>
+                            </label>
+                            <label class="space-y-1 text-xs font-bold text-secondary">
+                                <span>الوقت (بتوقيت القاهرة)</span>
+                                <input id="schedTime" type="time" value="<%= (backupSchedule && backupSchedule.time) || '03:00' %>" class="w-full border border-outline-variant rounded-lg px-sm py-2 text-sm text-on-surface bg-white" dir="ltr" />
+                            </label>
+                        </div>
+                        <label id="weekdayRow" class="space-y-1 text-xs font-bold text-secondary" style="<%= backupSchedule && backupSchedule.frequency === 'weekly' ? '' : 'display:none' %>">
+                            <span>يوم النسخة الأسبوعية</span>
+                            <select id="schedWeekday" class="w-full border border-outline-variant rounded-lg px-sm py-2 text-sm text-on-surface bg-white">
+                                <% const days = ['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت']; %>
+                                <% days.forEach((d, i) => { %>
+                                    <option value="<%= i %>" <%= backupSchedule && Number(backupSchedule.weekday) === i ? 'selected' : '' %>><%= d %></option>
+                                <% }); %>
+                            </select>
+                        </label>
+                        <label class="space-y-1 text-xs font-bold text-secondary">
+                            <span>عدد النسخ المحتفظ بها (1 - 90)</span>
+                            <input id="schedRetention" type="number" min="1" max="90" value="<%= (backupSchedule && backupSchedule.retention) || 14 %>" class="w-full border border-outline-variant rounded-lg px-sm py-2 text-sm text-on-surface bg-white" dir="ltr" />
+                        </label>
+                        <% if (backupSchedule && backupSchedule.lastRunAt) { %>
+                            <p class="text-[11px] text-secondary">آخر تشغيل مجدول: <%= formatStatusDateTime(backupSchedule.lastRunAt) %></p>
+                        <% } %>
+                        <button type="submit" class="w-full px-lg py-sm border-2 border-primary text-primary rounded-full font-bold text-sm hover:bg-primary hover:text-on-primary active:scale-[0.98] transition-all cursor-pointer">
+                            حفظ الجدولة
+                        </button>
+                    </form>
+                </div>
+            </div>
+            <% } else { %>
+            <div class="bg-white rounded-xl border border-outline-variant p-lg shadow-sm text-center space-y-sm">
+                <div class="w-12 h-12 mx-auto rounded-full bg-secondary/10 text-secondary flex items-center justify-center">
+                    <span class="material-symbols-outlined text-2xl">visibility_off</span>
+                </div>
+                <h3 class="font-bold text-on-surface text-sm">إدارة النسخ الاحتياطي غير متاحة لدورك</h3>
+                <p class="text-xs text-secondary">تشغيل النسخ والجدولة وتنزيل الملفات يتطلب صلاحية إدارة الإعدادات. سجل المهام أدناه للعرض فقط.</p>
+            </div>
+            <% } %>
+
+            <!-- Jobs history card -->
+            <div class="bg-white rounded-xl border border-outline-variant p-lg shadow-sm space-y-md">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-xs border-b border-outline-variant/40 pb-md">
+                    <div class="flex items-center gap-sm">
+                        <div class="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold">
+                            <span class="material-symbols-outlined text-xl">folder_managed</span>
+                        </div>
+                        <div>
+                            <h2 class="font-headline-sm text-headline-sm font-bold text-on-surface">سجل مهام النسخ الاحتياطي</h2>
+                            <p class="text-xs text-secondary">أحدث 20 مهمة — يدوية أو مجدولة</p>
+                        </div>
+                    </div>
+                    <button type="button" onclick="refreshBackups()" class="text-xs font-bold text-primary hover:underline flex items-center gap-1 cursor-pointer">
+                        <span class="material-symbols-outlined text-base">refresh</span>
+                        تحديث السجل
+                    </button>
+                </div>
+
+                <div id="backupJobsWrap">
+                    <%- include('partials/backup-jobs-table', { jobs: (typeof backupJobs !== 'undefined' ? backupJobs : []), canManage: (typeof canManageBackups !== 'undefined' ? canManageBackups : false) }) %>
+                </div>
+            </div>
+
+        </div><!-- /tabPanelBackup -->
 
     </div>
 
@@ -239,8 +399,184 @@
 
 <script src="/js/shared-ui.js"></script>
 <script>
+    const STATUS_ACTIVE_TAB = '<%= (typeof activeTab !== "undefined" && activeTab === "backup") ? "backup" : "system" %>';
+    const CAN_MANAGE_BACKUPS = <%= (typeof canManageBackups !== 'undefined' && canManageBackups) ? 'true' : 'false' %>;
+
+    function switchStatusTab(name) {
+        const isBackup = name === 'backup';
+        document.getElementById('tabPanelSystem').hidden = isBackup;
+        document.getElementById('tabPanelBackup').hidden = !isBackup;
+        const btnSys = document.getElementById('tabBtnSystem');
+        const btnBak = document.getElementById('tabBtnBackup');
+        const activeCls = ['text-primary', 'border-primary'];
+        const idleCls = ['text-secondary', 'border-transparent'];
+        for (const [btn, on] of [[btnSys, !isBackup], [btnBak, isBackup]]) {
+            btn.setAttribute('aria-selected', on ? 'true' : 'false');
+            btn.classList.remove(...(on ? idleCls : activeCls));
+            btn.classList.add(...(on ? activeCls : idleCls));
+        }
+        const url = new URL(window.location.href);
+        if (isBackup) url.searchParams.set('tab', 'backup');
+        else url.searchParams.delete('tab');
+        window.history.replaceState(null, '', url.toString());
+        if (isBackup) refreshBackups();
+    }
+
+    function formatBytes(n) {
+        n = Number(n) || 0;
+        if (n < 1024) return n + ' بايت';
+        if (n < 1024 * 1024) return (n / 1024).toFixed(1) + ' ك.ب';
+        return (n / (1024 * 1024)).toFixed(2) + ' م.ب';
+    }
+
+    function formatArDate(iso) {
+        try {
+            const d = new Date(iso);
+            if (isNaN(d.getTime())) return iso;
+            return d.toLocaleString('ar-EG-u-nu-latn', {
+                timeZone: 'Africa/Cairo', year: 'numeric', month: 'long', day: 'numeric',
+                hour: 'numeric', minute: '2-digit', hour12: true
+            });
+        } catch (e) { return iso; }
+    }
+
+    function jobStatusBadge(job) {
+        if (job.status === 'success') {
+            return '<span class="inline-flex items-center gap-1 px-sm py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-300"><span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>ناجحة</span>';
+        }
+        if (job.status === 'running') {
+            return '<span class="inline-flex items-center gap-1 px-sm py-0.5 rounded-full text-xs font-bold bg-amber-50 text-amber-800 border border-amber-300"><span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>جارية</span>';
+        }
+        return '<span class="inline-flex items-center gap-1 px-sm py-0.5 rounded-full text-xs font-bold bg-red-50 text-red-800 border border-red-300"><span class="w-1.5 h-1.5 rounded-full bg-red-600"></span>فاشلة</span>';
+    }
+
+    function renderBackupJobs(jobs) {
+        const wrap = document.getElementById('backupJobsWrap');
+        if (!jobs || jobs.length === 0) {
+            wrap.innerHTML = '<div class="p-lg bg-surface-container-low rounded-xl border border-outline-variant/40 text-center space-y-sm">'
+                + '<div class="w-12 h-12 mx-auto rounded-full bg-secondary/10 text-secondary flex items-center justify-center"><span class="material-symbols-outlined text-2xl">cloud_off</span></div>'
+                + '<h3 class="font-bold text-on-surface text-sm">لا توجد نسخ احتياطية بعد</h3>'
+                + '<p class="text-xs text-secondary">شغّل أول نسخة يدويًا أو فعّل الجدولة التلقائية أعلاه.</p></div>';
+            return;
+        }
+        let rows = '';
+        jobs.forEach((job, idx) => {
+            const trigger = job.trigger === 'scheduled' ? 'مجدولة' : 'يدوية';
+            const by = job.createdBy ? ' — ' + escapeHtml(job.createdBy) : '';
+            const err = job.status === 'failed' && job.error ? '<div class="text-[11px] text-red-700 font-mono mt-1">' + escapeHtml(job.error) + '</div>' : '';
+            let actions = '<span class="text-secondary">—</span>';
+            if (job.status === 'success' && CAN_MANAGE_BACKUPS) {
+                actions = '<div class="flex items-center justify-center gap-xs">'
+                    + '<a href="/status/backup/' + job.id + '/download" class="p-1.5 rounded-lg text-primary hover:bg-primary/10 transition-colors" title="تنزيل النسخة"><span class="material-symbols-outlined text-xl">download</span></a>'
+                    + '<button type="button" onclick="deleteBackup(' + job.id + ')" class="p-1.5 rounded-lg text-red-600 hover:bg-red-50 transition-colors cursor-pointer" title="حذف النسخة"><span class="material-symbols-outlined text-xl">delete</span></button>'
+                    + '</div>';
+            } else if (job.status === 'success') {
+                actions = '<a href="/status/backup/' + job.id + '/download" class="p-1.5 rounded-lg text-primary hover:bg-primary/10 transition-colors" title="تنزيل النسخة"><span class="material-symbols-outlined text-xl">download</span></a>';
+            }
+            rows += '<tr class="hover:bg-surface-container-lowest transition-colors ' + (idx === 0 ? 'bg-emerald-50/40' : '') + '">'
+                + '<td class="py-sm px-md font-medium text-on-surface text-xs">' + formatArDate(job.createdAt)
+                + (idx === 0 ? ' <span class="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.5 rounded mr-1">الأحدث</span>' : '') + err + '</td>'
+                + '<td class="py-sm px-md text-center text-xs">' + trigger + by + '</td>'
+                + '<td class="py-sm px-md text-center">' + jobStatusBadge(job) + '</td>'
+                + '<td class="py-sm px-md text-center text-xs font-bold">' + Number(job.recordCount || 0).toLocaleString('en') + '</td>'
+                + '<td class="py-sm px-md text-center text-xs">' + formatBytes(job.sizeBytes) + '</td>'
+                + '<td class="py-sm px-md text-center">' + actions + '</td>'
+                + '</tr>';
+        });
+        wrap.innerHTML = '<div class="overflow-x-auto rounded-xl border border-outline-variant/40"><table class="ui-table">'
+            + '<thead><tr class="bg-surface-container-low text-secondary border-b border-outline-variant/40 font-bold">'
+            + '<th class="py-sm px-md">التاريخ والوقت</th><th class="py-sm px-md text-center">النوع</th>'
+            + '<th class="py-sm px-md text-center">الحالة</th><th class="py-sm px-md text-center">السجلات</th>'
+            + '<th class="py-sm px-md text-center">الحجم</th><th class="py-sm px-md text-center">إجراءات</th>'
+            + '</tr></thead><tbody>' + rows + '</tbody></table></div>';
+    }
+
+    async function refreshBackups() {
+        if (!CAN_MANAGE_BACKUPS) return;
+        try {
+            const res = await fetch('/status/backup', { headers: { 'Accept': 'application/json' } });
+            if (!res.ok) return;
+            const data = await res.json();
+            renderBackupJobs(data.jobs || []);
+            if (data.schedule) {
+                const en = document.getElementById('schedEnabled');
+                if (en) en.checked = Boolean(data.schedule.enabled);
+            }
+        } catch (e) { /* keep server-rendered table on failure */ }
+    }
+
+    async function runBackupNow() {
+        const btn = document.getElementById('runBackupBtn');
+        if (!btn || btn.disabled) return;
+        btn.disabled = true;
+        const original = btn.innerHTML;
+        btn.innerHTML = '<span class="material-symbols-outlined text-lg animate-spin">progress_activity</span> جارٍ إنشاء النسخة...';
+        try {
+            const res = await fetch('/status/backup/run', { method: 'POST', headers: { 'Accept': 'application/json' } });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(data.error || 'فشل النسخ الاحتياطي');
+            showToast('تم إنشاء النسخة الاحتياطية بنجاح', 'success');
+            await refreshBackups();
+            const summary = document.getElementById('lastBackupSummary');
+            if (summary && data.job) {
+                summary.innerHTML = 'آخر نسخة ناجحة: <span class="font-bold text-on-surface">' + formatArDate(data.job.createdAt) + '</span>'
+                    + ' (' + Number(data.job.recordCount || 0).toLocaleString('en') + ' سجل — ' + formatBytes(data.job.sizeBytes) + ')';
+            }
+        } catch (e) {
+            showToast(e.message || 'فشل النسخ الاحتياطي', 'error');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = original;
+        }
+    }
+
+    function toggleWeekdayRow() {
+        const freq = document.getElementById('schedFrequency');
+        const row = document.getElementById('weekdayRow');
+        if (freq && row) row.style.display = freq.value === 'weekly' ? '' : 'none';
+    }
+
+    async function saveBackupSchedule(event) {
+        event.preventDefault();
+        try {
+            const body = {
+                enabled: document.getElementById('schedEnabled').checked,
+                frequency: document.getElementById('schedFrequency').value,
+                time: document.getElementById('schedTime').value,
+                weekday: Number(document.getElementById('schedWeekday').value),
+                retention: Number(document.getElementById('schedRetention').value)
+            };
+            const res = await fetch('/status/backup/schedule', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                body: JSON.stringify(body)
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(data.error || 'فشل حفظ الجدولة');
+            showToast(data.schedule && data.schedule.enabled ? 'تم تفعيل الجدولة التلقائية' : 'تم حفظ الجدولة', 'success');
+        } catch (e) {
+            showToast(e.message || 'فشل حفظ الجدولة', 'error');
+        }
+        return false;
+    }
+
+    async function deleteBackup(id) {
+        const ok = await showConfirm('حذف هذه النسخة الاحتياطية نهائيًا؟');
+        if (!ok) return;
+        try {
+            const res = await fetch('/status/backup/' + id, { method: 'DELETE', headers: { 'Accept': 'application/json' } });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(data.error || 'فشل حذف النسخة');
+            showToast('تم حذف النسخة', 'success');
+            await refreshBackups();
+        } catch (e) {
+            showToast(e.message || 'فشل حذف النسخة', 'error');
+        }
+    }
+
     document.addEventListener('DOMContentLoaded', async () => {
         await checkAuth();
+        switchStatusTab(STATUS_ACTIVE_TAB);
     });
 </script>
 </body>
