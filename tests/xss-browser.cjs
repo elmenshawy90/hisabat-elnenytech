@@ -9,10 +9,10 @@ const browser = await puppeteer.launch({executablePath:process.env.CHROME_PATH |
 try {
  const page = await browser.newPage();
  const payload = `أحمد <img data-xss src=x onerror="window.__xss=1"> &quot; ' \\`;
- const client={id:1,_id:1,name:payload,clientName:payload,phone:payload,address:payload,notes:payload,balance:50,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),matchedEndClients:[payload]};
+ const client={pageNumber:42,id:1,_id:1,name:payload,clientName:payload,phone:payload,address:payload,notes:payload,balance:50,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),matchedEndClients:[payload]};
  const unit={id:1,name:payload,unitId:1,isBaseUnit:true,conversionRate:1,isActive:true};
  const item={id:1,_id:1,name:payload,notes:payload,units:[unit],baseUnit:unit,currentStock:10,isActive:true};
- const inv={id:1,_id:1,clientId:1,clientName:payload,clientPhone:payload,endClientId:1,endClientName:payload,invoiceCode:'2609-1',type:'purchase',balanceEffect:'increase',amount:50,details:payload,date:new Date().toISOString(),items:[{item,itemUnit:unit,quantity:1,unitPrice:50,lineTotal:50}],services:[{name:payload,price:10}]};
+ const inv={clientPageNumber:42,id:1,_id:1,clientId:1,clientName:payload,clientPhone:payload,endClientId:1,endClientName:payload,invoiceCode:'2609-1',type:'purchase',balanceEffect:'increase',amount:50,details:payload,date:new Date().toISOString(),items:[{item,itemUnit:unit,quantity:1,unitPrice:50,lineTotal:50}],services:[{name:payload,price:10}]};
  const errors=[];
  page.on('pageerror',e=>errors.push(e.message));
  await page.setRequestInterception(true);
@@ -56,7 +56,14 @@ try {
    if(name==='items') { renderUnitsTable();openRestockModal(1);await openStockLogModal(1); }
    if(name==='suppliers') await openStatementModal(1);
    if(name==='new-invoice'||name==='client-details') {
+    if (name === 'client-details') {
+     openEditClientDetailsModal();
+     if (document.getElementById('editClientOpeningBalance')) throw new Error('Opening balance remains in client edit');
+     if (document.getElementById('editClientPageNumber').value !== '42') throw new Error('Missing editable page number');
+     closeEditClientModal();
+    }
     await openTransactionDetails(1);
+    if (document.getElementById('tdClientPageNumber').textContent !== '42') throw new Error('Missing invoice page number');
     const headers=Array.from(document.querySelectorAll('#tdItemsBreakdownContainer th')).map(el=>el.textContent.trim());
     if(headers.join('|')!=='الكمية|الوحدة|الصنف|سعر الوحدة|الإجمالي') throw new Error('Invoice details columns are out of order: '+name);
     if(document.querySelectorAll('#tdItemsBreakdownBody tr').length!==1) throw new Error('Invoice item details are missing: '+name);
@@ -80,6 +87,7 @@ try {
  await page.goto('http://hisabat.test/new-invoice',{waitUntil:'networkidle0'});
  await page.addStyleTag({content:'html,body{margin:0}.fixed{position:fixed}.inset-0{inset:0}.hidden{display:none}.flex{display:flex}.w-full{width:100%}.p-4{padding:1rem}'});
  await page.evaluate(()=>openModal());
+ await page.evaluate(() => Promise.all(document.getAnimations().map(animation => animation.finished.catch(() => {}))));
  const mobileLayout=await page.evaluate(()=>{
   const panel=document.querySelector('.invoice-modal-panel').getBoundingClientRect();
   const grid=document.querySelector('.invoice-line-grid');

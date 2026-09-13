@@ -281,6 +281,7 @@
                         </div>
                         <div class="text-sm text-secondary mr-7">
                             <p>الرصيد: <span id="summaryBalance" class="font-bold dir-ltr inline-block">0</span></p>
+                            <p>رقم الصفحة: <bdi dir="ltr" id="summaryPageNumber">-</bdi></p>
                             <p>آخر معاملة: <span id="summaryLastTransaction">--</span></p>
                         </div>
                     </div>
@@ -536,7 +537,7 @@
                 <div>
                     <h2 class="font-headline-md text-headline-md font-bold text-on-surface">تفاصيل المعاملة</h2>
                     <span id="tdInvoiceCode"
-                        class="inline-flex items-center gap-1 font-mono font-bold text-xs bg-primary/10 text-primary px-2.5 py-0.5 rounded-full mt-1"></span>
+                        class="inline-flex items-center gap-1 font-mono font-bold text-xs bg-primary/10 text-primary px-2.5 py-0.5 rounded-full mt-1"></span><p class="text-sm text-secondary mt-2">رقم الصفحة: <bdi dir="ltr" id="tdClientPageNumber">-</bdi></p>
                 </div>
                 <button class="text-secondary hover:text-on-surface" onclick="closeTransactionDetails()" type="button">
                     <span class="material-symbols-outlined">close</span>
@@ -1110,6 +1111,7 @@
                         balanceEl.textContent = formatCurrency(client.balance || 0);
                         balanceEl.className = `font-bold dir-ltr inline-block ${(client.balance || 0) > 0 ? 'text-tertiary' : ((client.balance || 0) < 0 ? 'text-error' : 'text-primary')}`;
                     }
+                    document.getElementById('summaryPageNumber').textContent = toEnglishDigits(client.pageNumber || '-');
                     const lastTx = document.getElementById('summaryLastTransaction');
                     if (lastTx) lastTx.textContent = client.updatedAt ? formatDate(client.updatedAt) : '--';
                     const profLink = document.getElementById('summaryProfileLink');
@@ -1321,7 +1323,8 @@
                 }
             }
 
-            const codeEl = document.getElementById('tdInvoiceCode');
+            document.getElementById('tdClientPageNumber').textContent = toEnglishDigits(inv.clientPageNumber || '-');
+    const codeEl = document.getElementById('tdInvoiceCode');
             if (codeEl) {
                 if (inv.invoiceCode) {
                     codeEl.innerHTML = `رقم الفاتورة: <bdi dir="ltr">${escapeHtml(inv.invoiceCode)}</bdi>`;
@@ -2200,6 +2203,7 @@
             balanceEl.textContent = formatCurrency(balance);
             balanceEl.className = `font-bold dir-ltr inline-block ${balance > 0 ? 'text-tertiary' : (balance < 0 ? 'text-error' : 'text-primary')}`;
 
+            document.getElementById('summaryPageNumber').textContent = toEnglishDigits(c.pageNumber || '-');
             document.getElementById('summaryLastTransaction').textContent = c.updatedAt ? formatDate(c.updatedAt) : '--';
             document.getElementById('summaryProfileLink').href = `/client-details?id=${clientId}`;
 

@@ -68,6 +68,7 @@ router.get('/', async (req, res) => {
     const invoices = await prisma.invoice.findMany({
       where,
       include: {
+        client: { select: { pageNumber: true } },
         endClient: true,
         items: {
           include: {
@@ -89,6 +90,7 @@ router.get('/', async (req, res) => {
       data: invoices.map(inv => ({
         ...inv,
         _id: inv.id,
+        clientPageNumber: inv.client?.pageNumber || 0,
         client: inv.clientId // For frontend compatibility
       })),
       pagination: {
@@ -113,6 +115,7 @@ router.get('/:id', async (req, res) => {
     const invoice = await prisma.invoice.findUnique({
       where: { id },
       include: {
+        client: { select: { pageNumber: true } },
         endClient: true,
         items: {
           include: {
@@ -128,7 +131,8 @@ router.get('/:id', async (req, res) => {
 
     res.json({
       ...invoice,
-      _id: invoice.id
+      _id: invoice.id,
+      clientPageNumber: invoice.client?.pageNumber || 0
     });
   } catch (err) {
     console.error(err);
