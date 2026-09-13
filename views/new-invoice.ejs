@@ -920,7 +920,7 @@
             <td class="p-md font-body-md text-on-surface client-name">
                 <div class="flex flex-col">
                     <span class="font-bold">${highlightArabic(inv.clientName, query)}</span>
-                    ${inv.invoiceCode ? `<span class="text-[11px] font-mono text-secondary font-medium">${escapeHtml(inv.invoiceCode)}</span>` : ''}
+                    ${inv.invoiceCode ? `<bdi dir="ltr" class="text-[11px] font-mono text-secondary font-medium">${escapeHtml(inv.invoiceCode)}</bdi>` : ''}
                 </div>
             </td>
             <td class="p-md font-body-md text-secondary end-client-name">${highlightArabic(inv.endClientName || '', query) || '-'}</td>
@@ -1046,7 +1046,7 @@
 
             const modalTitle = document.getElementById('modalTitle');
             if (modalTitle) {
-                modalTitle.textContent = `تعديل الفاتورة ${fullInv.invoiceCode ? `[${fullInv.invoiceCode}]` : `[#${id}]`}`;
+                modalTitle.innerHTML = `تعديل الفاتورة <bdi dir="ltr">[${escapeHtml(fullInv.invoiceCode || `#${id}`)}]</bdi>`;
             }
 
             const submitBtnText = document.getElementById('submitButtonText');
@@ -1324,7 +1324,7 @@
             const codeEl = document.getElementById('tdInvoiceCode');
             if (codeEl) {
                 if (inv.invoiceCode) {
-                    codeEl.textContent = `رقم الفاتورة: ${inv.invoiceCode}`;
+                    codeEl.innerHTML = `رقم الفاتورة: <bdi dir="ltr">${escapeHtml(inv.invoiceCode)}</bdi>`;
                     codeEl.classList.remove('hidden');
                 } else {
                     codeEl.classList.add('hidden');

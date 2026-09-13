@@ -1425,7 +1425,7 @@ function renderTransactions(invoices, resetPage = false) {
                 <td class="px-md py-md font-body-md text-body-md">
                     <div class="flex flex-col">
                         <span>${formatDate(inv.date)}</span>
-                        ${inv.invoiceCode ? `<span class="text-[11px] font-mono text-secondary font-medium">${escapeHtml(inv.invoiceCode)}</span>` : ''}
+                        ${inv.invoiceCode ? `<bdi dir="ltr" class="text-[11px] font-mono text-secondary font-medium">${escapeHtml(inv.invoiceCode)}</bdi>` : ''}
                     </div>
                 </td>
                 <td class="px-md py-md">${typeBadge}</td>
@@ -1622,7 +1622,7 @@ async function openTransactionDetails(id) {
     const codeEl = document.getElementById('tdInvoiceCode');
     if (codeEl) {
         if (inv.invoiceCode) {
-            codeEl.textContent = `رقم الفاتورة: ${inv.invoiceCode}`;
+            codeEl.innerHTML = `رقم الفاتورة: <bdi dir="ltr">${escapeHtml(inv.invoiceCode)}</bdi>`;
             codeEl.classList.remove('hidden');
         } else {
             codeEl.classList.add('hidden');
@@ -1990,7 +1990,7 @@ async function openEditInvoiceModal(id) {
     // Set modal title & submit button text
     const title = document.getElementById('modalTitle');
     if (title) {
-        title.textContent = `تعديل الفاتورة ${inv.invoiceCode ? `[${inv.invoiceCode}]` : `[#${inv.id}]`}`;
+        title.innerHTML = `تعديل الفاتورة <bdi dir="ltr">[${escapeHtml(inv.invoiceCode || `#${inv.id}`)}]</bdi>`;
     }
     const submitBtn = document.getElementById('submitBtn');
     if (submitBtn) {
