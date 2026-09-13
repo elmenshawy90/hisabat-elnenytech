@@ -72,6 +72,7 @@ app.use('/api/dashboard', require('./routes/dashboard'));
 app.use('/api/export', require('./routes/export'));
 app.use('/api/search', require('./routes/search'));
 app.use('/api/users', require('./routes/users'));
+app.use('/api/roles', require('./routes/roles'));
 
 console.log('[server] Routes loaded');
 

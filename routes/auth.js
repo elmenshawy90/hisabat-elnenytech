@@ -134,15 +134,25 @@ router.post('/logout', (req, res) => {
 });
 
 // GET /api/auth/me - Check current session
-router.get('/me', (req, res) => {
+router.get('/me', async (req, res) => {
   if (req.user) {
-    res.json({
-      authenticated: true,
-      user: {
-        username: req.user.username,
-        role: req.user.role
-      }
-    });
+    try {
+      const { loadRoleMap } = require('../lib/roles');
+      const map = await loadRoleMap();
+      const roleInfo = map[req.user.role] || null;
+      res.json({
+        authenticated: true,
+        user: {
+          username: req.user.username,
+          role: req.user.role,
+          roleLabel: roleInfo ? roleInfo.label : req.user.role,
+          permissions: roleInfo ? roleInfo.permissions : null
+        }
+      });
+    } catch (err) {
+      console.error('Auth me error:', err);
+      res.json({ authenticated: true, user: { username: req.user.username, role: req.user.role } });
+    }
   } else {
     res.json({ authenticated: false });
   }

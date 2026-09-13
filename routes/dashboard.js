@@ -1,12 +1,12 @@
 const express = require('express');
 const router = express.Router();
 const prisma = require('../lib/prisma');
-const { requireAuth, requireEditor } = require('../middleware/auth');
+const { requireAuth, requireAccess } = require('../middleware/auth');
 const { getAllClientBalances } = require('../lib/balance');
 
 // Apply auth middleware
 router.use(requireAuth);
-router.use(requireEditor); // viewer role is read-only
+router.use(requireAccess('dashboard'));
 
 // GET /api/dashboard/settings - Get settings
 router.get('/settings', async (req, res) => {
@@ -22,8 +22,11 @@ router.get('/settings', async (req, res) => {
   }
 });
 
-// PUT /api/dashboard/settings - Update settings
+// PUT /api/dashboard/settings - Update settings (requires settings permission)
 router.put('/settings', async (req, res) => {
+  if (!req.permissions || !req.permissions.manageSettings) {
+    return res.status(403).json({ error: 'ممنوع، مطلوب صلاحيات الإعدادات' });
+  }
   try {
     const days = parseInt(req.body.overdueThresholdDays);
     if (isNaN(days) || days < 1) {

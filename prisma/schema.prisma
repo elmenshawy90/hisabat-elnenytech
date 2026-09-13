@@ -230,3 +230,14 @@ model Setting {
   key   String @id
   value String
 }
+
+// أدوار المستخدمين وصلاحياتها — تُدار من صفحة المستخدمين (تبويب الأدوار)
+// permissions JSON: { modules: { dashboard, clients, invoices, items, suppliers: 'hidden'|'view'|'edit' }, manageUsers: bool, manageSettings: bool }
+model Role {
+  key         String   @id // e.g. 'admin', 'editor', 'viewer', custom latin keys
+  label       String
+  system      Boolean  @default(false) // system roles can't be deleted/renamed
+  permissions Json
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}

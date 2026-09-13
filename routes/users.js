@@ -2,13 +2,17 @@ const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcrypt');
 const prisma = require('../lib/prisma');
-const { requireAuth, requireAdmin } = require('../middleware/auth');
+const { requireAuth, requireManageUsers } = require('../middleware/auth');
+const { loadRoleMap } = require('../lib/roles');
 
-// All user-management endpoints are admin-only
+// User management requires the user-management permission (see Users > Roles tab)
 router.use(requireAuth);
-router.use(requireAdmin);
+router.use(requireManageUsers);
 
-const VALID_ROLES = ['admin', 'editor', 'viewer'];
+async function validRoleKeys() {
+  const map = await loadRoleMap();
+  return Object.keys(map);
+}
 
 function publicUser(u) {
   return {
@@ -42,8 +46,8 @@ router.post('/', async (req, res) => {
   if (typeof password !== 'string' || password.length < 8) {
     return res.status(400).json({ error: 'كلمة المرور يجب أن تكون 8 أحرف على الأقل' });
   }
-  if (!VALID_ROLES.includes(role)) {
-    return res.status(400).json({ error: 'الدور غير صالح (admin / editor / viewer)' });
+  if (!(await validRoleKeys()).includes(role)) {
+    return res.status(400).json({ error: 'الدور غير صالح' });
   }
 
   try {
@@ -82,14 +86,20 @@ router.put('/:id', async (req, res) => {
     if (role && role !== target.role && target.id === req.user.userId) {
       return res.status(400).json({ error: 'لا يمكنك تغيير دور حسابك الحالي' });
     }
-    if (role && !VALID_ROLES.includes(role)) {
-      return res.status(400).json({ error: 'الدور غير صالح (admin / editor / viewer)' });
+    if (role && !(await validRoleKeys()).includes(role)) {
+      return res.status(400).json({ error: 'الدور غير صالح' });
     }
-    // Cannot demote the last admin
-    if (role && target.role === 'admin' && role !== 'admin') {
-      const adminCount = await prisma.user.count({ where: { role: 'admin' } });
-      if (adminCount <= 1) {
-        return res.status(400).json({ error: 'لا يمكن تخفيض آخر مدير في النظام' });
+    // Cannot strip user-management from the last user who has it
+    if (role && role !== target.role) {
+      const map = await loadRoleMap();
+      const hadManage = Boolean(map[target.role] && map[target.role].permissions.manageUsers);
+      const willHaveManage = Boolean(map[role] && map[role].permissions.manageUsers);
+      if (hadManage && !willHaveManage) {
+        const managingKeys = Object.values(map).filter(r => r.permissions.manageUsers).map(r => r.key);
+        const managerCount = await prisma.user.count({ where: { role: { in: managingKeys } } });
+        if (managerCount <= 1) {
+          return res.status(400).json({ error: 'لا يمكن إزالة صلاحية إدارة المستخدمين عن آخر مدير في النظام' });
+        }
       }
     }
     if (password !== undefined && password !== '' && (typeof password !== 'string' || password.length < 8)) {
@@ -120,9 +130,12 @@ router.delete('/:id', async (req, res) => {
     if (target.id === req.user.userId) {
       return res.status(400).json({ error: 'لا يمكنك حذف حسابك الحالي' });
     }
-    if (target.role === 'admin') {
-      const adminCount = await prisma.user.count({ where: { role: 'admin' } });
-      if (adminCount <= 1) {
+    const map = await loadRoleMap();
+    const targetManages = Boolean(map[target.role] && map[target.role].permissions.manageUsers);
+    if (targetManages) {
+      const managingKeys = Object.values(map).filter(r => r.permissions.manageUsers).map(r => r.key);
+      const managerCount = await prisma.user.count({ where: { role: { in: managingKeys } } });
+      if (managerCount <= 1) {
         return res.status(400).json({ error: 'لا يمكن حذف آخر مدير في النظام' });
       }
     }

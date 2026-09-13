@@ -466,6 +466,7 @@ document.addEventListener('wheel', function (e) {
 // ([data-requires-admin]) for non-admin users. Runs on every page.
 if (typeof window !== 'undefined') {
 window.currentUserRole = null;
+window.currentPermissions = null;
 }
 if (typeof document !== 'undefined') {
 document.addEventListener('DOMContentLoaded', async () => {
@@ -476,9 +477,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     const data = await res.json();
     if (!data.authenticated) return;
     window.currentUserRole = data.user.role;
-    if (data.user.role !== 'admin') {
+    window.currentPermissions = data.user.permissions || null;
+    const perms = data.user.permissions || {};
+    const mods = perms.modules || {};
+    // User-management tab (also [data-requires-admin]) needs the manageUsers permission
+    if (!perms.manageUsers) {
       document.querySelectorAll('[data-requires-admin]').forEach((el) => el.remove());
     }
+    // Hide navigation entries for modules hidden from this role
+    document.querySelectorAll('[data-module]').forEach((el) => {
+      const m = el.getAttribute('data-module');
+      if (m === 'users') return; // handled above
+      if (!mods[m] || mods[m] === 'hidden') el.remove();
+    });
   } catch (err) {
     console.error('Role gating failed:', err);
   }

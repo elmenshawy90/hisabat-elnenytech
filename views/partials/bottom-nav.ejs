@@ -1,21 +1,21 @@
 <nav class="md:hidden fixed bottom-0 left-0 right-0 min-h-[4rem] h-[calc(4rem+env(safe-area-inset-bottom))] bg-surface border-t border-outline-variant flex items-center justify-around px-md pb-[env(safe-area-inset-bottom)] z-50">
-<a class="flex flex-col items-center gap-xs <%= active === 'dashboard' ? 'text-primary' : 'text-secondary' %>" href="/dashboard">
+<a class="flex flex-col items-center gap-xs <%= active === 'dashboard' ? 'text-primary' : 'text-secondary' %>" data-module="dashboard" href="/dashboard">
 <span class="material-symbols-outlined <%= active === 'dashboard' ? 'filled' : '' %>">dashboard</span>
 <span class="text-[10px] font-label-sm">الرئيسية</span>
 </a>
-<a class="flex flex-col items-center gap-xs <%= active === 'clients' ? 'text-primary' : 'text-secondary' %>" href="/clients">
+<a class="flex flex-col items-center gap-xs <%= active === 'clients' ? 'text-primary' : 'text-secondary' %>" data-module="clients" href="/clients">
 <span class="material-symbols-outlined <%= active === 'clients' ? 'filled' : '' %>">group</span>
 <span class="text-[10px] font-label-sm">العملاء</span>
 </a>
-<a class="flex flex-col items-center gap-xs <%= active === 'invoices' ? 'text-primary' : 'text-secondary' %>" href="/new-invoice">
+<a class="flex flex-col items-center gap-xs <%= active === 'invoices' ? 'text-primary' : 'text-secondary' %>" data-module="invoices" href="/new-invoice">
 <span class="material-symbols-outlined <%= active === 'invoices' ? 'filled' : '' %>">receipt_long</span>
 <span class="text-[10px] font-label-sm">الفواتير</span>
 </a>
-<a class="flex flex-col items-center gap-xs <%= active === 'items' ? 'text-primary' : 'text-secondary' %>" href="/items">
+<a class="flex flex-col items-center gap-xs <%= active === 'items' ? 'text-primary' : 'text-secondary' %>" data-module="items" href="/items">
 <span class="material-symbols-outlined <%= active === 'items' ? 'filled' : '' %>">inventory_2</span>
 <span class="text-[10px] font-label-sm">الأصناف</span>
 </a>
-<a class="flex flex-col items-center gap-xs <%= active === 'suppliers' ? 'text-primary' : 'text-secondary' %>" href="/suppliers">
+<a class="flex flex-col items-center gap-xs <%= active === 'suppliers' ? 'text-primary' : 'text-secondary' %>" data-module="suppliers" href="/suppliers">
 <span class="material-symbols-outlined <%= active === 'suppliers' ? 'filled' : '' %>">local_shipping</span>
 <span class="text-[10px] font-label-sm">الموردين</span>
 </a>

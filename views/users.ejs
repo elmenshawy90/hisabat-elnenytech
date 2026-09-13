@@ -45,13 +45,21 @@
     </div>
 </div>
 
+<!-- Sub Tabs -->
+<div class="flex items-center gap-xs mb-xl bg-surface-container-lowest border border-outline-variant rounded-full p-1 w-fit">
+    <button id="tabBtnUsers" onclick="switchUsersTab('users')" class="px-lg h-10 rounded-full font-bold text-sm bg-primary text-white transition-all cursor-pointer">المستخدمون</button>
+    <button id="tabBtnRoles" onclick="switchUsersTab('roles')" class="px-lg h-10 rounded-full font-bold text-sm text-secondary hover:text-on-surface transition-all cursor-pointer">الأدوار والصلاحيات</button>
+</div>
+
+<div id="usersSection">
+
 <!-- Stats Row -->
 <div class="grid grid-cols-1 md:grid-cols-3 gap-md mb-xl">
     <div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-md flex items-center justify-between shadow-sm select-none">
         <div class="flex flex-col gap-xs">
-            <span class="font-label-md text-label-md text-secondary font-bold">المديرون</span>
+            <span class="font-label-md text-label-md text-secondary font-bold">إجمالي المستخدمين</span>
             <div class="flex items-baseline gap-sm">
-                <span class="font-headline-md text-headline-md text-primary font-bold" id="statAdmins">--</span>
+                <span class="font-headline-md text-headline-md text-primary font-bold" id="statTotalUsers">--</span>
                 <span class="text-xs text-secondary font-bold">مستخدم</span>
             </div>
         </div>
@@ -61,10 +69,10 @@
     </div>
     <div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-md flex items-center justify-between shadow-sm select-none">
         <div class="flex flex-col gap-xs">
-            <span class="font-label-md text-label-md text-secondary font-bold">المحررون</span>
+            <span class="font-label-md text-label-md text-secondary font-bold">عدد الأدوار</span>
             <div class="flex items-baseline gap-sm">
-                <span class="font-headline-md text-headline-md text-green-700 font-bold" id="statEditors">--</span>
-                <span class="text-xs text-secondary font-bold">مستخدم</span>
+                <span class="font-headline-md text-headline-md text-green-700 font-bold" id="statTotalRoles">--</span>
+                <span class="text-xs text-secondary font-bold">دور</span>
             </div>
         </div>
         <div class="w-12 h-12 rounded-xl bg-green-500/10 text-green-700 flex items-center justify-center shrink-0">
@@ -73,9 +81,9 @@
     </div>
     <div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-md flex items-center justify-between shadow-sm select-none">
         <div class="flex flex-col gap-xs">
-            <span class="font-label-md text-label-md text-secondary font-bold">المشاهدون</span>
+            <span class="font-label-md text-label-md text-secondary font-bold">لديهم إدارة المستخدمين</span>
             <div class="flex items-baseline gap-sm">
-                <span class="font-headline-md text-headline-md text-tertiary font-bold" id="statViewers">--</span>
+                <span class="font-headline-md text-headline-md text-tertiary font-bold" id="statManagers">--</span>
                 <span class="text-xs text-secondary font-bold">مستخدم</span>
             </div>
         </div>
@@ -115,10 +123,104 @@
     </div>
 </div>
 
+</div><!-- /usersSection -->
+
+<!-- Roles Section -->
+<div id="rolesSection" class="hidden">
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-md mb-xl">
+    <div class="flex flex-col">
+        <h2 class="font-headline-md text-headline-md text-on-surface font-bold">الأدوار والصلاحيات</h2>
+        <p class="font-body-md text-body-md text-secondary">تحكم في ظهور الأقسام (مخفي / عرض / تعديل) وإدارة المستخدمين والإعدادات لكل دور — تُطبق التغييرات فوراً</p>
+    </div>
+    <button onclick="openAddRoleModal()" class="px-md py-sm bg-primary hover:bg-primary-container text-white rounded-full flex items-center justify-center gap-xs font-bold text-sm shadow-sm transition-all active:scale-95 cursor-pointer w-fit">
+        <span class="material-symbols-outlined text-xl">add</span>
+        <span>دور جديد</span>
+    </button>
+</div>
+
+<div class="bg-surface-container-lowest border border-outline-variant rounded-2xl shadow-sm overflow-hidden mb-xl">
+    <div class="overflow-x-auto">
+        <table class="w-full text-right border-collapse">
+            <thead>
+                <tr class="bg-surface-container-low border-b border-outline-variant text-secondary font-label-md text-xs">
+                    <th class="px-md py-md font-bold">الدور</th>
+                    <th class="px-md py-md font-bold">المعرف</th>
+                    <th class="px-md py-md font-bold">المستخدمون</th>
+                    <th class="px-md py-md font-bold">الأقسام</th>
+                    <th class="px-md py-md font-bold text-center">الإجراءات</th>
+                </tr>
+            </thead>
+            <tbody id="rolesTableBody" class="divide-y divide-outline-variant/60 font-body-md text-sm">
+            </tbody>
+        </table>
+    </div>
+    <div id="rolesLoading" class="py-xl text-center text-secondary">
+        <div class="flex flex-col items-center justify-center gap-sm">
+            <div class="w-8 h-8 border-3 border-outline-variant border-t-primary rounded-full animate-spin"></div>
+            <span>جاري تحميل الأدوار...</span>
+        </div>
+    </div>
+</div>
+</div><!-- /rolesSection -->
+
 </div><!-- /usersContent -->
 </div>
 <%- include('partials/bottom-nav', { active: 'users' }) %>
 </main>
+</div>
+
+<!-- Role Form Modal (Add & Edit permissions) -->
+<div class="fixed inset-0 z-[120] hidden items-center justify-center bg-black/50 p-4" id="roleModal">
+    <div class="bg-surface rounded-2xl shadow-2xl w-full max-w-lg p-lg space-y-md border border-outline-variant/60 max-h-[90vh] overflow-y-auto custom-scrollbar">
+        <div class="flex items-center justify-between border-b border-outline-variant/60 pb-sm">
+            <div class="flex items-center gap-sm text-primary">
+                <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                    <span class="material-symbols-outlined text-2xl">tune</span>
+                </div>
+                <h3 class="font-headline-sm font-bold text-on-surface" id="roleModalTitle">تعديل الدور</h3>
+            </div>
+            <button type="button" onclick="closeRoleModal()" class="text-secondary hover:text-on-surface">
+                <span class="material-symbols-outlined">close</span>
+            </button>
+        </div>
+
+        <form id="roleForm" onsubmit="submitRoleForm(event)" class="space-y-md">
+            <input type="hidden" id="roleModalKey" value="" />
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-sm" id="roleIdentityFields">
+                <div class="space-y-xs" id="roleKeyWrap">
+                    <label class="block text-xs font-bold text-on-surface-variant">المعرف (بالإنجليزية) <span class="text-error">*</span></label>
+                    <input type="text" id="roleKey" dir="ltr" placeholder="e.g. accountant" autocomplete="off"
+                        class="w-full h-11 px-sm rounded-xl bg-surface-container-low border border-outline-variant text-sm font-bold text-left outline-none focus:border-primary" />
+                </div>
+                <div class="space-y-xs">
+                    <label class="block text-xs font-bold text-on-surface-variant">اسم الدور <span class="text-error">*</span></label>
+                    <input type="text" id="roleLabel" placeholder="مثال: محاسب" autocomplete="off"
+                        class="w-full h-11 px-sm rounded-xl bg-surface-container-low border border-outline-variant text-sm font-bold text-right outline-none focus:border-primary" />
+                </div>
+            </div>
+
+            <div class="space-y-xs">
+                <label class="block text-xs font-bold text-on-surface-variant">صلاحيات الأقسام</label>
+                <div id="roleModulesGrid" class="space-y-xs"></div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-sm">
+                <label class="flex items-center justify-between gap-sm p-sm rounded-xl border border-outline-variant cursor-pointer hover:bg-surface-container-low transition-colors">
+                    <span class="text-xs font-bold">إدارة المستخدمين والأدوار</span>
+                    <input type="checkbox" id="permManageUsers" class="w-5 h-5 accent-primary" />
+                </label>
+                <label class="flex items-center justify-between gap-sm p-sm rounded-xl border border-outline-variant cursor-pointer hover:bg-surface-container-low transition-colors">
+                    <span class="text-xs font-bold">إعدادات النظام</span>
+                    <input type="checkbox" id="permManageSettings" class="w-5 h-5 accent-primary" />
+                </label>
+            </div>
+
+            <div class="flex items-center gap-sm pt-sm border-t border-outline-variant/60">
+                <button type="submit" id="roleSubmitBtn" class="flex-1 h-11 bg-primary text-white rounded-full font-bold text-sm hover:opacity-90 active:scale-95 transition-all">حفظ</button>
+                <button type="button" onclick="closeRoleModal()" class="h-11 px-lg border border-outline-variant rounded-full font-bold text-sm hover:bg-surface-container-low transition-all">إلغاء</button>
+            </div>
+        </form>
+    </div>
 </div>
 
 <!-- User Form Modal (Add & Edit) -->
@@ -194,26 +296,238 @@
 <script src="/js/shared-ui.js"></script>
 <script>
 let allUsers = [];
+let allRoles = [];
 let currentUserId = null;
 
-const ROLE_LABELS = {
-    admin: { text: 'مدير', cls: 'bg-primary/10 text-primary' },
-    editor: { text: 'محرر', cls: 'bg-green-500/10 text-green-700' },
-    viewer: { text: 'مشاهد', cls: 'bg-tertiary/10 text-tertiary' }
+const MODULE_LABELS = {
+    dashboard: 'لوحة القيادة',
+    clients: 'العملاء',
+    invoices: 'الفواتير',
+    items: 'الأصناف',
+    suppliers: 'الموردين'
 };
+const LEVEL_LABELS = { hidden: 'مخفي', view: 'عرض', edit: 'تعديل' };
+const MODULE_ORDER = ['dashboard', 'clients', 'invoices', 'items', 'suppliers'];
+
+function roleBadgeClass(key) {
+    if (key === 'admin') return 'bg-primary/10 text-primary';
+    if (key === 'editor') return 'bg-green-500/10 text-green-700';
+    if (key === 'viewer') return 'bg-tertiary/10 text-tertiary';
+    return 'bg-surface-container-high text-secondary';
+}
+
+function switchUsersTab(name) {
+    const isUsers = name === 'users';
+    document.getElementById('usersSection').classList.toggle('hidden', !isUsers);
+    document.getElementById('rolesSection').classList.toggle('hidden', isUsers);
+    const btnU = document.getElementById('tabBtnUsers');
+    const btnR = document.getElementById('tabBtnRoles');
+    btnU.className = 'px-lg h-10 rounded-full font-bold text-sm transition-all cursor-pointer ' + (isUsers ? 'bg-primary text-white' : 'text-secondary hover:text-on-surface');
+    btnR.className = 'px-lg h-10 rounded-full font-bold text-sm transition-all cursor-pointer ' + (!isUsers ? 'bg-primary text-white' : 'text-secondary hover:text-on-surface');
+}
 
 document.addEventListener('DOMContentLoaded', async () => {
     const user = await checkAuth();
     if (!user) return;
-    if (user.role !== 'admin') {
+    if (!user.permissions || !user.permissions.manageUsers) {
         document.getElementById('usersContent').classList.add('hidden');
         document.getElementById('accessDenied').classList.remove('hidden');
         document.getElementById('usersLoading').classList.add('hidden');
         return;
     }
     currentUserId = user.username;
+    await loadRoles();
     await loadUsers();
 });
+
+async function loadRoles() {
+    const tbody = document.getElementById('rolesTableBody');
+    const loading = document.getElementById('rolesLoading');
+    loading.classList.remove('hidden');
+    try {
+        const res = await fetch('/api/roles');
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.error || 'فشل في تحميل الأدوار');
+        }
+        allRoles = await res.json();
+        renderRoles();
+    } catch (err) {
+        console.error(err);
+        showToast(err.message || 'فشل في تحميل الأدوار', 'error');
+    } finally {
+        loading.classList.add('hidden');
+    }
+}
+
+function renderRoles() {
+    const tbody = document.getElementById('rolesTableBody');
+    tbody.innerHTML = allRoles.map(r => {
+        const p = r.permissions || { modules: {} };
+        const modBadges = MODULE_ORDER.map(m => {
+            const lv = (p.modules && p.modules[m]) || 'hidden';
+            const cls = lv === 'edit' ? 'bg-green-500/10 text-green-700' : (lv === 'view' ? 'bg-primary/10 text-primary' : 'bg-surface-container-high text-secondary');
+            return `<span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${cls}">${MODULE_LABELS[m]}: ${LEVEL_LABELS[lv]}</span>`;
+        }).join(' ');
+        const extra = [
+            p.manageUsers ? '<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-primary/10 text-primary">إدارة المستخدمين</span>' : '',
+            p.manageSettings ? '<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-tertiary/10 text-tertiary">الإعدادات</span>' : ''
+        ].join(' ');
+        return `
+            <tr class="hover:bg-surface-container-high/50">
+                <td class="px-md py-sm font-bold text-on-surface">${escapeHtml(r.label)}${r.system ? ' <span class="text-[10px] bg-surface-container-high text-secondary font-bold px-2 py-0.5 rounded-full">أساسي</span>' : ''}</td>
+                <td class="px-md py-sm font-mono text-secondary text-xs" dir="ltr" style="text-align:right">${escapeHtml(r.key)}</td>
+                <td class="px-md py-sm text-on-surface font-bold">${r.userCount || 0}</td>
+                <td class="px-md py-sm"><div class="flex flex-wrap gap-1">${modBadges}${extra}</div></td>
+                <td class="px-md py-sm">
+                    <div class="flex items-center justify-center gap-xs">
+                        <button onclick="openEditRoleModal('${escapeJsString(r.key)}')" class="w-8 h-8 flex items-center justify-center text-primary hover:bg-primary/10 rounded-md transition-colors cursor-pointer" title="تعديل الصلاحيات">
+                            <span class="material-symbols-outlined text-base">tune</span>
+                        </button>
+                        ${r.system ? '' : `<button onclick="deleteRole('${escapeJsString(r.key)}')" class="w-8 h-8 flex items-center justify-center text-error hover:bg-error/10 rounded-md transition-colors cursor-pointer" title="حذف الدور">
+                            <span class="material-symbols-outlined text-base">delete</span>
+                        </button>`}
+                    </div>
+                </td>
+            </tr>`;
+    }).join('');
+}
+
+function renderRoleOptions(selected) {
+    const grid = document.getElementById('roleSelectGrid');
+    grid.innerHTML = allRoles.map(r => {
+        const checked = (selected || 'editor') === r.key ? 'checked' : '';
+        return `
+        <label class="flex flex-col items-center gap-1 p-2 rounded-xl border border-outline-variant cursor-pointer hover:bg-surface-container-low transition-colors has-[:checked]:border-primary has-[:checked]:bg-primary/5">
+            <input type="radio" name="userRole" value="${escapeHtml(r.key)}" class="accent-primary" ${checked} />
+            <span class="text-xs font-bold">${escapeHtml(r.label)}</span>
+            <span class="text-[10px] font-mono text-secondary" dir="ltr">${escapeHtml(r.key)}</span>
+        </label>`;
+    }).join('');
+}
+
+function renderModuleSelects(perms) {
+    const grid = document.getElementById('roleModulesGrid');
+    const mods = (perms && perms.modules) || {};
+    grid.innerHTML = MODULE_ORDER.map(m => {
+        const cur = mods[m] || 'hidden';
+        const opts = ['hidden', 'view', 'edit'].map(lv =>
+            `<option value="${lv}" ${cur === lv ? 'selected' : ''}>${LEVEL_LABELS[lv]}</option>`).join('');
+        return `
+        <div class="flex items-center justify-between gap-sm p-sm rounded-xl bg-surface-container-low border border-outline-variant/60">
+            <span class="text-xs font-bold">${MODULE_LABELS[m]}</span>
+            <select data-module="${m}" class="h-9 px-sm rounded-lg bg-surface border border-outline-variant text-xs font-bold outline-none cursor-pointer focus:border-primary">
+                ${opts}
+            </select>
+        </div>`;
+    }).join('');
+}
+
+function openAddRoleModal() {
+    document.getElementById('roleForm').reset();
+    document.getElementById('roleModalKey').value = '';
+    document.getElementById('roleModalTitle').textContent = 'إضافة دور جديد';
+    document.getElementById('roleKeyWrap').classList.remove('hidden');
+    document.getElementById('roleKey').disabled = false;
+    document.getElementById('roleKey').value = '';
+    document.getElementById('roleLabel').disabled = false;
+    document.getElementById('roleLabel').value = '';
+    renderModuleSelects({ modules: { dashboard: 'view', clients: 'view', invoices: 'view', items: 'view', suppliers: 'view' } });
+    document.getElementById('permManageUsers').checked = false;
+    document.getElementById('permManageSettings').checked = false;
+    document.getElementById('roleSubmitBtn').textContent = 'إضافة الدور';
+    openRoleModal();
+}
+
+function openEditRoleModal(key) {
+    const r = allRoles.find(x => x.key === key);
+    if (!r) return;
+    document.getElementById('roleForm').reset();
+    document.getElementById('roleModalKey').value = r.key;
+    document.getElementById('roleModalTitle').textContent = `صلاحيات: ${r.label}`;
+    document.getElementById('roleKeyWrap').classList.add('hidden');
+    document.getElementById('roleLabel').disabled = r.system;
+    document.getElementById('roleLabel').value = r.label;
+    renderModuleSelects(r.permissions);
+    document.getElementById('permManageUsers').checked = Boolean(r.permissions && r.permissions.manageUsers);
+    document.getElementById('permManageSettings').checked = Boolean(r.permissions && r.permissions.manageSettings);
+    document.getElementById('roleSubmitBtn').textContent = 'حفظ الصلاحيات';
+    openRoleModal();
+}
+
+function openRoleModal() {
+    const modal = document.getElementById('roleModal');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeRoleModal() {
+    const modal = document.getElementById('roleModal');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+    document.body.style.overflow = '';
+    document.getElementById('roleForm').reset();
+}
+
+async function submitRoleForm(e) {
+    e.preventDefault();
+    const key = document.getElementById('roleModalKey').value;
+    const isEdit = Boolean(key);
+    const label = document.getElementById('roleLabel').value.trim();
+    const newKey = document.getElementById('roleKey').value.trim().toLowerCase();
+    const modules = {};
+    document.querySelectorAll('#roleModulesGrid select[data-module]').forEach(s => {
+        modules[s.getAttribute('data-module')] = s.value;
+    });
+    const permissions = {
+        modules,
+        manageUsers: document.getElementById('permManageUsers').checked,
+        manageSettings: document.getElementById('permManageSettings').checked
+    };
+    if (!isEdit && !newKey) {
+        showToast('الرجاء إدخال معرف الدور بالإنجليزية', 'warning');
+        return;
+    }
+    if (!label) {
+        showToast('الرجاء إدخال اسم الدور', 'warning');
+        return;
+    }
+    try {
+        const url = isEdit ? `/api/roles/${encodeURIComponent(key)}` : '/api/roles';
+        const res = await fetch(url, {
+            method: isEdit ? 'PUT' : 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(isEdit ? { label, permissions } : { key: newKey, label, permissions })
+        });
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.error || 'فشل في حفظ الدور');
+        }
+        showToast(isEdit ? 'تم حفظ الصلاحيات بنجاح' : 'تمت إضافة الدور بنجاح', 'success');
+        closeRoleModal();
+        await loadRoles();
+    } catch (err) {
+        showToast(err.message, 'error');
+    }
+}
+
+async function deleteRole(key) {
+    const r = allRoles.find(x => x.key === key);
+    const name = r ? r.label : key;
+    if (!confirm(`حذف الدور "${name}" نهائياً؟`)) return;
+    try {
+        const res = await fetch(`/api/roles/${encodeURIComponent(key)}`, { method: 'DELETE' });
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.error || 'فشل في حذف الدور');
+        }
+        showToast('تم حذف الدور بنجاح', 'success');
+        await loadRoles();
+    } catch (err) {
+        showToast(err.message, 'error');
+    }
+}
 
 async function loadUsers() {
     const tableBody = document.getElementById('usersTableBody');
@@ -241,12 +555,10 @@ async function loadUsers() {
 function renderUsers() {
     const tableBody = document.getElementById('usersTableBody');
     const empty = document.getElementById('usersEmpty');
-    const admins = allUsers.filter(u => u.role === 'admin').length;
-    const editors = allUsers.filter(u => u.role === 'editor').length;
-    const viewers = allUsers.filter(u => u.role === 'viewer').length;
-    document.getElementById('statAdmins').textContent = admins;
-    document.getElementById('statEditors').textContent = editors;
-    document.getElementById('statViewers').textContent = viewers;
+    document.getElementById('statTotalUsers').textContent = allUsers.length;
+    document.getElementById('statTotalRoles').textContent = allRoles.length;
+    const managingKeys = new Set(allRoles.filter(r => r.permissions && r.permissions.manageUsers).map(r => r.key));
+    document.getElementById('statManagers').textContent = allUsers.filter(u => managingKeys.has(u.role)).length;
 
     if (!allUsers.length) {
         empty.classList.remove('hidden');
@@ -254,13 +566,15 @@ function renderUsers() {
     }
     empty.classList.add('hidden');
     tableBody.innerHTML = allUsers.map(u => {
-        const role = ROLE_LABELS[u.role] || { text: u.role, cls: 'bg-surface-container-high text-secondary' };
+        const roleInfo = allRoles.find(r => r.key === u.role);
+        const roleText = roleInfo ? roleInfo.label : u.role;
+        const roleCls = roleBadgeClass(u.role);
         const isSelf = u.username === currentUserId;
         return `
             <tr class="hover:bg-surface-container-high/50">
                 <td class="px-md py-sm font-mono font-bold text-on-surface" dir="ltr" style="text-align:right">${escapeHtml(u.username)}${isSelf ? ' <span class="text-[10px] bg-primary/10 text-primary font-bold px-2 py-0.5 rounded-full font-sans">(أنت)</span>' : ''}</td>
                 <td class="px-md py-sm text-on-surface">${escapeHtml(u.displayName || '-')}</td>
-                <td class="px-md py-sm"><span class="text-[11px] font-bold px-2 py-1 rounded-full ${role.cls}">${role.text}</span></td>
+                <td class="px-md py-sm"><span class="text-[11px] font-bold px-2 py-1 rounded-full ${roleCls}">${escapeHtml(roleText)}</span></td>
                 <td class="px-md py-sm text-secondary text-xs">${formatDate(u.createdAt)}</td>
                 <td class="px-md py-sm">
                     <div class="flex items-center justify-center gap-xs">
@@ -283,7 +597,7 @@ function openAddUserModal() {
     document.getElementById('userModalIcon').textContent = 'person_add';
     document.getElementById('usernameFieldWrap').classList.remove('hidden');
     document.getElementById('userUsername').disabled = false;
-    document.querySelector('input[name="userRole"][value="editor"]').checked = true;
+    renderRoleOptions('editor');
     document.querySelectorAll('input[name="userRole"]').forEach(r => { r.disabled = false; });
     document.getElementById('selfRoleHint').classList.add('hidden');
     document.getElementById('passwordLabel').innerHTML = 'كلمة المرور <span class="text-error">*</span>';
@@ -302,8 +616,7 @@ function openEditUserModal(id) {
     document.getElementById('usernameFieldWrap').classList.add('hidden');
     document.getElementById('userDisplayName').value = u.displayName || '';
     document.getElementById('userPassword').value = '';
-    const radio = document.querySelector(`input[name="userRole"][value="${u.role}"]`);
-    if (radio) radio.checked = true;
+    renderRoleOptions(u.role);
     const isSelf = u.username === currentUserId;
     document.querySelectorAll('input[name="userRole"]').forEach(r => { r.disabled = isSelf; });
     document.getElementById('selfRoleHint').classList.toggle('hidden', !isSelf);
@@ -410,6 +723,9 @@ async function deleteUser(id) {
 
 document.getElementById('userModal').addEventListener('click', function(e) {
     if (e.target === this) closeUserModal();
+});
+document.getElementById('roleModal').addEventListener('click', function(e) {
+    if (e.target === this) closeRoleModal();
 });
 </script>
 </body>

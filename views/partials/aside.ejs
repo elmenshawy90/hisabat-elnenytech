@@ -10,27 +10,27 @@
     </div>
     <nav class="flex flex-col gap-sm flex-grow">
         <a class="flex flex-row items-center gap-md <%= active === 'dashboard' ? 'bg-primary-container text-on-primary-container' : 'text-secondary' %> rounded-lg px-md py-sm hover:bg-surface-container-highest hover:text-on-surface transition-all"
-            href="/dashboard">
+            data-module="dashboard" href="/dashboard">
             <span class="material-symbols-outlined <%= active === 'dashboard' ? 'filled' : '' %>">dashboard</span>
             <span class="font-label-md text-label-md flex-grow text-right">لوحة القيادة</span>
         </a>
         <a class="flex flex-row items-center gap-md <%= active === 'clients' ? 'bg-primary-container text-on-primary-container' : 'text-secondary' %> px-md py-sm hover:bg-surface-container-highest hover:text-on-surface transition-all rounded-lg"
-            href="/clients">
+            data-module="clients" href="/clients">
             <span class="material-symbols-outlined <%= active === 'clients' ? 'filled' : '' %>">group</span>
             <span class="font-label-md text-label-md flex-grow text-right">العملاء</span>
         </a>
         <a class="flex flex-row items-center gap-md <%= active === 'items' ? 'bg-primary-container text-on-primary-container' : 'text-secondary' %> px-md py-sm hover:bg-surface-container-highest hover:text-on-surface transition-all rounded-lg"
-            href="/items">
+            data-module="items" href="/items">
             <span class="material-symbols-outlined <%= active === 'items' ? 'filled' : '' %>">inventory_2</span>
             <span class="font-label-md text-label-md flex-grow text-right">كتالوج الأصناف</span>
         </a>
         <a class="flex flex-row items-center gap-md <%= active === 'invoices' ? 'bg-primary-container text-on-primary-container' : 'text-secondary' %> px-md py-sm hover:bg-surface-container-highest hover:text-on-surface transition-all rounded-lg"
-            href="/new-invoice">
+            data-module="invoices" href="/new-invoice">
             <span class="material-symbols-outlined <%= active === 'invoices' ? 'filled' : '' %>">receipt_long</span>
             <span class="font-label-md text-label-md flex-grow text-right">سجل الفواتير</span>
         </a>
         <a class="flex flex-row items-center gap-md <%= active === 'suppliers' ? 'bg-primary-container text-on-primary-container' : 'text-secondary' %> px-md py-sm hover:bg-surface-container-highest hover:text-on-surface transition-all rounded-lg"
-            href="/suppliers">
+            data-module="suppliers" href="/suppliers">
             <span class="material-symbols-outlined <%= active === 'suppliers' ? 'filled' : '' %>">local_shipping</span>
             <span class="font-label-md text-label-md flex-grow text-right">الموردين</span>
         </a>

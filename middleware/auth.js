@@ -27,4 +27,44 @@ function requireEditor(req, res, next) {
   }
 }
 
-module.exports = { requireAuth, requireAdmin, requireEditor };
+// Dynamic role permissions (customizable from the Users > Roles tab).
+// GET/HEAD/OPTIONS need 'view' on the module; writes need 'edit'.
+function requireAccess(module) {
+  return async (req, res, next) => {
+    try {
+      const { getRolePermissions, canRead, canWrite } = require('../lib/roles');
+      const perms = await getRolePermissions(req.user && req.user.role);
+      if (!perms) {
+        return res.status(403).json({ error: 'ممنوع، الدور غير معروف' });
+      }
+      const isRead = req.method === 'GET' || req.method === 'HEAD' || req.method === 'OPTIONS';
+      const ok = isRead ? canRead(perms, module) : canWrite(perms, module);
+      if (!ok) {
+        return res.status(403).json({ error: isRead ? 'ممنوع، هذا القسم مخفي لدورك' : 'ممنوع، دورك لا يسمح بالتعديل' });
+      }
+      req.permissions = perms;
+      return next();
+    } catch (err) {
+      console.error('requireAccess error:', err);
+      return res.status(500).json({ error: 'خطأ في الخادم' });
+    }
+  };
+}
+
+// User/role management section (Users tab + /api/users + /api/roles)
+async function requireManageUsers(req, res, next) {
+  try {
+    const { getRolePermissions } = require('../lib/roles');
+    const perms = await getRolePermissions(req.user && req.user.role);
+    if (perms && perms.manageUsers) {
+      req.permissions = perms;
+      return next();
+    }
+    return res.status(403).json({ error: 'ممنوع، مطلوب صلاحيات إدارة المستخدمين' });
+  } catch (err) {
+    console.error('requireManageUsers error:', err);
+    return res.status(500).json({ error: 'خطأ في الخادم' });
+  }
+}
+
+module.exports = { requireAuth, requireAdmin, requireEditor, requireAccess, requireManageUsers };
