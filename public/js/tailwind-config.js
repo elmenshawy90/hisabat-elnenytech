@@ -18,7 +18,8 @@ window.sharedTailwindConfig = {
         "on-error-container": "#93000a",
         "primary-fixed-dim": "#7adaa3",
         "tertiary-container": "#b4565a",
-        "primary-container": "#1b8354",
+        "primary-container": "#cfe9da",
+        "primary-hover": "#005231",
         "outline": "#6e7a71",
         "surface-tint": "#006d42",
         "primary": "#006840",
@@ -51,7 +52,11 @@ window.sharedTailwindConfig = {
         "on-tertiary-container": "#fff8f8",
         "inverse-primary": "#7adaa3",
         "on-secondary": "#ffffff",
-        "on-primary-container": "#ebffef"
+        "on-primary-container": "#002111",
+        "ink": "#24362b",
+        "muted": "#59685e",
+        "line": "#dbe3dd",
+        "wash": "#f0f8f3",
       },
       borderRadius: {
         DEFAULT: "0.25rem",

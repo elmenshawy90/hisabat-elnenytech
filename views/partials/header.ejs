@@ -1,15 +1,15 @@
-<!-- TopNavBar (Mobile & Tablet) -->
-<header class="app-topbar flex flex-row justify-between items-center w-full h-16 bg-surface mb-lg rounded-xl px-md border border-outline-variant/30 md:hidden shadow-sm">
-<div class="flex items-center gap-sm">
-<img src="/images/logo.svg" alt="سجل الديون" class="w-8 h-8 object-contain" />
-<h2 class="font-bold text-primary text-lg"><%= title %></h2>
+<!-- TopBar (Mobile & Tablet): full-bleed sticky bar -->
+<header class="app-topbar md:hidden sticky top-0 z-40 flex flex-row justify-between items-center w-full h-16 bg-surface/90 backdrop-blur-md px-md border-b border-line shadow-sm">
+<div class="flex items-center gap-sm min-w-0">
+<img src="/images/logo.svg" alt="سجل الديون" class="w-8 h-8 object-contain shrink-0" />
+<h2 class="font-bold text-ink text-[17px] truncate"><%= title %></h2>
 </div>
-<div class="flex items-center gap-md">
-<button type="button" onclick="event.preventDefault(); event.stopPropagation(); logout();" class="p-base hover:bg-error-container/20 text-secondary hover:text-error rounded-full transition-colors active:opacity-80 cursor-pointer" title="تسجيل الخروج">
-<span class="material-symbols-outlined">logout</span>
-</button>
-<button type="button" onclick="event.preventDefault(); event.stopPropagation(); openPasswordModal();" class="p-base hover:bg-primary/10 text-secondary hover:text-primary rounded-full transition-colors active:opacity-80 cursor-pointer" title="تغيير كلمة المرور">
+<div class="flex items-center gap-xs shrink-0">
+<button type="button" onclick="event.preventDefault(); event.stopPropagation(); openPasswordModal();" class="w-10 h-10 grid place-items-center hover:bg-wash text-secondary hover:text-primary rounded-full transition-colors active:scale-95 cursor-pointer" title="تغيير كلمة المرور" aria-label="تغيير كلمة المرور">
 <span class="material-symbols-outlined">account_circle</span>
+</button>
+<button type="button" onclick="event.preventDefault(); event.stopPropagation(); logout();" class="w-10 h-10 grid place-items-center hover:bg-error-container/20 text-secondary hover:text-error rounded-full transition-colors active:scale-95 cursor-pointer" title="تسجيل الخروج" aria-label="تسجيل الخروج">
+<span class="material-symbols-outlined">logout</span>
 </button>
 </div>
 </header>

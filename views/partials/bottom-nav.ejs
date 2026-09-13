@@ -1,26 +1,23 @@
-<nav class="md:hidden fixed bottom-0 left-0 right-0 min-h-[4rem] h-[calc(4rem+env(safe-area-inset-bottom))] bg-surface border-t border-outline-variant flex items-center justify-around px-md pb-[env(safe-area-inset-bottom)] z-50">
-<a class="flex flex-col items-center gap-xs <%= active === 'dashboard' ? 'text-primary' : 'text-secondary' %>" data-module="dashboard" href="/dashboard">
-<span class="material-symbols-outlined <%= active === 'dashboard' ? 'filled' : '' %>">dashboard</span>
-<span class="text-[10px] font-label-sm">الرئيسية</span>
+<!-- BottomNav (Mobile): 5 core destinations, M3 active pill -->
+<nav class="md:hidden fixed bottom-0 left-0 right-0 min-h-[4.5rem] h-[calc(4.5rem+env(safe-area-inset-bottom))] bg-surface/95 backdrop-blur-md border-t border-line flex items-start justify-around px-sm pt-2 pb-[env(safe-area-inset-bottom)] z-50" aria-label="التنقل السريع">
+<a class="flex flex-col items-center gap-1 min-w-[56px] <%= active === 'dashboard' ? 'text-ink font-bold' : 'text-muted' %>" data-module="dashboard" href="/dashboard" <%= active === 'dashboard' ? 'aria-current="page"' : '' %>>
+<span class="material-symbols-outlined <%= active === 'dashboard' ? 'filled' : '' %> <%= active === 'dashboard' ? 'bg-primary-container text-on-primary-container rounded-full px-5 py-1' : 'px-5 py-1' %>">dashboard</span>
+<span class="text-[11px]">الرئيسية</span>
 </a>
-<a class="flex flex-col items-center gap-xs <%= active === 'clients' ? 'text-primary' : 'text-secondary' %>" data-module="clients" href="/clients">
-<span class="material-symbols-outlined <%= active === 'clients' ? 'filled' : '' %>">group</span>
-<span class="text-[10px] font-label-sm">العملاء</span>
+<a class="flex flex-col items-center gap-1 min-w-[56px] <%= active === 'clients' ? 'text-ink font-bold' : 'text-muted' %>" data-module="clients" href="/clients" <%= active === 'clients' ? 'aria-current="page"' : '' %>>
+<span class="material-symbols-outlined <%= active === 'clients' ? 'filled' : '' %> <%= active === 'clients' ? 'bg-primary-container text-on-primary-container rounded-full px-5 py-1' : 'px-5 py-1' %>">group</span>
+<span class="text-[11px]">العملاء</span>
 </a>
-<a class="flex flex-col items-center gap-xs <%= active === 'invoices' ? 'text-primary' : 'text-secondary' %>" data-module="invoices" href="/new-invoice">
-<span class="material-symbols-outlined <%= active === 'invoices' ? 'filled' : '' %>">receipt_long</span>
-<span class="text-[10px] font-label-sm">الفواتير</span>
+<a class="flex flex-col items-center gap-1 min-w-[56px] <%= active === 'invoices' ? 'text-ink font-bold' : 'text-muted' %>" data-module="invoices" href="/new-invoice" <%= active === 'invoices' ? 'aria-current="page"' : '' %>>
+<span class="material-symbols-outlined <%= active === 'invoices' ? 'filled' : '' %> <%= active === 'invoices' ? 'bg-primary-container text-on-primary-container rounded-full px-5 py-1' : 'px-5 py-1' %>">receipt_long</span>
+<span class="text-[11px]">الفواتير</span>
 </a>
-<a class="flex flex-col items-center gap-xs <%= active === 'items' ? 'text-primary' : 'text-secondary' %>" data-module="items" href="/items">
-<span class="material-symbols-outlined <%= active === 'items' ? 'filled' : '' %>">inventory_2</span>
-<span class="text-[10px] font-label-sm">الأصناف</span>
+<a class="flex flex-col items-center gap-1 min-w-[56px] <%= active === 'items' ? 'text-ink font-bold' : 'text-muted' %>" data-module="items" href="/items" <%= active === 'items' ? 'aria-current="page"' : '' %>>
+<span class="material-symbols-outlined <%= active === 'items' ? 'filled' : '' %> <%= active === 'items' ? 'bg-primary-container text-on-primary-container rounded-full px-5 py-1' : 'px-5 py-1' %>">inventory_2</span>
+<span class="text-[11px]">الأصناف</span>
 </a>
-<a class="flex flex-col items-center gap-xs <%= active === 'suppliers' ? 'text-primary' : 'text-secondary' %>" data-module="suppliers" href="/suppliers">
-<span class="material-symbols-outlined <%= active === 'suppliers' ? 'filled' : '' %>">local_shipping</span>
-<span class="text-[10px] font-label-sm">الموردين</span>
-</a>
-<a data-requires-admin class="flex flex-col items-center gap-xs <%= active === 'users' ? 'text-primary' : 'text-secondary' %>" href="/users">
-<span class="material-symbols-outlined <%= active === 'users' ? 'filled' : '' %>">manage_accounts</span>
-<span class="text-[10px] font-label-sm">المستخدمون</span>
+<a class="flex flex-col items-center gap-1 min-w-[56px] <%= active === 'suppliers' ? 'text-ink font-bold' : 'text-muted' %>" data-module="suppliers" href="/suppliers" <%= active === 'suppliers' ? 'aria-current="page"' : '' %>>
+<span class="material-symbols-outlined <%= active === 'suppliers' ? 'filled' : '' %> <%= active === 'suppliers' ? 'bg-primary-container text-on-primary-container rounded-full px-5 py-1' : 'px-5 py-1' %>">local_shipping</span>
+<span class="text-[11px]">الموردين</span>
 </a>
 </nav>
