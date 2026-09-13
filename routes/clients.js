@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const prisma = require('../lib/prisma');
+const { nextInvoiceCode } = require('../lib/invoice-code');
 const { requireAuth, requireAccess } = require('../middleware/auth');
 const { normalize } = require('../lib/normalize');
 const { getClientBalance, getAllClientBalances } = require('../lib/balance');
@@ -219,12 +220,8 @@ router.post('/', async (req, res) => {
           }
         });
 
-        const counter = await tx.counter.upsert({
-          where: { id: 'invoice' },
-          create: { id: 'invoice', value: 1 },
-          update: { value: { increment: 1 } }
-        });
-        const invoiceCode = `Nen${counter.value}`;
+        const openingDate = new Date();
+        const invoiceCode = await nextInvoiceCode(tx, openingDate);
 
         const inv = await tx.invoice.create({
           data: {
@@ -238,7 +235,7 @@ router.post('/', async (req, res) => {
             details: detailsText,
             address: client.address || '-',
             status: 'paid',
-            date: new Date()
+            date: openingDate
           }
         });
 
@@ -309,15 +306,12 @@ router.put('/:id', async (req, res) => {
         const balanceEffect = openingBalanceType === 'debit' ? 'increase' : 'decrease';
         const detailsText = openingBalanceType === 'debit' ? 'رصيد افتتاحي (عليه)' : 'رصيد افتتاحي (له)';
 
-        const counter = await tx.counter.upsert({
-          where: { id: 'invoice' },
-          create: { id: 'invoice', value: 1 },
-          update: { value: { increment: 1 } }
-        });
+        const openingDate = new Date();
+        const invoiceCode = await nextInvoiceCode(tx, openingDate);
 
         await tx.invoice.create({
           data: {
-            invoiceCode: `Nen${counter.value}`,
+            invoiceCode,
             clientId: updated.id,
             clientName: updated.name,
             clientPhone: updated.phone,
@@ -327,7 +321,7 @@ router.put('/:id', async (req, res) => {
             details: detailsText,
             address: updated.address || '-',
             status: 'paid',
-            date: new Date()
+            date: openingDate
           }
         });
       }

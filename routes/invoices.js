@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const prisma = require('../lib/prisma');
+const { nextInvoiceCode } = require('../lib/invoice-code');
 const { requireAuth, requireAccess } = require('../middleware/auth');
 const { normalize } = require('../lib/normalize');
 const { getClientBalance } = require('../lib/balance');
@@ -366,21 +367,12 @@ router.post('/', async (req, res) => {
 
     const d = data.date ? new Date(data.date) : new Date();
     const targetDate = isNaN(d.getTime()) ? new Date() : d;
-    const yy = String(targetDate.getFullYear()).slice(-2);
-    const mm = String(targetDate.getMonth() + 1).padStart(2, '0');
-    const yearMonth = `${yy}${mm}`;
-    const counterId = `invoice-${yearMonth}`;
 
     const newNotes = data.details || (data.type === 'purchase' ? 'عملية شراء' : (data.type === 'adjustment' ? 'تسوية رصيد' : 'دفعة'));
 
     // Use transaction to increment monthly counter, create invoice with invoiceCode, items, stock logs, auto-payment and update client notes
     const { invoice, autoPaymentInvoice, updatedClient } = await prisma.$transaction(async (tx) => {
-      const counter = await tx.counter.upsert({
-        where: { id: counterId },
-        create: { id: counterId, value: 1 },
-        update: { value: { increment: 1 } }
-      });
-      const invoiceCode = `${yearMonth}-${counter.value}`;
+      const invoiceCode = await nextInvoiceCode(tx, targetDate);
 
       const balanceEffect = data.balanceEffect === 'decrease' ? 'decrease' : (data.type === 'payment' ? 'decrease' : 'increase');
 
@@ -442,12 +434,7 @@ router.post('/', async (req, res) => {
       // If this is a purchase invoice and paidAmount > 0, create an automatic payment invoice
       let createdAutoPayment = null;
       if (data.type === 'purchase' && paidAmount > 0) {
-        const payCounter = await tx.counter.upsert({
-          where: { id: counterId },
-          create: { id: counterId, value: 1 },
-          update: { value: { increment: 1 } }
-        });
-        const payInvoiceCode = `${yearMonth}-${payCounter.value}`;
+        const payInvoiceCode = await nextInvoiceCode(tx, targetDate);
 
         createdAutoPayment = await tx.invoice.create({
           data: {
@@ -818,16 +805,7 @@ router.put('/:id', async (req, res) => {
           });
         } else {
           // Create new auto-payment
-          const yy = String(validDate.getFullYear()).slice(-2);
-          const mm = String(validDate.getMonth() + 1).padStart(2, '0');
-          const yearMonth = `${yy}${mm}`;
-          const counterId = `invoice-${yearMonth}`;
-          const payCounter = await tx.counter.upsert({
-            where: { id: counterId },
-            create: { id: counterId, value: 1 },
-            update: { value: { increment: 1 } }
-          });
-          const payInvoiceCode = `${yearMonth}-${payCounter.value}`;
+          const payInvoiceCode = await nextInvoiceCode(tx, validDate);
 
           await tx.invoice.create({
             data: {
