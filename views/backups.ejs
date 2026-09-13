@@ -1,0 +1,38 @@
+<%- include('partials/page-head', { title: 'سجل الديون - النسخ الاحتياطي', description: 'إدارة النسخ الاحتياطية وجدولتها' }) %>
+<link rel="stylesheet" href="/css/backups.css">
+<body class="bg-background text-on-surface overflow-hidden max-w-[100vw]">
+<div class="flex h-screen w-full">
+<%- include('partials/aside', { active: 'backups' }) %>
+<main class="flex-1 min-w-0 flex flex-col md:mr-64 h-full relative">
+<div class="flex-1 overflow-y-auto p-container-margin pb-24 md:pb-xl md:p-xl custom-scrollbar">
+<%- include('partials/header', { title: 'النسخ الاحتياطي' }) %>
+<section class="backup-page">
+<div class="backup-heading"><div><h1>النسخ الاحتياطي</h1><p>نسخ محفوظة لبياناتك، وسجل واضح لكل عملية.</p></div><button id="createBackup" class="backup-primary" disabled><span class="material-symbols-outlined">backup</span>نسخة احتياطية الآن</button></div>
+<p id="backupNotice" class="backup-notice" role="status">جاري تحميل حالة النسخ الاحتياطي…</p>
+<div id="backupContent" hidden>
+<div class="backup-stats">
+<article><span class="material-symbols-outlined">verified_user</span><p>آخر نسخة ناجحة</p><strong id="lastBackup">لا توجد نسخ بعد</strong><small id="lastBackupHint">ابدأ أول نسخة لحماية بياناتك</small></article>
+<article><span class="material-symbols-outlined">event_repeat</span><p>النسخة القادمة</p><strong id="nextBackup">غير مجدولة</strong><small>بتوقيت الرياض (UTC+3)</small></article>
+<article><span class="material-symbols-outlined">cloud_done</span><p>النسخ المحفوظة</p><strong id="backupCount">0 نسخة</strong><small id="backupSize">0 MB</small></article>
+</div>
+<details class="backup-schedule" open><summary><span class="material-symbols-outlined">schedule</span>إعدادات الجدولة</summary>
+<form id="backupSettings"><fieldset id="settingsFields" disabled>
+<label class="backup-switch"><input id="scheduleEnabled" type="checkbox"> تشغيل النسخ التلقائي</label>
+<div class="backup-fields">
+<label>التكرار<select id="intervalDays"><option value="1">يوميًا</option><option value="7">كل أسبوع</option><option value="14" selected>كل أسبوعين</option></select></label>
+<label>الوقت — الرياض<input id="backupTime" type="time" value="02:00" required dir="ltr"></label>
+<label>مدة الاحتفاظ<select id="retentionDays"><option value="30">30 يومًا</option><option value="90" selected>90 يومًا</option><option value="180">180 يومًا</option><option value="365">365 يومًا</option></select></label>
+<button class="backup-primary" type="submit">حفظ الإعدادات</button>
+</div><p class="backup-help">بعد المدة المحددة تُحذف ملفات النسخ القديمة تلقائيًا، مع الحفاظ على أحدث نسخة والنسخ المعلّمة للاحتفاظ.</p>
+</fieldset></form></details>
+<section class="backup-history"><div class="backup-history-heading"><div><h2>سجل النسخ الاحتياطية</h2><p>تابع العمليات، ونزّل نسخك أو احتفظ بالمهم منها.</p></div><button id="refreshBackups" class="backup-secondary" aria-label="تحديث سجل النسخ"><span class="material-symbols-outlined">refresh</span>تحديث</button></div>
+<div id="backupEmpty" class="backup-empty"><span class="material-symbols-outlined">cloud_upload</span><h3>لا توجد نسخ احتياطية بعد</h3><p>أول نسخة هتظهر هنا بمجرد بدء النسخ.</p></div>
+<div class="backup-record-head" aria-hidden="true"><span>التاريخ والوقت</span><span>النوع</span><span>الحجم</span><span>الحالة</span><span>الإجراءات</span></div>
+<div id="backupRecords" class="backup-records"></div>
+</section>
+<p class="backup-help">الملفات مشفّرة وتشمل جداول وبيانات النظام. الملفات المرفوعة خارج قاعدة البيانات تحتاج نسخًا منفصلًا. الاسترجاع إجراء مستقل عن هذه الصفحة.</p>
+</div></section>
+</div><%- include('partials/bottom-nav', { active: 'backups' }) %>
+</main></div>
+<script src="/js/shared-ui.js"></script><script src="/js/backups.js"></script>
+</body></html>

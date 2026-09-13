@@ -73,6 +73,7 @@ app.use('/api/export', require('./routes/export'));
 app.use('/api/search', require('./routes/search'));
 app.use('/api/users', require('./routes/users'));
 app.use('/api/roles', require('./routes/roles'));
+app.use('/api/backups', require('./routes/backups'));
 
 console.log('[server] Routes loaded');
 
@@ -86,6 +87,7 @@ app.get('/suppliers', (req, res) => res.render('suppliers'));
 app.get('/new-invoice', (req, res) => res.render('new-invoice'));
 app.get('/client-details', (req, res) => res.render('client-details'));
 app.get('/users', (req, res) => res.render('users'));
+app.get('/backups', (req, res) => res.render('backups'));
 app.use('/status', require('./routes/status'));
 
 // Health check for Vercel debugging

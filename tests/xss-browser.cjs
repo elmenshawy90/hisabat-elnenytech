@@ -22,6 +22,7 @@ try {
   if(u.pathname.startsWith('/api/')){
    let data={data:[],pagination:{page:1,total:1,pages:1},stats:{}};
    if(u.pathname==='/api/auth/me')data={authenticated:true,user:{username:'admin',role:'admin'}};
+   else if(u.pathname==='/api/backups')data={configured:true,settings:{enabled:true,intervalDays:14,time:'02:00',retentionDays:90,nextRun:'2026-09-27T23:00:00Z'},records:[{id:'12345678-1234-1234-1234-123456789012',createdAt:'2026-09-13T23:00:00Z',completedAt:'2026-09-13T23:01:00Z',status:'completed',type:'manual',requestedBy:payload,size:4096,keep:false}]};
    else if(u.pathname==='/api/clients/1')data={...client,invoices:[inv]};
    else if(u.pathname==='/api/clients')data={...data,data:[client]};
    else if(u.pathname==='/api/items/1')data={...item,stockLogs:[{quantityBase:1,balanceAfter:10,changeType:'restock',notes:payload,supplier:client,createdAt:inv.date}]};
@@ -38,16 +39,21 @@ try {
   }
   if(u.pathname.startsWith('/js/'))return req.respond({status:200,contentType:'application/javascript',body:fs.readFileSync(path.join(root,'public',u.pathname),'utf8')});
   if(u.pathname.startsWith('/css/'))return req.respond({status:200,contentType:'text/css',body:fs.readFileSync(path.join(root,'public',u.pathname),'utf8')});
-  if(['/dashboard','/clients','/items','/suppliers','/new-invoice','/client-details'].includes(u.pathname)){
+  if(['/dashboard','/clients','/items','/suppliers','/new-invoice','/client-details','/backups'].includes(u.pathname)){
    const html=await ejs.renderFile(path.join(root,'views',u.pathname.slice(1)+'.ejs'));
    return req.respond({status:200,contentType:'text/html',body:html});
   }
   return req.respond({status:200,body:''});
  });
  await page.evaluateOnNewDocument(()=>{window.Chart=class{destroy(){}};window.flatpickr=()=>({setDate(){},clear(){}});window.flatpickr.l10ns={ar:{}};});
- for(const name of ['dashboard','clients','items','suppliers','new-invoice','client-details']){
+ for(const name of ['dashboard','clients','items','suppliers','new-invoice','client-details','backups']){
   await page.goto('http://hisabat.test/'+name+'?id=1',{waitUntil:'networkidle0'});
   await page.evaluate(async (name, payload) => {
+   if(name==='backups') {
+    if(document.querySelectorAll('.backup-record').length!==1) throw new Error('Backup history missing');
+    if(document.getElementById('intervalDays').value!=='14') throw new Error('Backup schedule not rendered');
+    if(!document.querySelector('a[href="/backups"][data-backup-admin]')) throw new Error('Backup navigation missing');
+   }
    if(name==='clients') {
     const button=document.querySelector('button[onclick*="openEditClientModal"]');
     button.click();

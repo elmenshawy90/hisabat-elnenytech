@@ -62,6 +62,10 @@
                 <span class="material-symbols-outlined <%= active === 'status' ? 'filled' : '' %>">dns</span>
                 <span class="text-[14px] flex-grow text-right">حالة النظام</span>
             </a>
+            <a data-backup-admin hidden class="relative flex flex-row items-center gap-md <%= active === 'backups' ? 'bg-primary-container text-on-primary-container font-bold' : 'text-secondary font-medium' %> rounded-xl px-md py-sm hover:bg-wash transition-all" href="/backups" <%= active === 'backups' ? 'aria-current="page"' : '' %>>
+                <span class="material-symbols-outlined">backup</span>
+                <span class="text-[14px] flex-grow text-right">النسخ الاحتياطي</span>
+            </a>
             </div>
         </div>
     </nav>

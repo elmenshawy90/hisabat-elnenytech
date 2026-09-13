@@ -476,6 +476,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (!res.ok) return;
     const data = await res.json();
     if (!data.authenticated) return;
+    document.querySelectorAll('[data-backup-admin]').forEach(el => {
+      if (data.user.role !== 'admin') el.remove();
+      else el.removeAttribute('hidden');
+    });
     window.currentUserRole = data.user.role;
     window.currentPermissions = data.user.permissions || null;
     const perms = data.user.permissions || {};

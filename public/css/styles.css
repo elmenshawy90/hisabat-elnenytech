@@ -520,3 +520,6 @@ body {
     *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
     html { scroll-behavior: auto; }
 }
+
+/* Backup access is revealed only after the admin identity check. */
+[data-backup-admin][hidden] { display: none !important; }
