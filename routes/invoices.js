@@ -252,6 +252,13 @@ router.post('/', async (req, res) => {
         }
 
         unitPrice = Math.round(unitPrice);
+
+        const rawSupplier = typeof itemInput.supplierName === 'string' ? itemInput.supplierName.trim() : '';
+        if (rawSupplier.length > 120) {
+          return res.status(400).json({ error: `اسم المورد في البند ${i + 1} طويل جدًا (بحد أقصى 120 حرفًا)` });
+        }
+        const supplierName = rawSupplier || null;
+
         const unit = await prisma.itemUnit.findUnique({
           where: { id: itemUnitId },
           include: { item: true }
@@ -283,7 +290,8 @@ router.post('/', async (req, res) => {
           quantity,
           quantityBase,
           unitPrice,
-          lineTotal
+          lineTotal,
+          supplierName
         });
       }
 
@@ -402,7 +410,8 @@ router.post('/', async (req, res) => {
               quantity: pi.quantity,
               quantityBase: pi.quantityBase,
               unitPrice: pi.unitPrice,
-              lineTotal: pi.lineTotal
+              lineTotal: pi.lineTotal,
+              supplierName: pi.supplierName
             }))
           } : undefined,
           ...(servicesSupported(tx) && parsedServices.services.length > 0 ? {
@@ -635,6 +644,8 @@ router.put('/:id', async (req, res) => {
       const lineTotal = Math.round(qty * uPrice);
       calculatedSubtotal += lineTotal;
 
+      const rawSupplier = typeof rawItem.supplierName === 'string' ? rawItem.supplierName.trim().slice(0, 120) : '';
+
       newPreparedItems.push({
         itemId: iId,
         itemUnitId: uId,
@@ -642,6 +653,7 @@ router.put('/:id', async (req, res) => {
         quantityBase,
         unitPrice: uPrice,
         lineTotal,
+        supplierName: rawSupplier || null,
         itemName: dbItem.name
       });
     }
@@ -715,7 +727,8 @@ router.put('/:id', async (req, res) => {
             quantity: it.quantity,
             quantityBase: it.quantityBase,
             unitPrice: it.unitPrice,
-            lineTotal: it.lineTotal
+            lineTotal: it.lineTotal,
+            supplierName: it.supplierName
           }))
         });
       }

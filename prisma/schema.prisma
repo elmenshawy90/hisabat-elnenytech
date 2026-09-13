@@ -208,6 +208,7 @@ model InvoiceItem {
   quantityBase  Float    // الكمية محوّلة للوحدة الأساسية
   unitPrice     Float    // سعر الوحدة المختارة وقت البيع
   lineTotal     Float    // quantity * unitPrice
+  supplierName  String?  // اسم المورد للبنود خارج المخزون — داخلي فقط، لا يُطبع بالفاتورة
   createdAt     DateTime @default(now())
 
   @@index([invoiceId])

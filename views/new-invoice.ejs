@@ -1,23 +1,4 @@
-<!DOCTYPE html>
-<html class="light" dir="rtl" lang="ar">
-
-<head>
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta charset="utf-8" />
-    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
-    <title>إضافة فاتورة جديدة | سجل الديون</title>
-    <meta name="description" content="إضافة وإدارة الفواتير والمعاملات المالية" />
-    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ar.js"></script>
-    <script src="js/tailwind-config.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap"
-        rel="stylesheet" />
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
-        rel="stylesheet" />
-    <link href="css/styles.css" rel="stylesheet" />
-</head>
+<%- include('partials/page-head', { title: 'إضافة فاتورة جديدة | سجل الديون', description: 'إضافة وإدارة الفواتير والمعاملات المالية', extra: 'flatpickr' }) %>
 
 <body class="bg-background text-on-surface overflow-hidden max-w-[100vw]">
     <!-- Shell Container -->
@@ -179,8 +160,8 @@
                         <div
                             class="bg-surface-container-lowest border border-outline-variant rounded-xl shadow-sm overflow-hidden">
                             <div class="overflow-x-auto w-full max-w-[100vw]">
-                                <table class="w-full text-right border-collapse whitespace-nowrap" dir="rtl">
-                                    <thead class="bg-surface-container-low border-b border-outline-variant">
+                                <table class="ui-table" dir="rtl">
+                                    <thead>
                                         <tr>
                                             <th class="px-lg py-md font-label-md text-label-md text-secondary">العميل
                                             </th>
@@ -199,7 +180,7 @@
                                                 الإجراءات</th>
                                         </tr>
                                     </thead>
-                                    <tbody class="divide-y divide-outline-variant" id="invoiceList">
+                                    <tbody class="" id="invoiceList">
                                         <tr>
                                             <td colspan="7" class="p-xl text-center text-secondary">جاري التحميل...</td>
                                         </tr>
@@ -273,7 +254,7 @@
 
     <!-- Modal -->
     <div class="invoice-modal-overlay fixed inset-0 z-[100] hidden items-center justify-center bg-black/50 p-4" id="invoiceModal">
-        <div class="invoice-modal-panel bg-white rounded-2xl shadow-lg w-full max-w-6xl max-h-[94vh] overflow-y-auto">
+        <div class="invoice-modal-panel anim-pop bg-white rounded-2xl shadow-lg w-full max-w-5xl max-h-[94vh] overflow-y-auto">
             <div class="invoice-modal-header flex flex-row justify-between items-center border-b border-outline-variant px-md md:px-xl py-md">
                 <h2 class="font-headline-md text-headline-md font-bold text-on-surface" id="modalTitle">إضافة فاتورة
                     جديدة</h2>
@@ -591,7 +572,7 @@
                 <div id="tdItemsBreakdownContainer" class="hidden border-b border-outline-variant pb-xs space-y-xs">
                     <span class="text-secondary font-label-md font-bold">بنود الفاتورة التفصيلية</span>
                     <div class="overflow-x-auto rounded-lg border border-outline-variant/60">
-                        <table class="w-full text-right text-xs border-collapse">
+                        <table class="ui-table">
                             <thead
                                 class="bg-surface-container-low text-secondary font-bold border-b border-outline-variant/60">
                                 <tr>
@@ -602,7 +583,7 @@
                                     <th class="p-2">الإجمالي</th>
                                 </tr>
                             </thead>
-                            <tbody id="tdItemsBreakdownBody" class="divide-y divide-outline-variant/40">
+                            <tbody id="tdItemsBreakdownBody" class="">
                                 <!-- Items populated via JS -->
                             </tbody>
                         </table>
@@ -615,7 +596,7 @@
                 <div id="tdServicesBreakdownContainer" class="hidden border-b border-outline-variant pb-xs space-y-xs">
                     <span class="text-secondary font-label-md font-bold">خدمات إضافية (أخري)</span>
                     <div class="overflow-x-auto rounded-lg border border-outline-variant/60">
-                        <table class="w-full text-right text-xs border-collapse">
+                        <table class="ui-table">
                             <thead
                                 class="bg-surface-container-low text-secondary font-bold border-b border-outline-variant/60">
                                 <tr>
@@ -623,7 +604,7 @@
                                     <th class="p-2">السعر</th>
                                 </tr>
                             </thead>
-                            <tbody id="tdServicesBreakdownBody" class="divide-y divide-outline-variant/40">
+                            <tbody id="tdServicesBreakdownBody" class="">
                                 <!-- Services populated via JS -->
                             </tbody>
                         </table>
@@ -1215,6 +1196,10 @@
                         </button>
                     </div>
                 </div>
+                <div>
+                    <label class="block text-[11px] font-bold text-secondary mb-1">المورد <span class="text-[10px] font-medium text-secondary/70">(اختياري — للبنود خارج المخزون)</span></label>
+                    <input type="text" maxlength="120" value="${escapeHtml(itemData.supplierName || '')}" class="line-supplier-input w-full h-9 px-xs rounded-md bg-surface-container-low border border-outline-variant text-xs font-medium text-right focus:border-primary outline-none" placeholder="اسم المورد — لا يظهر في الفاتورة المطبوعة" />
+                </div>
                 <div class="line-stock-info hidden text-[11px] font-medium px-sm py-1 rounded-md border"></div>
             `;
 
@@ -1577,6 +1562,11 @@
                                 <span class="material-symbols-outlined text-base">delete</span>
                             </button>
                         </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-[11px] font-bold text-secondary mb-1">المورد <span class="text-[10px] font-medium text-secondary/70">(اختياري — للبنود خارج المخزون)</span></label>
+                        <input type="text" maxlength="120" class="line-supplier-input w-full h-9 px-xs rounded-md bg-surface-container-low border border-outline-variant text-xs font-medium text-right focus:border-primary outline-none" placeholder="اسم المورد — لا يظهر في الفاتورة المطبوعة" />
                     </div>
 
                     <!-- Live Stock Warning Banner -->
@@ -2337,7 +2327,10 @@
                     return;
                 }
 
-                itemsPayload.push({ itemId, itemUnitId, quantity, unitPrice });
+                const supplierInput = row.querySelector('.line-supplier-input');
+                const supplierName = supplierInput ? supplierInput.value.trim().slice(0, 120) : '';
+
+                itemsPayload.push({ itemId, itemUnitId, quantity, unitPrice, supplierName });
             }
 
             const collected = collectServicesPayload();

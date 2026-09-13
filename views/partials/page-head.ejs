@@ -1,0 +1,33 @@
+<%# Shared page head: DOCTYPE through /head. Params: title (required), description (optional), extra chart|flatpickr|client-details (optional). %>
+<%
+const _title = typeof title !== 'undefined' ? title : 'سجل الديون';
+const _desc = typeof description !== 'undefined' ? description : 'نظام سجل الديون — إدارة مواد البناء والعملاء والفواتير';
+const _extra = typeof extra !== 'undefined' ? extra : '';
+%>
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<meta name="theme-color" content="#006840" />
+<title><%= _title %></title>
+<meta name="description" content="<%= _desc %>" />
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script src="/js/tailwind-config.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<% if (_extra === 'chart') { %>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<% } %>
+<% if (_extra === 'flatpickr' || _extra === 'client-details') { %>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ar.js"></script>
+<% } %>
+<link href="/css/styles.css" rel="stylesheet"/>
+<% if (_extra === 'client-details') { %>
+<link rel="stylesheet" href="/css/client-details.css">
+<script defer src="/js/client-details-layout.js"></script>
+<% } %>
+</head>

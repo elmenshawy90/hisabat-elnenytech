@@ -1,17 +1,4 @@
-<!DOCTYPE html>
-<html dir="rtl" lang="ar">
-<head>
-<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-<meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>سجل الديون - العملاء</title>
-<meta name="description" content="إدارة ومتابعة ديون العملاء المسجلين"/>
-<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<script src="js/tailwind-config.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
-<link href="css/styles.css" rel="stylesheet"/>
-</head>
+<%- include('partials/page-head', { title: 'سجل الديون - العملاء', description: 'إدارة ومتابعة ديون العملاء المسجلين' }) %>
 <body class="bg-background text-on-surface overflow-hidden max-w-[100vw]">
 <!-- Shell Container -->
 <div class="flex h-screen w-full">
@@ -188,7 +175,7 @@
 <!-- Table Container -->
 <div class="bg-surface-container-lowest border border-outline-variant rounded-xl shadow-sm overflow-hidden">
 <div class="overflow-x-auto w-full max-w-[100vw]">
-<table class="w-full text-right whitespace-nowrap">
+<table class="ui-table">
 <thead>
 <tr class="bg-surface-container-low border-b border-outline-variant select-none">
 <th onclick="toggleHeaderSort('name')" class="px-lg py-md font-label-md text-label-md text-secondary cursor-pointer hover:bg-surface-container-high transition-colors">
@@ -231,7 +218,7 @@
 <th class="px-lg py-md font-label-md text-label-md text-secondary text-center">الإجراءات</th>
 </tr>
 </thead>
-<tbody class="divide-y divide-outline-variant" id="clientsTableBody">
+<tbody class="" id="clientsTableBody">
 <tr><td colspan="8" class="p-xl text-center text-secondary">جاري التحميل...</td></tr>
 
 </tbody>

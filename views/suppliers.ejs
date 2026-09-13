@@ -1,17 +1,4 @@
-<!DOCTYPE html>
-<html dir="rtl" lang="ar">
-<head>
-<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-<meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>سجل الديون - الموردين</title>
-<meta name="description" content="إدارة موردي الخامات وحركات التوريد"/>
-<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<script src="js/tailwind-config.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
-<link href="css/styles.css" rel="stylesheet"/>
-</head>
+<%- include('partials/page-head', { title: 'سجل الديون - الموردين', description: 'إدارة موردي الخامات وحركات التوريد' }) %>
 <body class="bg-background text-on-surface overflow-hidden max-w-[100vw]">
 <!-- Shell Container -->
 <div class="flex h-screen w-full">
@@ -103,7 +90,7 @@
 <!-- Suppliers Table Container -->
 <div class="bg-surface-container-lowest border border-outline-variant rounded-2xl shadow-sm overflow-hidden mb-xl">
     <div class="overflow-x-auto">
-        <table class="w-full text-right border-collapse">
+        <table class="ui-table">
             <thead>
                 <tr class="bg-surface-container-low border-b border-outline-variant text-secondary font-label-md text-xs">
                     <th class="px-md py-md font-bold">الاسم</th>
@@ -114,7 +101,7 @@
                     <th class="px-md py-md font-bold text-center">الإجراءات</th>
                 </tr>
             </thead>
-            <tbody id="suppliersTableBody" class="divide-y divide-outline-variant/60 font-body-md text-sm">
+            <tbody id="suppliersTableBody" class="font-body-md text-sm">
                 <!-- Loaded via JS -->
             </tbody>
         </table>
@@ -281,8 +268,8 @@
         </div>
 
         <div class="overflow-y-auto custom-scrollbar flex-1 border border-outline-variant/60 rounded-xl">
-            <table class="w-full text-right border-collapse text-xs">
-                <thead class="sticky top-0 bg-surface-container-low border-b border-outline-variant text-secondary">
+            <table class="ui-table">
+                <thead>
                     <tr>
                         <th class="px-md py-sm font-bold">التاريخ</th>
                         <th class="px-md py-sm font-bold">الحركة</th>
@@ -292,7 +279,7 @@
                         <th class="px-md py-sm font-bold">الرصيد</th>
                     </tr>
                 </thead>
-                <tbody id="statementTableBody" class="divide-y divide-outline-variant/40 font-body-md">
+                <tbody id="statementTableBody" class="font-body-md">
                 </tbody>
             </table>
             <div id="statementEmpty" class="hidden py-lg text-center text-secondary">

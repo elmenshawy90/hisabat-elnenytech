@@ -48,7 +48,8 @@ body {
 
 .invoice-modal-panel {
     scrollbar-gutter: stable;
-    height: min(94vh, 920px);
+    width: 100%;
+    max-height: min(94vh, 920px);
     display: flex;
     flex-direction: column;
     overflow: hidden !important;
@@ -90,9 +91,10 @@ body {
 }
 
 .invoice-modal-scroll {
-    position: absolute;
-    inset: 0 0 82px;
+    flex: 1 1 auto;
+    min-height: 0;
     overflow-y: auto;
+    padding-top: 4px;
     padding-bottom: 16px;
     scrollbar-gutter: stable;
 }
@@ -110,7 +112,7 @@ body {
 .invoice-line-table-head,
 .invoice-line-grid {
     display: grid;
-    grid-template-columns: 100px 130px minmax(210px, 1fr) 130px 115px 40px;
+    grid-template-columns: 88px 118px minmax(180px, 1fr) 118px 100px 36px;
     gap: 8px;
     align-items: center;
 }
@@ -192,11 +194,7 @@ body {
 }
 
 .invoice-modal-footer {
-    position: absolute;
-    right: -16px;
-    bottom: 0;
-    left: -16px;
-    z-index: 30;
+    flex-shrink: 0;
     margin: 0;
     background: rgba(255, 255, 255, 0.98);
     backdrop-filter: blur(10px);
@@ -205,13 +203,6 @@ body {
 
 .invoice-modal-footer > button {
     min-height: 48px;
-}
-
-@media (min-width: 768px) {
-    .invoice-modal-footer {
-        right: -24px;
-        left: -24px;
-    }
 }
 
 @media (max-width: 767px) {
@@ -225,7 +216,11 @@ body {
         max-height: 100vh !important;
         border-radius: 0 !important;
     }
+}
 
+/* Tablet + mobile: stack the 6-column line grid into cards so rows
+   never overflow the popup width */
+@media (max-width: 1023.98px) {
     .invoice-line-table-head {
         display: none;
     }
@@ -254,14 +249,6 @@ body {
 
     .invoice-service-grid {
         grid-template-columns: 1fr 110px 40px;
-    }
-
-    .invoice-modal-scroll {
-        bottom: 126px;
-    }
-
-    .invoice-modal-footer > button {
-        width: 100% !important;
     }
 
     .invoice-services-card,

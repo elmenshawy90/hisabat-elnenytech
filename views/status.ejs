@@ -1,17 +1,4 @@
-<!DOCTYPE html>
-<html dir="rtl" lang="ar">
-<head>
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta charset="utf-8"/>
-    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-    <title>حالة النظام - حسابات</title>
-    <meta name="description" content="عرض حالة النظام وسجل عمليات النشر وقاعدة البيانات"/>
-    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-    <script src="/js/tailwind-config.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
-    <link href="/css/styles.css" rel="stylesheet"/>
-</head>
+<%- include('partials/page-head', { title: 'حالة النظام - حسابات', description: 'عرض حالة النظام وسجل عمليات النشر وقاعدة البيانات' }) %>
 <body class="bg-background text-on-surface min-h-screen overflow-x-hidden">
 
 <!-- Side Navigation (Desktop Only) -->
@@ -199,14 +186,14 @@
                         }
                     %>
                     <div class="overflow-x-auto rounded-xl border border-outline-variant/40">
-                        <table class="w-full text-right border-collapse text-xs sm:text-sm">
+                        <table class="ui-table">
                             <thead>
                                 <tr class="bg-surface-container-low text-secondary border-b border-outline-variant/40 font-bold">
                                     <th class="py-sm px-md w-3/4">التاريخ والوقت</th>
                                     <th class="py-sm px-md w-1/4 text-center">الحالة</th>
                                 </tr>
                             </thead>
-                            <tbody class="divide-y divide-outline-variant/20">
+                            <tbody class="">
                                 <% displayedLogs.forEach((item, idx) => { %>
                                     <tr class="hover:bg-surface-container-lowest transition-colors <%= idx === 0 ? 'bg-emerald-50/40' : '' %>">
                                         <td class="py-sm px-md font-medium text-on-surface">

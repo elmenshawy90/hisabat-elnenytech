@@ -1,17 +1,4 @@
-<!DOCTYPE html>
-<html dir="rtl" lang="ar">
-<head>
-<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-<meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>سجل الديون - المستخدمون</title>
-<meta name="description" content="إدارة مستخدمي النظام وصلاحياتهم"/>
-<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<script src="js/tailwind-config.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
-<link href="css/styles.css" rel="stylesheet"/>
-</head>
+<%- include('partials/page-head', { title: 'سجل الديون - المستخدمون', description: 'إدارة مستخدمي النظام وصلاحياتهم' }) %>
 <body class="bg-background text-on-surface overflow-hidden max-w-[100vw]">
 <!-- Shell Container -->
 <div class="flex h-screen w-full">
@@ -96,7 +83,7 @@
 <!-- Users Table Container -->
 <div class="bg-surface-container-lowest border border-outline-variant rounded-2xl shadow-sm overflow-hidden mb-xl">
     <div class="overflow-x-auto">
-        <table class="w-full text-right border-collapse">
+        <table class="ui-table">
             <thead>
                 <tr class="bg-surface-container-low border-b border-outline-variant text-secondary font-label-md text-xs">
                     <th class="px-md py-md font-bold">اسم المستخدم</th>
@@ -106,7 +93,7 @@
                     <th class="px-md py-md font-bold text-center">الإجراءات</th>
                 </tr>
             </thead>
-            <tbody id="usersTableBody" class="divide-y divide-outline-variant/60 font-body-md text-sm">
+            <tbody id="usersTableBody" class="font-body-md text-sm">
                 <!-- Loaded via JS -->
             </tbody>
         </table>
@@ -140,7 +127,7 @@
 
 <div class="bg-surface-container-lowest border border-outline-variant rounded-2xl shadow-sm overflow-hidden mb-xl">
     <div class="overflow-x-auto">
-        <table class="w-full text-right border-collapse">
+        <table class="ui-table">
             <thead>
                 <tr class="bg-surface-container-low border-b border-outline-variant text-secondary font-label-md text-xs">
                     <th class="px-md py-md font-bold">الدور</th>
@@ -150,7 +137,7 @@
                     <th class="px-md py-md font-bold text-center">الإجراءات</th>
                 </tr>
             </thead>
-            <tbody id="rolesTableBody" class="divide-y divide-outline-variant/60 font-body-md text-sm">
+            <tbody id="rolesTableBody" class="font-body-md text-sm">
             </tbody>
         </table>
     </div>
